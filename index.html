@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#002F6C">
 <title>NTG Bergen</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"></script>
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" data-onesignal-app-id="e3ff81e2-292b-42cc-bc13-1e2169285824"></script>
 <style>
 :root{
   --blue:#002F6C;--blue-mid:#1A4A8A;--blue-light:#E8F0FA;
@@ -546,16 +546,6 @@ input[type=range]{width:100%;accent-color:var(--blue)}
 var SB_URL = 'https://plkutjfeahzkfsakwbkb.supabase.co';
 var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsa3V0amZlYWh6a2ZzYWt3YmtiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4OTcxNTcsImV4cCI6MjA5NTQ3MzE1N30.iieNM0ADFwLGBkckS7zZOecu-S5ekuxWKVARAupop6Q';
 var SB_ADMIN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsa3V0amZlYWh6a2ZzYWt3YmtiIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTg5NzE1NywiZXhwIjoyMDk1NDczMTU3fQ.k0ua_SumcQ3Igp8jKrUaehXINv597zeiccCZsPzyLC0';
-
-// Init OneSignal early
-window.OneSignalDeferred = window.OneSignalDeferred || [];
-window.OneSignalDeferred.push(function(OneSignal) {
-  OneSignal.init({
-    appId: 'e3ff81e2-292b-42cc-bc13-1e2169285824',
-    notifyButton: { enable: false },
-    allowLocalhostAsSecureOrigin: true
-  });
-});
 
 var SP = ['Eierskap til egen utvikling','Disiplin og gjennomf\u00f8ringskraft','Evne til \u00e5 holde fokus','T\u00e5le motgang','Energi','Samarbeidsevne','T\u00e5le trening \u2013 fysisk og psykisk'];
 var SL = ['Systematikk i treningsarbeid','S\u00f8vnmengde','Kosthold','24-timersut\u00f8ver'];
