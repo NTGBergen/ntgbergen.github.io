@@ -1589,7 +1589,11 @@ async function saveStudent() {
   if (!name) { errEl.textContent = 'Navn er p\u00e5krevd.'; errEl.style.display = 'block'; errEl.classList.add('show'); return; }
   try {
     if (editId) {
-      await api('PATCH', 'profiles?id=eq.' + editId, {full_name: name, class: cls, position: pos, group_name: grp || null, sport: spt});
+      await fetch(SB_URL + '/rest/v1/profiles?id=eq.' + editId, {
+        method: 'PATCH',
+        headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json', 'Prefer': 'return=representation'},
+        body: JSON.stringify({full_name: name, class: cls, position: pos, group_name: grp || null, sport: spt})
+      });
       document.getElementById('student-success-msg').textContent = 'Elev oppdatert!';
     } else {
       if (!email) { errEl.textContent = 'E-post er p\u00e5krevd.'; errEl.style.display = 'block'; errEl.classList.add('show'); return; }
@@ -1711,11 +1715,18 @@ async function loadCalendar() {
   el.innerHTML = '<div class="loading"><div class="spinner"></div>Laster \u00f8kter...</div>';
   var today = new Date().toISOString().split('T')[0];
   var sport = currentProfile.sport || 'H\u00e5ndball';
-  var events = await api('GET', 'training_events?date=gte.' + today + '&sport=eq.' + encodeURIComponent(sport) + '&order=date.asc,time.asc&select=*');
+  var query = 'training_events?date=gte.' + today + '&sport=eq.' + encodeURIComponent(sport) + '&order=date.asc,time.asc&select=*';
+  var events = await api('GET', query) || [];
+  // Filter by student's group if they have one
+  if (currentProfile.group_name) {
+    events = events.filter(function(ev) {
+      return !ev.group_names || ev.group_names.length === 0 || ev.group_names.indexOf(currentProfile.group_name) > -1;
+    });
+  }
   var regs = await api('GET', 'event_registrations?user_id=eq.' + currentProfile.id + '&select=event_id,status');
   var myRegs = {};
   (regs || []).forEach(function(r) { myRegs[r.event_id] = r.status; });
-  renderCalendarList(events || [], myRegs);
+  renderCalendarList(events, myRegs);
 }
 
 function renderCalendarList(events, myRegs) {
@@ -1736,17 +1747,21 @@ function renderCalendarList(events, myRegs) {
       var status = myRegs[ev.id];
       var isPaameldt = status === 'paameldt';
       var isAvmeldt = status === 'avmeldt';
-      var btnBg = isPaameldt ? 'var(--green-light)' : isAvmeldt ? 'var(--red-light)' : 'var(--bg2)';
-      var btnColor = isPaameldt ? 'var(--green-dark)' : isAvmeldt ? 'var(--red-dark)' : 'var(--text-muted)';
-      var btnBorder = isPaameldt ? 'var(--green)' : isAvmeldt ? 'var(--red)' : 'var(--border)';
-      var btnText = isPaameldt ? '&#10003; Meldt p\u00e5' : isAvmeldt ? '&#10007; Meldt av' : 'Meld p\u00e5';
+      var btnHtml;
+      if (isPaameldt) {
+        btnHtml = '<button onclick="toggleRegistration(\'' + ev.id + '\')" style="background:var(--red-light);color:var(--red-dark);border:1px solid var(--red);border-radius:7px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">\u274C Meld av</button>';
+      } else if (isAvmeldt) {
+        btnHtml = '<button onclick="toggleRegistration(\'' + ev.id + '\')" style="background:var(--green-light);color:var(--green-dark);border:1px solid var(--green);border-radius:7px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">\u2713 Meld p\u00e5</button>';
+      } else {
+        btnHtml = '<button onclick="toggleRegistration(\'' + ev.id + '\')" style="background:var(--blue-light);color:var(--blue);border:1px solid var(--blue);border-radius:7px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Meld p\u00e5</button>';
+      }
       html += '<div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--bg2);border-radius:9px;margin-bottom:6px;border:1px solid var(--border)">'
         + '<div style="flex:1">'
         + '<div style="font-size:14px;font-weight:700;color:var(--blue)">' + ev.title + '</div>'
         + '<div style="font-size:12px;color:var(--text-muted);margin-top:2px">' + ev.time + (ev.location ? ' \u2022 ' + ev.location : '') + '</div>'
         + '<div style="font-size:11px;margin-top:3px"><span class="stb">' + ev.type + '</span></div>'
         + '</div>'
-        + '<button onclick="toggleRegistration(\'' + ev.id + '\')" style="background:' + btnBg + ';color:' + btnColor + ';border:1px solid ' + btnBorder + ';border-radius:7px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">' + btnText + '</button>'
+        + btnHtml
         + '</div>';
     });
   });
