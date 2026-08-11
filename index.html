@@ -186,15 +186,8 @@ input[type=range]{width:100%;accent-color:var(--blue)}
       </div>
       <div class="login-error" id="login-error"></div>
       <button class="btn btn-primary" onclick="doLogin()">Logg inn</button>
-      <div style="display:flex;align-items:center;gap:8px;margin-top:12px;margin-bottom:4px">
-        <div style="flex:1;height:1px;background:var(--border)"></div>
-        <span style="font-size:12px;color:var(--text-muted)">eller</span>
-        <div style="flex:1;height:1px;background:var(--border)"></div>
-      </div>
-      <button class="btn btn-secondary" onclick="sendMagicLink()" style="margin-top:4px">Send innloggingslenke på e-post</button>
-      <div style="background:var(--green-light);border:1px solid var(--green-mid);color:var(--green-dark);border-radius:7px;padding:9px 12px;font-size:13px;margin-top:8px;display:none" id="magic-ok">Sjekk e-posten din – lenken er på vei!</div>
-      <button class="btn btn-secondary" onclick="showForgotPassword()" style="margin-top:6px;font-size:12px;color:var(--text-muted);border:none;background:none;padding:4px">Glemt passord?</button>
-      <div id="forgot-section" style="display:none;margin-top:8px">
+      <button class="btn btn-secondary" onclick="showForgotPassword()" style="margin-top:6px;font-size:13px">Glemt passord?</button>
+      <div id="forgot-section" style="display:none;margin-top:12px">
         <div class="form-group" style="margin-bottom:8px">
           <label>E-post</label>
           <input type="email" id="forgot-email" placeholder="din@elev.ntg.no">
@@ -1562,7 +1555,7 @@ async function loadTrainerView() {
     var lastS = pS.length ? pS[pS.length - 1].date : '-';
     var lastT = pT.length ? pT[0].date : '-';
     var dot = thisWeek.length ? 'dot-g' : 'dot-y';
-    return '<tr><td><span class="status-dot ' + dot + '"></span>' + p.full_name + '</td><td>' + p.class + '<br><span style="font-size:11px;color:var(--text-muted)">' + (p.sport||'H\u00e5ndball') + (p.group_name ? ' / ' + p.group_name : '') + '</span></td><td><span class="acwr-pill ' + acwrCls + '">' + (acwr ? acwr.toFixed(2) : '-') + '</span></td><td style="font-size:12px">' + lastS + '</td><td style="font-size:12px">' + lastT + '</td><td><button class="btn-sm-blue" onclick="openPlayerAsTrainer(\'' + p.id + '\')">&#197;pne</button> <button class="btn-sm" onclick="startEditStudent(\'' + p.id + '\',\'' + p.full_name.replace(/'/g,"\\'") + '\',\'' + p.class + '\',\'' + p.position + '\',\'' + (p.group_name||'') + '\',\'' + (p.sport||'H\u00e5ndball') + '\')">Rediger</button></td></tr>';
+    return '<tr><td><span class="status-dot ' + dot + '"></span>' + p.full_name + '</td><td>' + p.class + '<br><span style="font-size:11px;color:var(--text-muted)">' + (p.sport||'H\u00e5ndball') + (p.group_name ? ' / ' + p.group_name : '') + '</span></td><td><span class="acwr-pill ' + acwrCls + '">' + (acwr ? acwr.toFixed(2) : '-') + '</span></td><td style="font-size:12px">' + lastS + '</td><td style="font-size:12px">' + lastT + '</td><td><button class="btn-sm-blue" onclick="openPlayerAsTrainer(\'' + p.id + '\')">&#197;pne</button> <button class="btn-sm" onclick="startEditStudent(\'' + p.id + '\',\'' + p.full_name.replace(/'/g,"\\'") + '\',\'' + p.class + '\',\'' + p.position + '\',\'' + (p.group_name||'') + '\',\'' + (p.sport||'H\u00e5ndball') + '\')">Rediger</button> <button class="btn-sm" style="color:var(--red)" onclick="deleteStudent(\'' + p.id + '\',\'' + p.full_name.replace(/'/g,"\\'") + '\')">Slett</button></td></tr>';
   }));
   document.getElementById('trainer-tbody').innerHTML = rows.join('');
   document.getElementById('tr-total').textContent = profiles.length;
@@ -1793,10 +1786,50 @@ function renderGroupsList() {
   if (!allGroups.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen grupper opprettet enda</div>'; return; }
   el.innerHTML = allGroups.map(function(g) {
     return '<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)">'
-      + '<span style="font-size:14px;font-weight:600;color:var(--blue)">' + g.name + '</span>'
+      + '<span style="font-size:14px;font-weight:600;color:var(--blue);cursor:pointer;text-decoration:underline" onclick="showGroupStudents(\'' + g.id + '\',\'' + g.name + '\')">' + g.name + '</span>'
       + '<button class="btn-sm" style="color:var(--red)" onclick="deleteGroup(\'' + g.id + '\')">Slett</button>'
       + '</div>';
   }).join('');
+}
+
+async function showGroupStudents(groupId, groupName) {
+  var sport = trainerProfile ? (trainerProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball';
+  var students = await api('GET', 'profiles?group_name=eq.' + encodeURIComponent(groupName) + '&sport=eq.' + encodeURIComponent(sport) + '&is_trainer=eq.false&order=full_name.asc&select=*') || [];
+  var html = '<div style="font-size:16px;font-weight:700;color:var(--blue);margin-bottom:12px">' + groupName + ' (' + students.length + ' utøvere)</div>';
+  if (students.length) {
+    html += students.map(function(s) {
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">'
+        + '<div><div style="font-size:14px;font-weight:600">' + s.full_name + '</div>'
+        + '<div style="font-size:12px;color:var(--text-muted)">' + s.class + ' \u2013 ' + s.position + '</div></div>'
+        + '</div>';
+    }).join('');
+  } else {
+    html += '<div style="font-size:13px;color:var(--text-muted)">Ingen utøvere i denne gruppen enda</div>';
+  }
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:flex-end;justify-content:center';
+  overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+  overlay.innerHTML = '<div style="background:var(--bg);border-radius:16px 16px 0 0;padding:1.5rem;width:100%;max-width:680px;max-height:80vh;overflow-y:auto">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">'
+    + '<div style="font-size:15px;font-weight:700;color:var(--blue)">Gruppemedlemmer</div>'
+    + '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted)">&times;</button>'
+    + '</div>' + html + '</div>';
+  document.body.appendChild(overlay);
+}
+
+async function deleteStudent(userId, name) {
+  if (!confirm('Slette ' + name + '?\n\nAll data vil bli permanent slettet.')) return;
+  try {
+    await api('DELETE', 'user_roles?user_id=eq.' + userId);
+    await fetch(SB_URL + '/auth/v1/admin/users/' + userId, {
+      method: 'DELETE',
+      headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN}
+    });
+    await api('DELETE', 'profiles?id=eq.' + userId);
+    loadTrainerView();
+  } catch(e) {
+    alert('Feil ved sletting: ' + e.message);
+  }
 }
 
 function updateStudentGroupDropdown() {
