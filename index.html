@@ -2186,34 +2186,56 @@ async function sendPlayerMessage() {
 
 async function loadPlayerInbox() {
   var el = document.getElementById('chat-inbox'); if (!el) return;
-  var msgs = await api('GET', 'messages?sender_id=eq.' + currentProfile.id + '&order=created_at.desc&select=*') || [];
-  if (!msgs.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen meldinger enda</div>'; return; }
-  var html = '';
-  for (var i = 0; i < msgs.length; i++) {
-    var m = msgs[i];
-    var replies = await api('GET', 'message_replies?message_id=eq.' + m.id + '&order=created_at.asc&select=*,profiles(full_name)') || [];
-    // Mark unread replies as read
-    var unread = replies.filter(function(r){ return !r.read_at; });
-    for (var j = 0; j < unread.length; j++) {
-      await api('PATCH', 'message_replies?id=eq.' + unread[j].id, {read_at: new Date().toISOString()});
+  try {
+    // Messages sent BY player
+    var sentMsgs = await api('GET', 'messages?sender_id=eq.' + currentProfile.id + '&order=created_at.desc&select=*') || [];
+    // Messages sent TO player (from trainer)
+    var recRows = await api('GET', 'message_recipients?recipient_id=eq.' + currentProfile.id + '&select=message_id,read_at') || [];
+    var recMsgIds = recRows.map(function(r){ return r.message_id; });
+    var recMsgs = [];
+    for (var i = 0; i < recMsgIds.length; i++) {
+      var m = await api('GET', 'messages?id=eq.' + recMsgIds[i] + '&select=*');
+      if (m && m[0]) recMsgs.push(m[0]);
     }
-    html += '<div style="border:1px solid var(--border);border-radius:9px;padding:12px;margin-bottom:10px">';
-    html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">' + m.created_at.split('T')[0] + '</div>';
-    html += '<div style="font-size:14px;margin-bottom:8px;padding:8px;background:var(--blue-light);border-radius:7px">' + m.body + '</div>';
-    if (replies.length) {
-      replies.forEach(function(r) {
-        var rName = r.profiles ? r.profiles.full_name : 'Trener';
-        html += '<div style="font-size:13px;margin-top:6px;padding:8px;background:var(--green-light);border-radius:7px">'
-          + '<strong>' + rName + ':</strong> ' + r.body
-          + '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + r.created_at.split('T')[0] + '</div>'
-          + '</div>';
-      });
-    } else {
-      html += '<div style="font-size:12px;color:var(--text-muted);font-style:italic">Ikke svart enda</div>';
+    var allMsgs = sentMsgs.concat(recMsgs).sort(function(a,b){ return b.created_at.localeCompare(a.created_at); });
+    if (!allMsgs.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen meldinger enda</div>'; return; }
+    var html = '';
+    for (var j = 0; j < allMsgs.length; j++) {
+      var m = allMsgs[j];
+      var isSent = m.sender_id === currentProfile.id;
+      var replies = await api('GET', 'message_replies?message_id=eq.' + m.id + '&order=created_at.asc&select=*') || [];
+      // Mark unread replies as read
+      var unread = replies.filter(function(r){ return !r.read_at && isSent; });
+      for (var k = 0; k < unread.length; k++) {
+        await fetch(SB_URL + '/rest/v1/message_replies?id=eq.' + unread[k].id, {
+          method: 'PATCH',
+          headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
+          body: JSON.stringify({read_at: new Date().toISOString()})
+        });
+      }
+      var label = isSent ? 'Melding til trener' : 'Melding fra trener';
+      var bgColor = isSent ? 'var(--blue-light)' : 'var(--green-light)';
+      html += '<div style="border:1px solid var(--border);border-radius:9px;padding:12px;margin-bottom:10px">';
+      html += '<div style="font-size:11px;color:var(--text-muted);font-weight:600;margin-bottom:6px">' + label + ' \u2013 ' + m.created_at.split('T')[0] + '</div>';
+      html += '<div style="font-size:14px;padding:8px;background:' + bgColor + ';border-radius:7px;margin-bottom:6px">' + m.body + '</div>';
+      if (replies.length) {
+        replies.forEach(function(r) {
+          var rBg = r.sender_id === currentProfile.id ? 'var(--blue-light)' : 'var(--green-light)';
+          var rLabel = r.sender_id === currentProfile.id ? 'Du' : 'Trener';
+          html += '<div style="font-size:13px;padding:7px;background:' + rBg + ';border-radius:7px;margin-top:4px">'
+            + '<strong>' + rLabel + ':</strong> ' + r.body
+            + '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + r.created_at.split('T')[0] + '</div>'
+            + '</div>';
+        });
+      } else if (isSent) {
+        html += '<div style="font-size:12px;color:var(--text-muted);font-style:italic">Ikke svart enda</div>';
+      }
+      html += '</div>';
     }
-    html += '</div>';
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Kunne ikke laste meldinger</div>';
   }
-  el.innerHTML = html;
 }
 
 async function checkPlayerUnread() {
@@ -2357,18 +2379,31 @@ async function loadTrainerInbox() {
       if (isUnread) unreadCount++;
       var senderProfile = await api('GET', 'profiles?id=eq.' + m.sender_id + '&select=full_name') || [];
       var senderName = senderProfile[0] ? senderProfile[0].full_name : 'Ukjent';
+      var replies = await api('GET', 'message_replies?message_id=eq.' + m.id + '&order=created_at.asc&select=*') || [];
       html += '<div style="border:1px solid ' + (isUnread ? 'var(--blue)' : 'var(--border)') + ';border-radius:9px;padding:12px;margin-bottom:10px;background:' + (isUnread ? 'var(--blue-light)' : 'var(--bg)') + '">'
         + '<div style="display:flex;justify-content:space-between;margin-bottom:6px">'
         + '<strong style="font-size:13px">' + senderName + '</strong>'
         + '<span style="font-size:12px;color:var(--text-muted)">' + m.created_at.split('T')[0] + (isUnread ? ' \u2022 Ny' : '') + '</span>'
         + '</div>'
-        + '<div style="font-size:14px;margin-bottom:8px">' + m.body + '</div>'
-        + '<div style="display:flex;gap:6px">'
+        + '<div style="font-size:14px;margin-bottom:8px;padding:8px;background:var(--blue-light);border-radius:7px">' + m.body + '</div>';
+      if (replies.length) {
+        replies.forEach(function(r) {
+          html += '<div style="font-size:13px;padding:7px;background:var(--green-light);border-radius:7px;margin-bottom:4px">'
+            + '<strong>Du:</strong> ' + r.body
+            + '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + r.created_at.split('T')[0] + '</div>'
+            + '</div>';
+        });
+      }
+      html += '<div style="display:flex;gap:6px;margin-top:6px">'
         + '<input type="text" id="reply_' + m.id + '" placeholder="Svar..." style="flex:1;font-size:13px;border:1.5px solid var(--border);border-radius:7px;padding:7px 10px;outline:none">'
         + '<button class="btn-sm-blue" onclick="sendTrainerReply(\'' + m.id + '\',\'' + m.sender_id + '\')">Send svar</button>'
         + '</div></div>';
       if (isUnread) {
-        api('PATCH', 'message_recipients?message_id=eq.' + m.id + '&recipient_id=eq.' + tid, {read_at: new Date().toISOString()});
+        fetch(SB_URL + '/rest/v1/message_recipients?message_id=eq.' + m.id + '&recipient_id=eq.' + tid, {
+          method: 'PATCH',
+          headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
+          body: JSON.stringify({read_at: new Date().toISOString()})
+        });
       }
     }
     el.innerHTML = html;
