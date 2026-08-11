@@ -14,7 +14,11 @@
 <script>
   window.OneSignalDeferred = window.OneSignalDeferred || [];
   window.OneSignalDeferred.push(function(OneSignal) {
-    OneSignal.init({ appId: 'e3ff81e2-292b-42cc-bc13-1e2169285824' });
+    OneSignal.init({
+      appId: 'e3ff81e2-292b-42cc-bc13-1e2169285824',
+      notificationClickHandlerMatch: 'exact',
+      notificationClickHandlerAction: 'focus'
+    });
   });
 </script>
 <style>
@@ -231,7 +235,7 @@ input[type=range]{width:100%;accent-color:var(--blue)}
   <div class="tab-content active" id="tab-kalender">
     <div class="card" style="background:var(--blue-light);border-color:var(--blue)">
       <div style="font-size:13px;color:var(--blue);font-weight:600;margin-bottom:4px">Trenger du noen &aring; snakke med?</div>
-      <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">Send en melding til trener – helt trygt og enkelt.</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">Send en melding til ressursteam &ndash; helt trygt og enkelt.</div>
       <a id="snakke-link" href="#" onclick="openSnakkeLink(event)" style="display:block;background:var(--blue);color:#fff;text-align:center;padding:10px;border-radius:8px;font-size:14px;font-weight:700;text-decoration:none">Jeg trenger noen &aring; snakke med</a>
     </div>
     <div id="notif-opt-in-card" class="card" style="display:none;background:#FFF8E7;border-color:#E8B84B">
