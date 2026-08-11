@@ -10,7 +10,13 @@
 <meta name="theme-color" content="#002F6C">
 <title>NTG Bergen</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" data-onesignal-app-id="e3ff81e2-292b-42cc-bc13-1e2169285824"></script>
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  window.OneSignalDeferred.push(function(OneSignal) {
+    OneSignal.init({ appId: 'e3ff81e2-292b-42cc-bc13-1e2169285824' });
+  });
+</script>
 <style>
 :root{
   --blue:#002F6C;--blue-mid:#1A4A8A;--blue-light:#E8F0FA;
