@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NTG Superbruker</title>
+<style>
+:root{
+  --blue:#002F6C;--blue-light:#E8F0FA;--blue-mid:#1A4A8A;
+  --gold:#E8B84B;--green:#1D9E75;--green-light:#E1F5EE;
+  --red:#E24B4A;--red-light:#FCEBEB;
+  --text:#1a1a1a;--text-muted:#666;--border:rgba(0,0,0,0.11);
+  --bg:#fff;--bg2:#f5f6f8;--r:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg2);color:var(--text);font-size:15px}
+.app{max-width:900px;margin:0 auto;padding:1.5rem 1rem}
+.hdr{display:flex;align-items:center;gap:12px;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
+.logo{width:42px;height:42px;background:var(--blue);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--gold);font-size:14px;font-weight:900;font-family:Arial,sans-serif;flex-shrink:0}
+.hdr-title{font-size:18px;font-weight:800;color:var(--blue)}
+.hdr-sub{font-size:13px;color:var(--text-muted)}
+.logout-btn{margin-left:auto;background:none;border:1.5px solid var(--blue);border-radius:7px;padding:6px 14px;font-size:13px;font-weight:600;color:var(--blue);cursor:pointer}
+.card{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:1rem 1.25rem;margin-bottom:1rem}
+.sec-title{font-size:14px;font-weight:700;color:var(--blue);margin-bottom:.75rem}
+.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:1.25rem}
+.metric-card{background:var(--bg2);border-radius:9px;padding:12px;border:1px solid var(--border)}
+.metric-card .ml{font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px}
+.metric-card .mv{font-size:24px;font-weight:800;color:var(--blue)}
+.filters{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:1rem;align-items:center}
+.filters select{font-size:13px;border:1.5px solid var(--border);border-radius:7px;padding:7px 10px;background:var(--bg);color:var(--text);outline:none}
+.filters select:focus{border-color:var(--blue)}
+.filters label{font-size:12px;font-weight:600;color:var(--text-muted)}
+.btn{padding:9px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:none}
+.btn-primary{background:var(--blue);color:#fff}.btn-primary:hover{background:var(--blue-mid)}
+.btn-gold{background:var(--gold);color:var(--blue)}.btn-gold:hover{filter:brightness(.92)}
+.btn-sm{background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;color:var(--text-muted)}.btn-sm:hover{background:var(--bg2)}
+.export-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:1rem}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-size:11px;font-weight:700;color:var(--text-muted);text-align:left;padding:7px 10px;border-bottom:1px solid var(--border);white-space:nowrap;text-transform:uppercase;letter-spacing:.03em}
+td{padding:10px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+.sport-badge{font-size:11px;padding:2px 8px;border-radius:4px;font-weight:600;background:var(--blue-light);color:var(--blue)}
+.acwr-pill{font-size:11px;padding:2px 8px;border-radius:5px;font-weight:700}
+.acwr-pill.g{background:var(--green-light);color:#0F6E56}
+.acwr-pill.y{background:#FAEEDA;color:#633806}
+.acwr-pill.r{background:var(--red-light);color:#501313}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem}
+.login-card{background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:2rem;width:100%;max-width:370px;box-shadow:0 4px 24px rgba(0,47,108,.08)}
+.login-logo{width:64px;height:64px;background:var(--blue);border-radius:15px;display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;color:var(--gold);font-size:22px;font-weight:900;font-family:Arial,sans-serif}
+.login-title{font-size:20px;font-weight:800;text-align:center;color:var(--blue);margin-bottom:.25rem}
+.login-sub{font-size:13px;color:var(--text-muted);text-align:center;margin-bottom:1.5rem}
+.form-group{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.form-group label{font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.03em}
+input{font-size:14px;border:1.5px solid var(--border);border-radius:7px;padding:9px 11px;width:100%;outline:none;font-family:inherit}
+input:focus{border-color:var(--blue)}
+.err{background:var(--red-light);border:1px solid var(--red);color:#501313;border-radius:7px;padding:9px 12px;font-size:13px;margin-top:8px;display:none}
+.err.show{display:block}
+.loading{text-align:center;padding:2rem;color:var(--text-muted);font-size:14px}
+.spinner{width:26px;height:26px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 1rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div id="screen-login" style="display:block">
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="login-logo">NTG</div>
+      <div class="login-title">NTG Superbruker</div>
+      <div class="login-sub">Tverrfaglig oversikt alle idretter</div>
+      <div class="form-group"><label>E-post</label><input type="email" id="login-email" placeholder="din@ntg.no" autocomplete="email"></div>
+      <div class="form-group"><label>Passord</label><input type="password" id="login-password" placeholder="......" autocomplete="current-password"></div>
+      <div class="err" id="login-error"></div>
+      <button class="btn btn-primary" style="width:100%;padding:11px;margin-top:4px" onclick="doLogin()">Logg inn</button>
+    </div>
+  </div>
+</div>
+
+<div id="screen-main" style="display:none">
+  <div class="app">
+    <div class="hdr">
+      <div class="logo">NTG</div>
+      <div><div class="hdr-title">NTG Superbruker</div><div class="hdr-sub" id="su-name"></div></div>
+      <button class="logout-btn" onclick="doLogout()">Logg ut</button>
+    </div>
+
+    <div class="metric-grid" id="summary-metrics"></div>
+
+    <div class="card">
+      <div class="sec-title" id="trainer-form-title">Opprett trener</div>
+      <input type="hidden" id="edit-trainer-id" value="">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div class="form-group"><label>Fullt navn</label><input type="text" id="tr-name" placeholder="Ola Nordmann"></div>
+        <div class="form-group"><label>E-post</label><input type="email" id="tr-email" placeholder="ola@ntg.no"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div class="form-group"><label>Idrett</label>
+          <select id="tr-sport">
+            <option>Håndball</option><option>Fotball</option><option>Basketball</option>
+            <option>Golf</option><option>Sykkel</option><option>Svømming</option>
+            <option>Fekting</option><option>Tennis</option><option>Padel</option><option>Mix</option>
+          </select>
+        </div>
+        <div class="form-group" id="tr-pass-field"><label>Startpassord</label><input type="text" id="tr-pass" value="NTG2026"></div>
+      </div>
+      <div class="err" id="trainer-error"></div>
+      <div style="background:#E1F5EE;border:1px solid #5DCAA5;color:#085041;border-radius:7px;padding:9px 12px;font-size:13px;margin-top:8px;display:none" id="trainer-ok"></div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-primary" onclick="saveTrainer()">Lagre trener</button>
+        <button class="btn" id="trainer-cancel-btn" style="background:none;border:1px solid var(--border);display:none" onclick="cancelTrainerEdit()">Avbryt</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec-title">Trenere</div>
+      <div id="trainers-list"><div class="loading"><div class="spinner"></div>Laster...</div></div>
+    </div>
+
+    <div class="card">
+      <div class="sec-title">Eksport</div>
+      <div class="export-row">
+        <button class="btn btn-primary" onclick="exportAllStudents()">Eksport – alle utøvere (CSV)</button>
+        <button class="btn btn-primary" onclick="exportAllSessions()">Eksport – alle treningsdagbøker (CSV)</button>
+        <button class="btn btn-primary" onclick="exportAllTests()">Eksport – alle testresultater (CSV)</button>
+        <button class="btn btn-gold" onclick="exportBySport()">Eksport – per idrett (CSV)</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec-title">Alle utøvere</div>
+      <div class="filters">
+        <div>
+          <label>Idrett</label>
+          <select id="filter-sport" onchange="applyFilters()">
+            <option value="">Alle idretter</option>
+            <option>Håndball</option><option>Fotball</option><option>Basketball</option>
+            <option>Golf</option><option>Sykkel</option><option>Svømming</option>
+            <option>Fekting</option><option>Tennis</option><option>Padel</option><option>Mix</option>
+          </select>
+        </div>
+        <div>
+          <label>Klasse</label>
+          <select id="filter-class" onchange="applyFilters()">
+            <option value="">Alle klasser</option>
+            <option>VG1</option><option>VG2</option><option>VG3</option>
+          </select>
+        </div>
+        <div>
+          <label>Gruppe</label>
+          <select id="filter-group" onchange="applyFilters()">
+            <option value="">Alle grupper</option>
+          </select>
+        </div>
+        <div style="margin-left:auto">
+          <input type="text" id="filter-search" placeholder="Søk navn..." style="width:180px;padding:7px 10px;font-size:13px" oninput="applyFilters()">
+        </div>
+      </div>
+      <div id="student-table-wrap"><div class="loading"><div class="spinner"></div>Laster...</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+var SB_URL = 'https://plkutjfeahzkfsakwbkb.supabase.co';
+var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsa3V0amZlYWh6a2ZzYWt3YmtiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4OTcxNTcsImV4cCI6MjA5NTQ3MzE1N30.iieNM0ADFwLGBkckS7zZOecu-S5ekuxWKVARAupop6Q';
+var SB_ADMIN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsa3V0amZlYWh6a2ZzYWt3YmtiIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTg5NzE1NywiZXhwIjoyMDk1NDczMTU3fQ.k0ua_SumcQ3Igp8jKrUaehXINv597zeiccCZsPzyLC0';
+
+var currentUser = null;
+var allProfiles = [];
+var allSessions = [];
+var allTests = [];
+var filteredProfiles = [];
+
+async function api(method, path, body) {
+  var token = currentUser && currentUser.access_token ? currentUser.access_token : SB_KEY;
+  var opts = {method:method, headers:{'apikey':SB_KEY,'Authorization':'Bearer '+token,'Content-Type':'application/json'}};
+  if (body) opts.body = JSON.stringify(body);
+  var res = await fetch(SB_URL + '/rest/v1/' + path, opts);
+  if (!res.ok) { var e = await res.json().catch(function(){return{};}); throw new Error(e.message||res.statusText); }
+  return res.status === 204 ? null : res.json();
+}
+
+async function authApi(path, body) {
+  var res = await fetch(SB_URL + '/auth/v1/' + path, {method:'POST', headers:{'apikey':SB_KEY,'Content-Type':'application/json'}, body:JSON.stringify(body)});
+  var data = await res.json();
+  if (!res.ok) throw new Error(data.error_description || data.message || 'Feil');
+  return data;
+}
+
+async function doLogin() {
+  var email = document.getElementById('login-email').value.trim();
+  var pass = document.getElementById('login-password').value;
+  var errEl = document.getElementById('login-error');
+  errEl.classList.remove('show');
+  try {
+    var data = await authApi('token?grant_type=password', {email:email, password:pass});
+    var profileRes = await fetch(SB_URL + '/rest/v1/profiles?id=eq.' + data.user.id + '&select=*', {
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+data.access_token,'Accept':'application/json'}
+    });
+    var profiles = await profileRes.json();
+    if (!Array.isArray(profiles) || !profiles.length) {
+      errEl.textContent = 'Ingen profil funnet. Kontakt administrator.';
+      errEl.classList.add('show');
+      return;
+    }
+    var profile = profiles[0];
+    if (!profile.is_superuser && !profile.is_trainer) {
+      errEl.textContent = 'Ingen superbruker-tilgang for denne kontoen.';
+      errEl.classList.add('show');
+      return;
+    }
+    currentUser = data;
+    document.getElementById('su-name').textContent = profile.full_name + ' \u2013 ' + (profile.is_superuser ? 'superbruker' : 'trener');
+    document.getElementById('screen-login').style.display = 'none';
+    document.getElementById('screen-main').style.display = 'block';
+    loadData();
+  } catch(e) {
+    errEl.textContent = 'Feil: ' + e.message;
+    errEl.classList.add('show');
+  }
+}
+
+function doLogout() {
+  currentUser = null; allProfiles = []; allSessions = []; allTests = [];
+  document.getElementById('screen-main').style.display = 'none';
+  document.getElementById('screen-login').style.display = 'block';
+  document.getElementById('login-password').value = '';
+}
+
+async function loadData() {
+  document.getElementById('student-table-wrap').innerHTML = '<div class="loading"><div class="spinner"></div>Laster data...</div>';
+  try {
+    var results = await Promise.all([
+      api('GET', 'profiles?is_trainer=eq.false&is_superuser=eq.false&order=sport.asc,full_name.asc&select=*'),
+      api('GET', 'sessions?order=date.asc&select=*'),
+      api('GET', 'tests?order=date.desc&select=*')
+    ]);
+    allProfiles = results[0] || [];
+    allSessions = results[1] || [];
+    allTests = results[2] || [];
+    renderSummary();
+    populateGroupFilter();
+    applyFilters();
+    loadTrainers();
+  } catch(e) {
+    document.getElementById('student-table-wrap').innerHTML = '<div style="color:var(--red);padding:1rem">Feil ved lasting: ' + e.message + '</div>';
+  }
+}
+
+var allTrainers = [];
+
+async function loadTrainers() {
+  allTrainers = await api('GET', 'profiles?is_trainer=eq.true&order=sport.asc,full_name.asc&select=*') || [];
+  renderTrainers();
+}
+
+function renderTrainers() {
+  var el = document.getElementById('trainers-list');
+  if (!allTrainers.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen trenere opprettet enda</div>'; return; }
+  var html = '<table><thead><tr><th>Navn</th><th>Idrett</th><th>E-post</th><th></th></tr></thead><tbody>';
+  allTrainers.forEach(function(t) {
+    html += '<tr><td style="font-weight:600">' + t.full_name + '</td>'
+      + '<td><span class="sport-badge">' + (t.sport||'Håndball') + '</span></td>'
+      + '<td style="font-size:12px;color:var(--text-muted)">' + (t.email||'–') + '</td>'
+      + '<td><button class="btn-sm" onclick="editTrainer(\'' + t.id + '\',\'' + t.full_name.replace(/'/g,"\\'") + '\',\'' + (t.sport||'Håndball') + '\')">Rediger</button></td></tr>';
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+async function saveTrainer() {
+  var editId = document.getElementById('edit-trainer-id').value;
+  var name = document.getElementById('tr-name').value.trim();
+  var email = document.getElementById('tr-email').value.trim();
+  var sport = document.getElementById('tr-sport').value;
+  var pass = document.getElementById('tr-pass').value;
+  var errEl = document.getElementById('trainer-error');
+  var okEl = document.getElementById('trainer-ok');
+  errEl.classList.remove('show'); errEl.style.display = 'none';
+  okEl.style.display = 'none';
+  if (!name) { errEl.textContent = 'Navn er påkrevd.'; errEl.style.display = 'block'; errEl.classList.add('show'); return; }
+  try {
+    if (editId) {
+      await api('PATCH', 'profiles?id=eq.' + editId, {full_name: name, sport: sport});
+      okEl.textContent = '✓ Trener oppdatert!';
+    } else {
+      if (!email) { errEl.textContent = 'E-post er påkrevd.'; errEl.style.display = 'block'; errEl.classList.add('show'); return; }
+      var adminRes = await fetch(SB_URL + '/auth/v1/admin/users', {
+        method: 'POST',
+        headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
+        body: JSON.stringify({email: email, password: pass, email_confirm: true})
+      });
+      var adminData = await adminRes.json();
+      if (!adminRes.ok || !adminData.id) throw new Error(adminData.message || 'Kunne ikke opprette bruker');
+      try {
+        var adminApi2 = async function(path, body) {
+          var res = await fetch(SB_URL + '/rest/v1/' + path, {
+            method: 'POST',
+            headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json', 'Prefer': 'return=representation'}
+          , body: JSON.stringify(body)});
+          return res;
+        };
+        await adminApi2('profiles', {id: adminData.id, full_name: name, sport: sport, class: 'Trener', position: 'Trener', is_trainer: true, is_superuser: false});
+        await adminApi2('user_roles', {user_id: adminData.id, is_trainer: true, is_superuser: false, sport: sport});
+      } catch(e2) {
+        // Ignore secondary errors
+      }
+      okEl.textContent = '\u2713 Trener opprettet! Startpassord: ' + pass;
+    }
+    okEl.style.display = 'block';
+    document.getElementById('tr-name').value = '';
+    document.getElementById('tr-email').value = '';
+    document.getElementById('tr-pass').value = 'NTG2026';
+    cancelTrainerEdit();
+    setTimeout(function(){ okEl.style.display = 'none'; }, 5000);
+    loadTrainers();
+  } catch(e) {
+    errEl.textContent = 'Feil: ' + e.message; errEl.style.display = 'block'; errEl.classList.add('show');
+  }
+}
+
+function editTrainer(id, name, sport) {
+  document.getElementById('edit-trainer-id').value = id;
+  document.getElementById('trainer-form-title').textContent = 'Rediger trener';
+  document.getElementById('tr-name').value = name;
+  document.getElementById('tr-sport').value = sport;
+  document.getElementById('tr-pass-field').style.display = 'none';
+  document.getElementById('trainer-cancel-btn').style.display = 'inline-block';
+}
+
+function cancelTrainerEdit() {
+  document.getElementById('edit-trainer-id').value = '';
+  document.getElementById('trainer-form-title').textContent = 'Opprett trener';
+  document.getElementById('tr-name').value = '';
+  document.getElementById('tr-email').value = '';
+  document.getElementById('tr-pass').value = 'NTG2026';
+  document.getElementById('tr-pass-field').style.display = 'block';
+  document.getElementById('trainer-cancel-btn').style.display = 'none';
+}
+
+function renderSummary() {
+  var sports = {};
+  allProfiles.forEach(function(p) {
+    var s = p.sport || 'Håndball';
+    sports[s] = (sports[s] || 0) + 1;
+  });
+  var sportKeys = Object.keys(sports).sort();
+  var html = '<div class="metric-card"><div class="ml">Totalt utøvere</div><div class="mv">' + allProfiles.length + '</div></div>';
+  sportKeys.forEach(function(s) {
+    html += '<div class="metric-card"><div class="ml">' + s + '</div><div class="mv">' + sports[s] + '</div></div>';
+  });
+  document.getElementById('summary-metrics').innerHTML = html;
+}
+
+function populateGroupFilter() {
+  var groups = {};
+  allProfiles.forEach(function(p) { if(p.group_name) groups[p.group_name] = true; });
+  var sel = document.getElementById('filter-group');
+  sel.innerHTML = '<option value="">Alle grupper</option>' + Object.keys(groups).sort().map(function(g) { return '<option>'+g+'</option>'; }).join('');
+}
+
+function applyFilters() {
+  var sport = document.getElementById('filter-sport').value;
+  var cls = document.getElementById('filter-class').value;
+  var grp = document.getElementById('filter-group').value;
+  var search = document.getElementById('filter-search').value.toLowerCase();
+  filteredProfiles = allProfiles.filter(function(p) {
+    if (sport && (p.sport || 'Håndball') !== sport) return false;
+    if (cls && p.class !== cls) return false;
+    if (grp && p.group_name !== grp) return false;
+    if (search && p.full_name.toLowerCase().indexOf(search) === -1) return false;
+    return true;
+  });
+  renderTable();
+}
+
+function getACWR(pid) {
+  var s = allSessions.filter(function(x){return x.user_id===pid;});
+  function weekLoad(back) {
+    var now = new Date();
+    var ws = new Date(now); ws.setDate(ws.getDate()-(7*back)-((ws.getDay()+6)%7)); ws.setHours(0,0,0,0);
+    var we = new Date(ws); we.setDate(we.getDate()+6); we.setHours(23,59,59,999);
+    return s.filter(function(x){var d=new Date(x.date);return d>=ws&&d<=we;}).reduce(function(a,x){return a+x.load;},0);
+  }
+  var acute = weekLoad(0);
+  var chronic = [1,2,3,4,5,6].reduce(function(a,w){return a+weekLoad(w);},0)/6;
+  if(!chronic) return null;
+  return Math.round((acute/chronic)*100)/100;
+}
+
+function getLastSession(pid) {
+  var s = allSessions.filter(function(x){return x.user_id===pid;});
+  return s.length ? s[s.length-1].date : null;
+}
+
+function getLastTest(pid) {
+  var t = allTests.find(function(x){return x.user_id===pid;});
+  return t ? t.date : null;
+}
+
+function renderTable() {
+  var wrap = document.getElementById('student-table-wrap');
+  if (!filteredProfiles.length) { wrap.innerHTML = '<div style="font-size:13px;color:var(--text-muted);padding:1rem 0">Ingen utøvere funnet</div>'; return; }
+
+  var html = '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">' + filteredProfiles.length + ' utøvere</div>';
+  html += '<div style="overflow-x:auto"><table><thead><tr>'
+    + '<th>Navn</th><th>Idrett</th><th>Klasse</th><th>Gruppe</th><th>ACWR</th><th>Siste økt</th><th>Siste test</th>'
+    + '</tr></thead><tbody>';
+
+  filteredProfiles.forEach(function(p) {
+    var acwr = getACWR(p.id);
+    var acwrCls = !acwr ? '' : acwr > 1.5 ? 'r' : acwr > 1.3 ? 'y' : 'g';
+    var lastS = getLastSession(p.id) || '–';
+    var lastT = getLastTest(p.id) || '–';
+    html += '<tr>'
+      + '<td style="font-weight:600">' + p.full_name + '</td>'
+      + '<td><span class="sport-badge">' + (p.sport||'Håndball') + '</span></td>'
+      + '<td>' + p.class + '</td>'
+      + '<td style="color:var(--text-muted)">' + (p.group_name||'–') + '</td>'
+      + '<td>' + (acwr ? '<span class="acwr-pill '+acwrCls+'">'+acwr.toFixed(2)+'</span>' : '–') + '</td>'
+      + '<td style="font-size:12px;color:var(--text-muted)">' + lastS + '</td>'
+      + '<td style="font-size:12px;color:var(--text-muted)">' + lastT + '</td>'
+      + '</tr>';
+  });
+  html += '</tbody></table></div>';
+  wrap.innerHTML = html;
+}
+
+function dlCSV(content, filename) {
+  var blob = new Blob(['\uFEFF'+content], {type:'text/csv;charset=utf-8'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a'); a.href=url; a.download=filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportAllStudents() {
+  var csv = 'Navn,Idrett,Klasse,Gruppe,Posisjon,E-post\n';
+  allProfiles.forEach(function(p) {
+    csv += '"'+p.full_name+'","'+(p.sport||'Håndball')+'","'+p.class+'","'+(p.group_name||'')+'","'+p.position+'"\n';
+  });
+  dlCSV(csv, 'NTG_alle_utovere.csv');
+}
+
+function exportAllSessions() {
+  var profMap = {};
+  allProfiles.forEach(function(p){ profMap[p.id]=p; });
+  var csv = 'Navn,Idrett,Klasse,Dato,Type,Varighet (min),RPE,Session Load (AU),Kommentar\n';
+  allSessions.forEach(function(s) {
+    var p = profMap[s.user_id] || {};
+    csv += '"'+(p.full_name||s.user_id)+'","'+(p.sport||'')+'","'+(p.class||'')+'",'+s.date+',"'+s.type+'",'+s.duration+','+s.rpe+','+s.load+',"'+(s.comment||'')+'"\n';
+  });
+  dlCSV(csv, 'NTG_alle_treningsdagboker.csv');
+}
+
+function exportAllTests() {
+  var profMap = {};
+  allProfiles.forEach(function(p){ profMap[p.id]=p; });
+  var csv = 'Navn,Idrett,Klasse,Dato,Benkpress,Knebøy,Frivending,Hang ups,Beep test,Sprint 20m,Sprint 40m,Sergeant jump\n';
+  allTests.forEach(function(t) {
+    var p = profMap[t.user_id] || {};
+    csv += '"'+(p.full_name||t.user_id)+'","'+(p.sport||'')+'","'+(p.class||'')+'",'+t.date+','+(t.bench||'')+',"'+(t.squat||'')+'","'+(t.clean||'')+'","'+(t.hangup||'')+'","'+(t.beep||'')+'","'+(t.s20||'')+'","'+(t.s40||'')+'","'+(t.jump||'')+'"\n';
+  });
+  dlCSV(csv, 'NTG_alle_testresultater.csv');
+}
+
+function exportBySport() {
+  var sports = {};
+  allProfiles.forEach(function(p){ var s=p.sport||'Håndball'; if(!sports[s])sports[s]=[]; sports[s].push(p); });
+  var csv = 'Idrett,Antall utøvere,VG1,VG2,VG3\n';
+  Object.keys(sports).sort().forEach(function(s) {
+    var ps = sports[s];
+    var vg1 = ps.filter(function(p){return p.class==='VG1';}).length;
+    var vg2 = ps.filter(function(p){return p.class==='VG2';}).length;
+    var vg3 = ps.filter(function(p){return p.class==='VG3';}).length;
+    csv += '"'+s+'",'+ps.length+','+vg1+','+vg2+','+vg3+'\n';
+  });
+  dlCSV(csv, 'NTG_oversikt_per_idrett.csv');
+}
+
+document.getElementById('login-password').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
+</script>
+</body>
+</html>

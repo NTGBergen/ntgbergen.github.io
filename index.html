@@ -1,0 +1,2053 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="NTG Bergen">
+<meta name="theme-color" content="#002F6C">
+<title>NTG Bergen</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --blue:#002F6C;--blue-mid:#1A4A8A;--blue-light:#E8F0FA;
+  --gold:#E8B84B;--gold-light:#FDF5E0;
+  --green:#1D9E75;--green-light:#E1F5EE;--green-mid:#9FE1CB;--green-dark:#085041;
+  --amber:#EF9F27;--amber-light:#FAEEDA;--amber-dark:#633806;
+  --red:#E24B4A;--red-light:#FCEBEB;--red-dark:#501313;
+  --text:#1a1a1a;--text-muted:#666;--border:rgba(0,0,0,0.11);
+  --bg:#fff;--bg2:#f5f6f8;--r:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg2);color:var(--text);font-size:15px}
+.app{max-width:680px;margin:0 auto;padding:env(safe-area-inset-top, 1rem) 1rem 1rem 1rem;min-height:100vh;padding-top:max(1.5rem, env(safe-area-inset-top))}
+.screen{display:none}.screen.active{display:block}
+#splash{position:fixed;top:0;left:0;right:0;bottom:0;background:var(--blue);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;animation:splashOut 0.6s ease 2.2s forwards}
+@keyframes splashOut{0%{opacity:1;visibility:visible}to{opacity:0;visibility:hidden;pointer-events:none}}
+.splash-logo{width:90px;height:90px;background:var(--gold);border-radius:20px;display:flex;align-items:center;justify-content:center;margin-bottom:1.5rem}
+.splash-ntg{color:var(--blue);font-size:36px;font-weight:900;font-family:Arial,sans-serif}
+.splash-title{color:#fff;font-size:22px;font-weight:700}
+.splash-sub{color:rgba(255,255,255,.6);font-size:14px;margin-top:.4rem}
+.splash-bar{width:120px;height:3px;background:rgba(255,255,255,.2);border-radius:2px;margin-top:2rem;overflow:hidden}
+.splash-fill{height:100%;background:var(--gold);border-radius:2px;animation:loadbar 1.9s ease forwards}
+@keyframes loadbar{from{width:0}to{width:100%}}
+.hdr{display:flex;align-items:center;gap:12px;margin-bottom:1.25rem;padding-bottom:.9rem;border-bottom:1px solid var(--border)}
+.logo{width:38px;height:38px;background:var(--blue);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--gold);font-size:13px;font-weight:900;font-family:Arial,sans-serif}
+.hdr-title{font-size:17px;font-weight:700;color:var(--blue)}
+.hdr-sub{font-size:12px;color:var(--text-muted);margin-top:1px}
+.back-btn{margin-left:auto;font-size:13px;color:var(--blue);cursor:pointer;background:none;border:1.5px solid var(--blue);border-radius:7px;padding:5px 12px;display:flex;align-items:center;gap:5px;font-weight:600}
+.back-btn:hover{background:var(--blue-light)}
+.card{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:1rem 1.25rem;margin-bottom:1rem}
+.sec-title{font-size:14px;font-weight:700;margin-bottom:.75rem;color:var(--blue)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group label{font-size:12px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+input[type=text],input[type=email],input[type=password],input[type=number],input[type=date],select,textarea{font-size:14px;border:1.5px solid var(--border);border-radius:7px;padding:8px 10px;background:var(--bg);color:var(--text);width:100%;outline:none;font-family:inherit}
+input:focus,select:focus,textarea:focus{border-color:var(--blue)}
+textarea{resize:vertical}
+.btn{display:block;width:100%;padding:11px 20px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;border:none;text-align:center;margin-top:8px}
+.btn-primary{background:var(--blue);color:#fff}.btn-primary:hover{background:var(--blue-mid)}
+.btn-gold{background:var(--gold);color:var(--blue)}.btn-gold:hover{filter:brightness(.92)}
+.btn-secondary{background:none;color:var(--text);border:1.5px solid var(--border)}.btn-secondary:hover{background:var(--bg2)}
+.btn-sm{background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;color:var(--text-muted)}.btn-sm:hover{background:var(--bg2)}
+.btn-sm-blue{background:var(--blue-light);border:1px solid var(--blue);border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;color:var(--blue);font-weight:600}
+.btn-row{display:flex;gap:8px;margin-top:8px}.btn-row .btn{margin-top:0}
+.nav-tabs{display:flex;gap:2px;margin-bottom:1.1rem;background:var(--blue);border-radius:9px;padding:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap}
+.nav-tabs::-webkit-scrollbar{display:none}
+.nav-tab{flex:0 0 auto;padding:7px 10px;font-size:11px;font-weight:700;color:rgba(255,255,255,.6);background:none;border:none;border-radius:6px;cursor:pointer;text-align:center;white-space:nowrap}
+.nav-tab.active{background:var(--gold);color:var(--blue)}
+.tab-content{display:none}.tab-content.active{display:block}
+.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:1rem}
+.metric-card{background:var(--bg2);border-radius:8px;padding:10px 12px;border:1px solid var(--border)}
+.metric-card .ml{font-size:11px;color:var(--text-muted);margin-bottom:3px;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+.metric-card .mv{font-size:21px;font-weight:700;color:var(--blue)}
+.metric-card .mu{font-size:11px;color:var(--text-muted)}
+.acwr-box{display:flex;align-items:center;gap:14px;padding:13px 16px;border-radius:9px;margin-bottom:1rem}
+.acwr-box.green{background:var(--green-light);border:1px solid var(--green-mid)}
+.acwr-box.yellow{background:var(--amber-light);border:1px solid var(--amber)}
+.acwr-box.red{background:var(--red-light);border:1px solid var(--red)}
+.acwr-num{font-size:30px;font-weight:800}
+.acwr-box.green .acwr-num{color:var(--green-dark)}
+.acwr-box.yellow .acwr-num{color:var(--amber-dark)}
+.acwr-box.red .acwr-num{color:var(--red-dark)}
+.acwr-lbl{font-size:13px;font-weight:700;margin-bottom:2px}
+.acwr-box.green .acwr-lbl{color:#0F6E56}
+.acwr-box.yellow .acwr-lbl{color:var(--amber-dark)}
+.acwr-box.red .acwr-lbl{color:var(--red-dark)}
+.acwr-desc{font-size:12px;color:var(--text-muted);line-height:1.4}
+.alert{display:none;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:9px;margin-bottom:1rem}
+.alert.show{display:flex}
+.alert-red{background:var(--red-light);border:1px solid var(--red);color:var(--red-dark)}
+.alert-green{background:var(--green-light);border:1px solid var(--green-mid);color:var(--green-dark)}
+.alert-title{font-size:13px;font-weight:700;margin-bottom:2px}
+.alert-msg{font-size:12px;line-height:1.4}
+.slider-group{margin-bottom:10px}
+.slider-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
+.slider-row span{font-size:13px;color:var(--text-muted)}
+.slider-row strong{font-size:14px;font-weight:700;min-width:20px;text-align:right;color:var(--blue)}
+input[type=range]{width:100%;accent-color:var(--blue)}
+.week-bars{display:flex;align-items:flex-end;gap:5px;height:72px;margin-bottom:3px}
+.week-bar{flex:1;background:var(--blue-light);border-radius:3px 3px 0 0;min-height:3px;border:1px solid rgba(0,47,108,.15);border-bottom:none}
+.week-bar.current{background:var(--blue)}
+.week-labels{display:flex;gap:5px;font-size:10px;color:var(--text-muted);margin-bottom:.75rem}
+.week-labels span{flex:1;text-align:center}
+.test-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.test-item{background:var(--bg2);border-radius:8px;padding:10px;border:1px solid var(--border)}
+.test-item .tn{font-size:11px;color:var(--text-muted);font-weight:600;margin-bottom:5px;text-transform:uppercase;letter-spacing:.03em}
+.test-item input{border:none;border-bottom:1.5px solid var(--border);border-radius:0;padding:2px 0;background:transparent;font-size:14px}
+.test-item input:focus{border-bottom-color:var(--blue)}
+.goal-row{display:flex;gap:6px;margin-top:6px;align-items:center}
+.goal-row span{font-size:11px;color:var(--text-muted);white-space:nowrap}
+.goal-row input{font-size:13px}
+.prog-wrap{height:5px;background:var(--border);border-radius:3px;margin-top:5px;overflow:hidden}
+.prog-fill{height:100%;border-radius:3px;transition:width .4s;background:var(--blue)}
+.focus-sec-title{font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.06em;margin:12px 0 6px;padding-top:8px;border-top:1px solid var(--border)}
+.focus-sec-title:first-child{border-top:none;padding-top:0;margin-top:0}
+.fci{display:flex;align-items:center;gap:9px;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;color:var(--text);margin-bottom:5px;background:var(--bg);user-select:none}
+.fci:hover{background:var(--bg2);border-color:#aac}
+.fci.selected{border-color:var(--blue);background:var(--blue-light);color:var(--blue);font-weight:600}
+.fci.disabled{opacity:.35;pointer-events:none}
+.fci-check{width:20px;height:20px;border:2px solid var(--border);border-radius:5px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;background:var(--bg)}
+.fci.selected .fci-check{border-color:var(--blue);background:var(--blue);color:#fff}
+.focus-period{border:1.5px solid var(--border);border-radius:9px;padding:12px;margin-bottom:10px;background:var(--bg)}
+.focus-period.active-p{border-color:var(--blue)}
+.period-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;gap:8px}
+.period-title{font-size:14px;font-weight:700;color:var(--blue);line-height:1.3}
+.badge{font-size:11px;padding:2px 8px;border-radius:5px;font-weight:700;white-space:nowrap}
+.badge-active{background:var(--blue);color:#fff}
+.badge-done{background:var(--bg2);color:var(--text-muted)}
+.ftag{display:inline-block;background:var(--blue-light);color:var(--blue);font-size:11px;padding:2px 7px;border-radius:4px;margin:2px 3px 2px 0;font-weight:600}
+.conv-item{padding:12px;border-bottom:1px solid var(--border)}
+.conv-item:last-child{border-bottom:none}
+.conv-meta{font-size:11px;color:var(--text-muted);margin-bottom:4px}
+.conv-text{font-size:13px;line-height:1.5}
+.conv-author{font-size:11px;color:var(--blue);margin-top:4px;font-weight:700}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem}
+.login-card{background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:2rem;width:100%;max-width:370px;box-shadow:0 4px 24px rgba(0,47,108,.08)}
+.login-logo{width:64px;height:64px;background:var(--blue);border-radius:15px;display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;color:var(--gold);font-size:24px;font-weight:900;font-family:Arial,sans-serif}
+.login-title{font-size:20px;font-weight:800;text-align:center;color:var(--blue);margin-bottom:.25rem}
+.login-sub{font-size:13px;color:var(--text-muted);text-align:center;margin-bottom:1.5rem}
+.login-error{background:var(--red-light);border:1px solid var(--red);color:var(--red-dark);border-radius:7px;padding:9px 12px;font-size:13px;margin-top:8px;display:none}
+.login-error.show{display:block}
+.trainer-table{width:100%;border-collapse:collapse;font-size:13px}
+.trainer-table th{font-size:11px;font-weight:700;color:var(--text-muted);text-align:left;padding:6px 8px;border-bottom:1px solid var(--border)}
+.trainer-table td{padding:10px 8px;border-bottom:1px solid var(--border);vertical-align:middle}
+.trainer-table tr:last-child td{border-bottom:none}
+.status-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:6px}
+.dot-g{background:var(--green)}.dot-y{background:var(--amber)}.dot-r{background:var(--red)}
+.acwr-pill{font-size:11px;padding:2px 8px;border-radius:5px;font-weight:700}
+.acwr-pill.g{background:var(--green-light);color:#0F6E56}
+.acwr-pill.y{background:var(--amber-light);color:var(--amber-dark)}
+.acwr-pill.r{background:var(--red-light);color:var(--red-dark)}
+.export-btn{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--border);border-radius:9px;cursor:pointer;background:var(--bg);width:100%;margin-bottom:8px;text-align:left}
+.export-btn:hover{background:var(--bg2)}
+.export-icon{width:36px;height:36px;border-radius:8px;background:var(--blue-light);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.export-label{font-size:14px;font-weight:700;color:var(--blue)}
+.export-sub{font-size:12px;color:var(--text-muted)}
+.shi{padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px}
+.shi-date{font-size:11px;color:var(--text-muted);margin-bottom:6px;font-weight:700}
+.wsi{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}
+.wsi:last-child{border-bottom:none}
+.stb{font-size:11px;padding:2px 7px;border-radius:4px;font-weight:600;background:var(--blue-light);color:var(--blue)}
+.score-badge{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:7px;font-size:13px;font-weight:800;background:var(--blue-light);color:var(--blue)}
+.canvas-wrap{position:relative;width:100%}
+.loading{text-align:center;padding:3rem 1rem;color:var(--text-muted);font-size:14px}
+.spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 1rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:500px){.form-row{grid-template-columns:1fr}.test-grid{grid-template-columns:1fr}.metric-grid{grid-template-columns:1fr 1fr}.nav-tab{font-size:10px;min-width:38px}}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <div class="splash-logo"><span class="splash-ntg">NTG</span></div>
+  <div class="splash-title">NTG Bergen</div>
+  <div class="splash-sub">Norges Toppidrettsgymnas</div>
+  <div class="splash-bar"><div class="splash-fill"></div></div>
+</div>
+
+<div class="app">
+
+<div class="screen active" id="screen-login">
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="login-logo">NTG</div>
+      <div class="login-title">NTG Bergen</div>
+      <div class="login-sub">Logg inn med din skole-e-post</div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label>E-post</label>
+        <input type="email" id="login-email" placeholder="abc.def@elev.ntg.no" autocomplete="email">
+      </div>
+      <div class="form-group" style="margin-bottom:4px">
+        <label>Passord</label>
+        <input type="password" id="login-password" placeholder="......" autocomplete="current-password">
+      </div>
+      <div class="login-error" id="login-error"></div>
+      <button class="btn btn-primary" onclick="doLogin()">Logg inn</button>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:12px;margin-bottom:4px">
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+        <span style="font-size:12px;color:var(--text-muted)">eller</span>
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+      </div>
+      <button class="btn btn-secondary" onclick="sendMagicLink()" style="margin-top:4px">Send innloggingslenke på e-post</button>
+      <div style="background:var(--green-light);border:1px solid var(--green-mid);color:var(--green-dark);border-radius:7px;padding:9px 12px;font-size:13px;margin-top:8px;display:none" id="magic-ok">Sjekk e-posten din – lenken er på vei!</div>
+      <button class="btn btn-secondary" onclick="showForgotPassword()" style="margin-top:6px;font-size:12px;color:var(--text-muted);border:none;background:none;padding:4px">Glemt passord?</button>
+      <div id="forgot-section" style="display:none;margin-top:8px">
+        <div class="form-group" style="margin-bottom:8px">
+          <label>E-post</label>
+          <input type="email" id="forgot-email" placeholder="din@elev.ntg.no">
+        </div>
+        <div class="login-error" id="forgot-error"></div>
+        <div style="background:var(--green-light);border:1px solid var(--green-mid);color:var(--green-dark);border-radius:7px;padding:9px 12px;font-size:13px;margin-top:8px;display:none" id="forgot-ok">Tilbakestillingslenke er sendt!</div>
+        <button class="btn btn-primary" onclick="sendResetEmail()">Send tilbakestillingslenke</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="screen-player">
+  <div class="hdr">
+    <div class="logo">NTG</div>
+    <div><div class="hdr-title" id="ps-name">Spiller</div><div class="hdr-sub" id="ps-meta"></div></div>
+    <button class="back-btn" id="player-back-btn" onclick="handlePlayerBack()">Logg ut</button>
+  </div>
+  <div class="alert alert-green" id="save-toast"><div><div class="alert-title">Lagret!</div></div></div>
+  <div class="alert alert-red" id="load-alert"><div><div class="alert-title">H&oslash;y belastning</div><div class="alert-msg" id="load-alert-msg"></div></div></div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchTab('kalender')">Kalender</button>
+    <button class="nav-tab" onclick="switchTab('dagbok')">Dagbok</button>
+    <button class="nav-tab" onclick="switchTab('uke')">Uke</button>
+    <button class="nav-tab" onclick="switchTab('tester')">Tester</button>
+    <button class="nav-tab" onclick="switchTab('grafer')">Grafer</button>
+    <button class="nav-tab" onclick="switchTab('ferdigheter')">Ferdigheter</button>
+    <button class="nav-tab" onclick="switchTab('fokus')">Fokus</button>
+    <button class="nav-tab" onclick="switchTab('samtaler')">Samtaler</button>
+    <button class="nav-tab" onclick="switchTab('profil')">Profil</button>
+  </div>
+
+  <div class="tab-content active" id="tab-kalender">
+    <div class="card" style="background:var(--blue-light);border-color:var(--blue)">
+      <div style="font-size:13px;color:var(--blue);font-weight:600;margin-bottom:4px">Trenger du noen &aring; snakke med?</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">Send en melding til trener – helt trygt og enkelt.</div>
+      <a id="snakke-link" href="#" onclick="openSnakkeLink(event)" style="display:block;background:var(--blue);color:#fff;text-align:center;padding:10px;border-radius:8px;font-size:14px;font-weight:700;text-decoration:none">Jeg trenger noen &aring; snakke med</a>
+    </div>
+    <div class="card">
+      <div class="sec-title">Kommende &oslash;kter for din gruppe</div>
+      <div id="kalender-content"><div class="loading"><div class="spinner"></div>Laster &oslash;kter...</div></div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-dagbok">
+    <div id="acwr-display"></div>
+    <div class="card">
+      <div class="sec-title">Logg &oslash;kt</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Type &oslash;kt</label>
+          <select id="session-type"></select>
+        </div>
+        <div class="form-group"><label>Dato</label><input type="date" id="session-date"></div>
+      </div>
+      <div class="slider-group">
+        <div class="slider-row"><span>Varighet (min)</span><strong id="dur-out">60</strong></div>
+        <input type="range" min="15" max="180" step="5" value="60" id="session-dur" oninput="document.getElementById('dur-out').textContent=this.value;updateLoad()">
+      </div>
+      <div class="slider-group">
+        <div class="slider-row"><span>RPE 1-10</span><strong id="rpe-out">6</strong></div>
+        <input type="range" min="1" max="10" step="1" value="6" id="session-rpe" oninput="document.getElementById('rpe-out').textContent=this.value;updateLoad()">
+      </div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label>Kommentar (valgfritt)</label>
+        <textarea id="session-comment" rows="2" placeholder="Kort notat om treningen eller kampen..."></textarea>
+      </div>
+      <div class="metric-grid" style="margin-top:4px">
+        <div class="metric-card"><div class="ml">Session load</div><div class="mv" id="sl-val">360</div><div class="mu">AU</div></div>
+        <div class="metric-card"><div class="ml">Ukesbelastning</div><div class="mv" id="wl-val">0</div><div class="mu">AU</div></div>
+      </div>
+      <button class="btn btn-primary" onclick="logSession()">Logg &oslash;kt</button>
+    </div>
+    <div class="card">
+      <div class="sec-title">Belastning siste 6 uker</div>
+      <div class="week-bars" id="week-bars"></div>
+      <div class="week-labels" id="week-labels"></div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-uke"><div id="uke-content"></div></div>
+
+  <div class="tab-content" id="tab-tester">
+    <div class="card">
+      <div class="sec-title">Styrke &#8211; 1RM</div>
+      <div class="test-grid">
+        <div class="test-item"><div class="tn">Benkpress (kg)</div><input type="number" id="t-bench" placeholder="-"><div class="goal-row"><span>M&aring;l:</span><input type="number" id="g-bench" placeholder="-"></div><div class="prog-wrap"><div class="prog-fill" id="p-bench"></div></div></div>
+        <div class="test-item"><div class="tn">Kneb&oslash;y (kg)</div><input type="number" id="t-squat" placeholder="-"><div class="goal-row"><span>M&aring;l:</span><input type="number" id="g-squat" placeholder="-"></div><div class="prog-wrap"><div class="prog-fill" id="p-squat"></div></div></div>
+        <div class="test-item"><div class="tn">Frivending (kg)</div><input type="number" id="t-clean" placeholder="-"><div class="goal-row"><span>M&aring;l:</span><input type="number" id="g-clean" placeholder="-"></div><div class="prog-wrap"><div class="prog-fill" id="p-clean"></div></div></div>
+        <div class="test-item"><div class="tn">Hang ups (reps)</div><input type="number" id="t-hangup" placeholder="-"><div class="goal-row"><span>M&aring;l:</span><input type="number" id="g-hangup" placeholder="-"></div><div class="prog-wrap"><div class="prog-fill" id="p-hangup"></div></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="sec-title">Kondisjon og hurtighet</div>
+      <div class="test-grid">
+        <div class="test-item"><div class="tn">Beep test (niv&aring;.del)</div><input type="text" id="t-beep" placeholder="f.eks. 11.3"><div class="goal-row"><span>M&aring;l:</span><input type="text" id="g-beep" placeholder="-"></div></div>
+        <div class="test-item"><div class="tn">Sprint 20m (sek)</div><input type="number" step="0.01" id="t-s20" placeholder="-"><div class="goal-row"><span>M&aring;l:</span><input type="number" step="0.01" id="g-s20" placeholder="-"></div><div class="prog-wrap"><div class="prog-fill" id="p-s20"></div></div></div>
+        <div class="test-item"><div class="tn">Sprint 40m m/vend. (sek)</div><input type="number" step="0.01" id="t-s40" placeholder="-"><div class="goal-row"><span>M&aring;l:</span><input type="number" step="0.01" id="g-s40" placeholder="-"></div><div class="prog-wrap"><div class="prog-fill" id="p-s40"></div></div></div>
+        <div class="test-item"><div class="tn">Sergeant jump (cm)</div><input type="number" id="t-jump" placeholder="-"><div class="goal-row"><span>M&aring;l:</span><input type="number" id="g-jump" placeholder="-"></div><div class="prog-wrap"><div class="prog-fill" id="p-jump"></div></div></div>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:.75rem"><label>Testdato</label><input type="date" id="test-date"></div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="saveTests()">Lagre testresultater</button>
+      <button class="btn btn-gold" onclick="saveGoals()">Lagre m&aring;l</button>
+    </div>
+    <div id="test-history" style="margin-top:1.25rem"></div>
+  </div>
+
+  <div class="tab-content" id="tab-grafer">
+    <div class="card"><div class="sec-title">Ukentlig belastning</div><div class="canvas-wrap" style="height:190px"><canvas id="g-load"></canvas></div></div>
+    <div class="card"><div class="sec-title">Styrke utvikling</div><div id="g-sl" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px;font-size:12px"></div><div class="canvas-wrap" style="height:190px"><canvas id="g-strength"></canvas></div></div>
+    <div class="card"><div class="sec-title">Fysiske tester</div><div id="g-pl" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px;font-size:12px"></div><div class="canvas-wrap" style="height:190px"><canvas id="g-physical"></canvas></div></div>
+    <div class="card"><div class="sec-title">Ferdighetsradar</div><div class="canvas-wrap" style="height:260px"><canvas id="g-radar"></canvas></div></div>
+  </div>
+
+  <div class="tab-content" id="tab-ferdigheter">
+    <div id="sport-skills-container"></div>
+    <button class="btn btn-primary" onclick="saveSkills()">Lever inn selvvurdering</button>
+    <div class="card" style="margin-top:1rem"><div class="sec-title">Tidligere selvvurderinger</div><div id="skills-history"></div></div>
+    <div class="card"><div class="sec-title">Progresjon &#8211; f&oslash;rste vs siste</div><div class="canvas-wrap" style="height:520px"><canvas id="g-sp"></canvas></div><div id="g-sp-empty" style="font-size:13px;color:var(--text-muted);padding:.5rem 0;display:none">Lever inn minst 2 selvvurderinger for &aring; se progresjon</div></div>
+  </div>
+
+  <div class="tab-content" id="tab-fokus">
+    <div class="card" id="focus-form-card">
+      <div class="sec-title" id="focus-form-title">Ny fokusperiode</div>
+      <input type="hidden" id="focus-edit-id" value="">
+      <div class="form-row">
+        <div class="form-group"><label>Fra dato</label><input type="date" id="focus-from" onchange="updateFocusTo()"></div>
+        <div class="form-group"><label>Varighet</label>
+          <select id="focus-weeks" onchange="updateFocusTo()">
+            <option value="4">4 uker</option><option value="5">5 uker</option><option value="6">6 uker</option>
+          </select>
+        </div>
+      </div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px">Periode til: <strong id="focus-to-display" style="color:var(--blue)">-</strong></div>
+      <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:8px">Velg maks 3 fokusomr&aring;der</div>
+      <div id="focus-sport-sections"></div>
+      <div class="focus-sec-title">Fysisk</div>
+      <div id="focus-krav-fysisk"></div>
+      <div class="form-group" style="margin:12px 0 8px">
+        <label>Hva skal jeg utvikle?</label>
+        <textarea id="focus-what" rows="2" placeholder="Beskriv konkret hva du &oslash;nsker &aring; bli bedre p&aring;..."></textarea>
+      </div>
+      <div class="form-group" style="margin-bottom:12px">
+        <label>Hvordan skal jeg gj&oslash;re det?</label>
+        <textarea id="focus-how" rows="2" placeholder="Beskriv konkret hvordan du skal jobbe med det..."></textarea>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="saveFocusPeriod()">Lagre fokusperiode</button>
+        <button class="btn btn-secondary" id="focus-cancel-btn" onclick="cancelFocusEdit()" style="display:none">Avbryt</button>
+      </div>
+    </div>
+    <div id="focus-list"></div>
+  </div>
+
+  <div class="tab-content" id="tab-samtaler">
+    <div id="conv-list"></div>
+    <div style="font-size:13px;color:var(--text-muted);padding:.5rem 0" id="conv-empty">Ingen samtaler logget enda. Samtaler logges av trener.</div>
+  </div>
+
+  <div class="tab-content" id="tab-profil">
+    <div class="card"><div class="sec-title">Min profil</div><div id="profil-info"></div></div>
+    <div class="card">
+      <div class="sec-title">Klubbinformasjon</div>
+      <div class="form-group" style="margin-bottom:10px"><label>Klubb</label><input type="text" id="club-name" placeholder="Navn p&aring; klubben din"></div>
+      <div class="form-group" style="margin-bottom:10px"><label>Klubbtrener</label><input type="text" id="club-coach-name" placeholder="Navn p&aring; klubbtrener"></div>
+      <div class="form-group" style="margin-bottom:10px"><label>Telefon klubbtrener</label><input type="text" id="club-coach-phone" placeholder="Telefonnummer"></div>
+      <div class="form-group" style="margin-bottom:10px"><label>E-post klubbtrener</label><input type="email" id="club-coach-email" placeholder="epost@klubb.no"></div>
+      <div class="alert alert-green" id="club-save-ok"><div><div class="alert-title">Lagret!</div></div></div>
+      <button class="btn btn-primary" onclick="saveClubInfo()">Lagre klubbinformasjon</button>
+    </div>
+    <div class="card">
+      <div class="sec-title">Endre passord</div>
+      <div class="form-group" style="margin-bottom:10px"><label>Nytt passord</label><input type="password" id="new-password" placeholder="Minst 6 tegn"></div>
+      <div class="form-group" style="margin-bottom:10px"><label>Bekreft passord</label><input type="password" id="confirm-password" placeholder="Gjenta passordet"></div>
+      <div class="login-error" id="pw-error"></div>
+      <div class="alert alert-green" id="pw-success"><div><div class="alert-title">Passord endret!</div></div></div>
+      <button class="btn btn-primary" onclick="changePassword()">Endre passord</button>
+    </div>
+    <div id="player-export-section" style="display:none">
+      <div class="card">
+        <div class="sec-title">Eksport - denne utoveren</div>
+        <button class="export-btn" onclick="exportPlayerCSV()"><div class="export-icon">📊</div><div><div class="export-label">Treningsdagbok</div><div class="export-sub">CSV</div></div></button>
+        <button class="export-btn" onclick="exportPlayerTests()"><div class="export-icon">📋</div><div><div class="export-label">Testresultater</div><div class="export-sub">CSV</div></div></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="screen-trainer">
+  <div class="hdr">
+    <div class="logo">NTG</div>
+    <div><div class="hdr-title">Treneroversikt</div><div class="hdr-sub">NTG Bergen &ndash; <span id="tr-sport-label"></span></div></div>
+    <button class="back-btn" onclick="doLogout()">Logg ut</button>
+  </div>
+  <div class="metric-grid">
+    <div class="metric-card"><div class="ml">Elever</div><div class="mv" id="tr-total">-</div></div>
+    <div class="metric-card"><div class="ml">Logget denne uka</div><div class="mv" id="tr-logged">-</div></div>
+    <div class="metric-card"><div class="ml">Overbelastning</div><div class="mv" id="tr-overload">-</div></div>
+    <div class="metric-card"><div class="ml">Mangler tester</div><div class="mv" id="tr-missing">-</div></div>
+  </div>
+  <div id="tr-alerts"></div>
+  <div class="card">
+    <div class="sec-title">Grupper</div>
+    <div id="groups-list" style="margin-bottom:10px"></div>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="new-group-name" placeholder="Navn på gruppe, f.eks. Jenter 1" style="flex:1">
+      <button class="btn-sm-blue" style="white-space:nowrap" onclick="saveGroup()">+ Legg til</button>
+    </div>
+    <div class="alert alert-green" id="group-toast" style="margin-top:8px"><div><div class="alert-title">Gruppe lagret!</div></div></div>
+  </div>
+
+  <div class="card">
+    <div class="sec-title" id="event-form-title">Legg inn trenings&oslash;kt</div>
+    <input type="hidden" id="edit-event-id" value="">
+    <div class="form-row">
+      <div class="form-group"><label>Tittel</label><input type="text" id="ev-title" placeholder="f.eks. Styrke VG2"></div>
+      <div class="form-group"><label>Type</label>
+        <select id="ev-type"></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Dato</label><input type="date" id="ev-date"></div>
+      <div class="form-group"><label>Tidspunkt</label><input type="time" id="ev-time" value="16:00"></div>
+    </div>
+    <div class="form-group" style="margin-bottom:10px"><label>Sted</label><input type="text" id="ev-location" placeholder="f.eks. Gymsalen, NTG Bergen"></div>
+    <div class="form-group" style="margin-bottom:10px">
+      <label>Synlig for grupper (velg ingen = alle ser den)</label>
+      <div id="ev-groups-select" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px"></div>
+    </div>
+    <div class="login-error" id="event-error"></div>
+    <div class="alert alert-green" id="event-success"><div><div class="alert-title" id="event-success-msg">Økt lagret!</div></div></div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="saveEvent()">Lagre &oslash;kt</button>
+      <button class="btn btn-secondary" id="event-cancel-btn" onclick="cancelEventEdit()" style="display:none">Avbryt</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sec-title">Planlagte &oslash;kter</div>
+    <div id="tr-events-list"><div class="loading"><div class="spinner"></div>Laster...</div></div>
+  </div>
+
+  <div class="card">
+    <div class="sec-title">Elevstatus</div>
+    <div id="tr-loading" class="loading"><div class="spinner"></div>Laster elever...</div>
+    <table class="trainer-table" id="tr-table" style="display:none">
+      <thead><tr><th>Elev</th><th>Klasse</th><th>ACWR</th><th>Siste &oslash;kt</th><th>Siste test</th><th></th></tr></thead>
+      <tbody id="trainer-tbody"></tbody>
+    </table>
+  </div>
+  <div class="card">
+    <div class="sec-title" id="student-form-title">Opprett elev</div>
+    <input type="hidden" id="edit-student-id" value="">
+    <div class="form-row">
+      <div class="form-group"><label>Fullt navn</label><input type="text" id="new-student-name" placeholder="Ola Nordmann"></div>
+      <div class="form-group"><label>E-post</label><input type="email" id="new-student-email" placeholder="ola.nor@elev.ntg.no"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Klasse</label><select id="new-student-class"><option>VG1</option><option>VG2</option><option>VG3</option></select></div>
+      <div class="form-group"><label>Posisjon</label>
+        <select id="new-student-pos"></select>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:10px"><label>Gruppe</label><select id="new-student-group"><option value="">Ingen gruppe</option></select></div>
+    <div class="form-group" style="margin-bottom:10px"><label>Idrett</label>
+      <select id="new-student-sport" onchange="updateStudentPositions()">
+        <option>H&aring;ndball</option><option>Fotball</option><option>Basketball</option>
+        <option>Golf</option><option>Sykkel</option><option>Sv&oslash;mming</option>
+        <option>Fekting</option><option>Tennis</option><option>Padel</option><option>Mix</option>
+      </select>
+    </div>
+    <div class="form-group" id="password-field" style="margin-bottom:10px"><label>Startpassord</label><input type="text" id="new-student-pass" value="NTG2026"></div>
+    <div class="login-error" id="student-error"></div>
+    <div class="alert alert-green" id="student-success"><div><div class="alert-title" id="student-success-msg">Elev opprettet!</div></div></div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="saveStudent()">Lagre elev</button>
+      <button class="btn btn-secondary" id="edit-cancel-btn" onclick="cancelStudentEdit()" style="display:none">Avbryt</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="sec-title">Logg samtale</div>
+    <div class="form-row">
+      <div class="form-group"><label>Elev</label><select id="tr-conv-player"></select></div>
+      <div class="form-group"><label>Type</label>
+        <select id="tr-conv-type"><option>Utviklingssamtale</option><option>Treningsevaluering</option><option>Kampgjennomgang</option><option>Fokusperiode-evaluering</option><option>Annet</option></select>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:10px"><label>Notat</label><textarea id="tr-conv-text" rows="3" placeholder="Kort oppsummering..."></textarea></div>
+    <button class="btn btn-primary" onclick="saveTrainerConv()">Logg samtale</button>
+    <div class="alert alert-green" id="tr-toast" style="margin-top:8px"><div><div class="alert-title">Samtale lagret!</div></div></div>
+  </div>
+  <div class="card">
+    <div class="sec-title">Eksport - alle elever</div>
+    <button class="export-btn" onclick="exportAllCSV()"><div class="export-icon">📊</div><div><div class="export-label">Alle treningsdagboker</div><div class="export-sub">CSV</div></div></button>
+    <button class="export-btn" onclick="exportAllTests()"><div class="export-icon">📋</div><div><div class="export-label">Alle testresultater</div><div class="export-sub">CSV</div></div></button>
+  </div>
+</div>
+
+</div>
+
+<script>
+var SB_URL = 'https://plkutjfeahzkfsakwbkb.supabase.co';
+var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsa3V0amZlYWh6a2ZzYWt3YmtiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4OTcxNTcsImV4cCI6MjA5NTQ3MzE1N30.iieNM0ADFwLGBkckS7zZOecu-S5ekuxWKVARAupop6Q';
+var SB_ADMIN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsa3V0amZlYWh6a2ZzYWt3YmtiIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTg5NzE1NywiZXhwIjoyMDk1NDczMTU3fQ.k0ua_SumcQ3Igp8jKrUaehXINv597zeiccCZsPzyLC0';
+
+var SP = ['Eierskap til egen utvikling','Disiplin og gjennomf\u00f8ringskraft','Evne til \u00e5 holde fokus','T\u00e5le motgang','Energi','Samarbeidsevne','T\u00e5le trening \u2013 fysisk og psykisk'];
+var SL = ['Systematikk i treningsarbeid','S\u00f8vnmengde','Kosthold','24-timersut\u00f8ver'];
+var FFYS = ['Utholdenhet','Plyometri','Styrke'];
+
+var SPORTS_DATA = {
+  'H\u00e5ndball': { cats: [
+    {key:'angrep', label:'Tekniske ferdigheter \u2013 angrep', items:['Kast og mottak etablert','Kast og mottak l\u00f8pespill','Innspill og utspill','Skudd fra gulvet','Skudd fra luft','Krysspill','Duellspill']},
+    {key:'forsvar', label:'Tekniske ferdigheter \u2013 forsvar', items:['Skr\u00e5stilling/beredskapsstilling','Forflytning','Stjele ball','Takle','Blokke']},
+    {key:'taktikk', label:'Forst\u00e5else og taktikk', items:['Forsvarsformasjoner','Spillsystemer','Samarbeid linjespiller','Omstillingsevne','Samarbeid m\u00e5lvakt']}
+  ]},
+  'Fotball': { cats: [
+    {key:'medball', label:'Tekniske ferdigheter \u2013 med ball', items:['Pasning kort og lang','Mottak og ballkontroll','Dribling og finte','Skudd og avslutning','Heading','Innlegg og crossing']},
+    {key:'utenball', label:'Tekniske ferdigheter \u2013 uten ball', items:['L\u00f8psspill og l\u00f8psveier','Pressing og jaging','Forsvarsposisjon','Markering og duell','Omstilling angrep/forsvar']},
+    {key:'taktikk', label:'Taktikk og forst\u00e5else', items:['Formasjonsforst\u00e5else','Samarbeid i linjer','Romforst\u00e5else','Pressing som lag','Overganger']}
+  ]},
+  'Basketball': { cats: [
+    {key:'angrep', label:'Tekniske ferdigheter \u2013 angrep', items:['Pasning og mottak','Dribling og ball-handling','Skudd fra felt','Lay-up og floater','Post-spill','Pick and roll']},
+    {key:'forsvar', label:'Tekniske ferdigheter \u2013 forsvar', items:['Forsvarsstilling og footwork','Mann-til-mann forsvar','Soneforsvarsforst\u00e5else','Steal og blokkering','Boxout og retur']},
+    {key:'taktikk', label:'Taktikk og forst\u00e5else', items:['Offensiv systemforst\u00e5else','Defensiv rotasjon','Overtallighetssituasjoner','Timing og rytme','Lese spillet']}
+  ]},
+  'Golf': { cats: [
+    {key:'teknikk', label:'Tekniske ferdigheter', items:['Driverslag','Fairway-slag','Jernspill','Kortstopp og chipping','Putting','Bunkerspill','Slagprosedyre og rutine']},
+    {key:'mental', label:'Mental og strategisk', items:['Spillestrategi og banelesing','Fokus og ro mellom slag','Feilh\u00e5ndtering og nullstilling','Rutine f\u00f8r slag','Sk\u00e5rkortforst\u00e5else']}
+  ]},
+  'Sykkel': { cats: [
+    {key:'teknikk', label:'Tekniske ferdigheter', items:['Pedaleffektivitet og tr\u00e5kkfrekvens','Posisjon p\u00e5 sykkelen','Svingkj\u00f8ring og teknisk terreng','Utrykk og spurt','Stigningskj\u00f8ring','Nedoverbakkekj\u00f8ring']},
+    {key:'taktikk', label:'Taktikk og forst\u00e5else', items:['Rytterforst\u00e5else og gruppesamarbeid','Vindskygge og plassering','L\u00f8pslesing','Matinntak og energistyring','Tempostyring']}
+  ]},
+  'Svømming': { cats: [
+    {key:'teknikk', label:'Tekniske ferdigheter', items:['Crawl \u2013 armtak og benspark','Bryst \u2013 koordinasjon','Butterfly \u2013 b\u00f8lgebevegelse og timing','Rygg \u2013 rotasjon og slag','Vending og start','Undervannsfase']},
+    {key:'taktikk', label:'Taktikk og forst\u00e5else', items:['Tempostyring per distanse','Pustefrekvens og rytme','Distansegj\u00f8else','L\u00f8psplan og gjennomf\u00f8ring']}
+  ]},
+  'Fekting': { cats: [
+    {key:'angrep', label:'Tekniske ferdigheter \u2013 angrep', items:['Utfall og forlengelse','Rykk og akselerasjon','Bindingsangrep','Angrepsfinter','Klingearbeid']},
+    {key:'forsvar', label:'Tekniske ferdigheter \u2013 forsvar', items:['Parader og respons','Distansekontroll','Motangrep','Retretter','Sirkelbevegelser']},
+    {key:'taktikk', label:'Taktikk og forst\u00e5else', items:['Lese motstanderen','Prioritetsregler','Aksjonsvalg under press','Tidsbruk og scoringstrategi']}
+  ]},
+  'Tennis': { cats: [
+    {key:'slag', label:'Tekniske ferdigheter \u2013 slag', items:['Forehand grunn- og toppspinn','Backhand ett- og toh\u00e5nds','Serve \u2013 flat, slice og kick','Retur av serve','Volley forehand og backhand','Smasj og overhead','Lobb og dropshot']},
+    {key:'bevegelighet', label:'Tekniske ferdigheter \u2013 bevegelighet', items:['Splittsteg og startposisjon','Sidevegsbevegelighet','Recovery til midten','Bevegelse inn til nettet','Rekkeviddesteg']},
+    {key:'taktikk', label:'Taktikk og forst\u00e5else', items:['Serve og returspill','Grunnlinjespill og m\u00f8nsterbygging','Nett- og angrepsspill','Punktkonstruksjon','Lese og tilpasse til motstanderen']}
+  ]},
+  'Padel': { cats: [
+    {key:'slag', label:'Tekniske ferdigheter \u2013 slag', items:['Forehand og backhand grunnslag','Bandeja og vibora','Bajada og angrepssituasjon','Volley og kontrollspill','Serve','Glass-spill bakvegg og sidevegg','Lob og forsvarsspill']},
+    {key:'posisjon', label:'Tekniske ferdigheter \u2013 posisjon', items:['Nettposisjon og rotasjon','Tilbakevending etter glass','Makkerposisjonering','Vinnerposisjon vs. forsvarsposisjon']},
+    {key:'taktikk', label:'Taktikk og forst\u00e5else', items:['Serve og returnspill','Paret samarbeid og kommunikasjon','Kontroll vs. press','Lese banen og glassspill','Punktoppbygging fra bakvegg']}
+  ]},
+  'Mix': { cats: [
+    {key:'motor', label:'Motoriske grunnferdigheter', items:['Koordinasjon og kroppskontroll','Balanse og stabilitet','Romlig orientering','Reaksjonsevne','Bevegelighet']},
+    {key:'overgrip', label:'Idrettsovergripende ferdigheter', items:['Samarbeid i lag','Taktisk tilpasningsevne','Teknisk l\u00e6ringsevne','Konkurranseforst\u00e5else','Treningsdisiplin']}
+  ]}
+};
+
+var SPORT_LIST = ['H\u00e5ndball','Fotball','Basketball','Golf','Sykkel','Sv\u00f8mming','Fekting','Tennis','Padel','Mix'];
+
+var SPORT_POSITIONS = {
+  'H\u00e5ndball': ['H\u00f8yrekant','Venstrekant','H\u00f8yre back','Venstre back','Midtback','Linjespiller','M\u00e5lvakt'],
+  'Fotball': ['Keeper','H\u00f8yreback','Venstreback','Midtstopper','Defensiv midtbane','Sentral midtbane','Offensiv midtbane','H\u00f8yreving','Venstreving','Spiss'],
+  'Basketball': ['Pointguard','Shooting guard','Small forward','Power forward','Center'],
+  'Golf': ['Ingen posisjon'],
+  'Sykkel': ['Spurter','Klatrer','Allrounder','Tempo'],
+  'Sv\u00f8mming': ['Crawl','Bryst','Butterfly','Rygg','Medley','Alle distanser'],
+  'Fekting': ['Florett','K\u00e5rde','Sabel'],
+  'Tennis': ['Singel','Dobbel','Begge'],
+  'Padel': ['H\u00f8yre side','Venstre side','Begge'],
+  'Mix': ['Ingen posisjon']
+};
+
+var SPORT_SESSION_TYPES = {
+  'H\u00e5ndball': ['H\u00e5ndball \u2013 trening','H\u00e5ndball \u2013 kamp','H\u00e5ndball \u2013 teknikk','Styrke','Utholdenhet','Plyometri','Annen trening'],
+  'Fotball': ['Fotball \u2013 trening','Fotball \u2013 kamp','Fotball \u2013 teknikk','Styrke','Utholdenhet','Plyometri','Annen trening'],
+  'Basketball': ['Basketball \u2013 trening','Basketball \u2013 kamp','Basketball \u2013 teknikk','Styrke','Utholdenhet','Plyometri','Annen trening'],
+  'Golf': ['Golf \u2013 trening','Golf \u2013 runde','Golf \u2013 teknikk','Styrke','Utholdenhet','Annen trening'],
+  'Sykkel': ['Sykkel \u2013 trening','Sykkel \u2013 ritt','Intervall','Styrke','Utholdenhet','Annen trening'],
+  'Sv\u00f8mming': ['Sv\u00f8mming \u2013 trening','Sv\u00f8mming \u2013 stevne','Teknikk','Styrke','Utholdenhet','Annen trening'],
+  'Fekting': ['Fekting \u2013 trening','Fekting \u2013 konkurranse','Teknikk','Styrke','Utholdenhet','Annen trening'],
+  'Tennis': ['Tennis \u2013 trening','Tennis \u2013 kamp','Teknikk','Styrke','Utholdenhet','Annen trening'],
+  'Padel': ['Padel \u2013 trening','Padel \u2013 kamp','Teknikk','Styrke','Utholdenhet','Annen trening'],
+  'Mix': ['Trening','Kamp','Teknikk','Styrke','Utholdenhet','Plyometri','Annen trening']
+};
+
+function getSportSessionTypes(sport) {
+  return SPORT_SESSION_TYPES[sport] || SPORT_SESSION_TYPES['H\u00e5ndball'];
+}
+
+function getSportPositions(sport) {
+  return SPORT_POSITIONS[sport] || SPORT_POSITIONS['H\u00e5ndball'];
+}
+
+function getSportCats(sport) {
+  return (SPORTS_DATA[sport] || SPORTS_DATA['H\u00e5ndball']).cats;
+}
+
+// Legacy arrays kept for radar/graphs compatibility
+var SA = SPORTS_DATA['H\u00e5ndball'].cats[0].items;
+var SF = SPORTS_DATA['H\u00e5ndball'].cats[1].items;
+var ST = SPORTS_DATA['H\u00e5ndball'].cats[2].items;
+
+var FOKUS_KRAV = {
+  angrep: SA.map(function(x){ return {id:'a_'+x.replace(/\W/g,'_'), label:x}; }),
+  forsvar: SF.map(function(x){ return {id:'f_'+x.replace(/\W/g,'_'), label:x}; }),
+  taktikk: ST.map(function(x){ return {id:'t_'+x.replace(/\W/g,'_'), label:x}; }),
+  fysisk: FFYS.map(function(x){ return {id:'p_'+x, label:x}; })
+};
+
+var currentUser = null;
+var currentProfile = null;
+var trainerProfile = null;
+var isTrainerViewing = false;
+var allSessions = [];
+var allTests = [];
+var allSkills = [];
+var allFocusPeriods = [];
+var testGoals = {};
+var chartInstances = {};
+
+async function api(method, path, body) {
+  var token = currentUser && currentUser.access_token ? currentUser.access_token : SB_KEY;
+  var opts = {
+    method: method,
+    headers: {
+      'apikey': SB_KEY,
+      'Authorization': 'Bearer ' + token,
+      'Content-Type': 'application/json',
+      'Prefer': method === 'POST' ? 'return=representation' : ''
+    }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  var res = await fetch(SB_URL + '/rest/v1/' + path, opts);
+  if (!res.ok) {
+    var e = await res.json().catch(function(){ return {}; });
+    throw new Error(e.message || res.statusText);
+  }
+  return res.status === 204 ? null : res.json();
+}
+
+async function authApi(path, body) {
+  var res = await fetch(SB_URL + '/auth/v1/' + path, {
+    method: 'POST',
+    headers: {'apikey': SB_KEY, 'Content-Type': 'application/json'},
+    body: JSON.stringify(body)
+  });
+  var data = await res.json();
+  if (!res.ok) throw new Error(data.error_description || data.message || 'Feil');
+  return data;
+}
+
+async function sendMagicLink() {
+  var email = document.getElementById('login-email').value.trim();
+  var errEl = document.getElementById('login-error');
+  var okEl = document.getElementById('magic-ok');
+  errEl.classList.remove('show'); errEl.style.display = 'none';
+  okEl.style.display = 'none';
+  if (!email) { errEl.textContent = 'Skriv inn e-postadressen din f\u00f8rst.'; errEl.style.display = 'block'; errEl.classList.add('show'); return; }
+  try {
+    await fetch(SB_URL + '/auth/v1/magiclink', {
+      method: 'POST',
+      headers: {'apikey': SB_KEY, 'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        email: email,
+        options: {redirectTo: 'https://ntgbergen.github.io/ntg-bergen'}
+      })
+    });
+    okEl.style.display = 'block';
+  } catch(e) {
+    errEl.textContent = 'Noe gikk galt. Pr\u00f8v igjen.'; errEl.style.display = 'block'; errEl.classList.add('show');
+  }
+}
+
+function showForgotPassword() {
+  var s = document.getElementById('forgot-section');
+  s.style.display = s.style.display === 'none' ? 'block' : 'none';
+}
+
+async function sendResetEmail() {
+  var email = document.getElementById('forgot-email').value.trim();
+  var errEl = document.getElementById('forgot-error');
+  var okEl = document.getElementById('forgot-ok');
+  errEl.classList.remove('show'); errEl.style.display = 'none';
+  okEl.style.display = 'none';
+  if (!email) { errEl.textContent = 'Skriv inn e-postadressen din.'; errEl.style.display = 'block'; errEl.classList.add('show'); return; }
+  try {
+    var res = await fetch(SB_URL + '/auth/v1/recover', {
+      method: 'POST',
+      headers: {'apikey': SB_KEY, 'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        email: email,
+        options: {redirectTo: 'https://ntgbergen.github.io/ntg-bergen'}
+      })
+    });
+    okEl.style.display = 'block';
+    document.getElementById('forgot-email').value = '';
+  } catch(e) {
+    errEl.textContent = 'Noe gikk galt. Prøv igjen.'; errEl.style.display = 'block'; errEl.classList.add('show');
+  }
+}
+
+async function doLogin() {
+  var email = document.getElementById('login-email').value.trim();
+  var pass = document.getElementById('login-password').value;
+  var errEl = document.getElementById('login-error');
+  errEl.classList.remove('show');
+  try {
+    var data = await authApi('token?grant_type=password', {email: email, password: pass});
+    currentUser = data;
+    try { localStorage.setItem('ntg_session', JSON.stringify({access_token: data.access_token, user_id: data.user.id})); } catch(e) {}
+    await loadProfile(data.user.id);
+  } catch(e) {
+    errEl.textContent = 'Feil e-post eller passord. Pr\u00f8v igjen.';
+    errEl.classList.add('show');
+  }
+}
+
+async function tryAutoLogin() {
+  try {
+    var saved = localStorage.getItem('ntg_session');
+    if (!saved) return;
+    var session = JSON.parse(saved);
+    if (!session.access_token || !session.user_id) return;
+    // Verify token is still valid
+    var res = await fetch(SB_URL + '/auth/v1/user', {
+      headers: {'apikey': SB_KEY, 'Authorization': 'Bearer ' + session.access_token}
+    });
+    if (!res.ok) { localStorage.removeItem('ntg_session'); return; }
+    currentUser = {access_token: session.access_token, user: {id: session.user_id}};
+    await loadProfile(session.user_id);
+  } catch(e) {
+    localStorage.removeItem('ntg_session');
+  }
+}
+
+async function loadProfile(uid) {
+  var profiles = await api('GET', 'profiles?id=eq.' + uid + '&select=*');
+  if (!profiles || !profiles.length) {
+    document.getElementById('login-error').textContent = 'Ingen profil funnet. Kontakt trener.';
+    document.getElementById('login-error').classList.add('show');
+    return;
+  }
+  currentProfile = profiles[0];
+  if (currentProfile.is_trainer) {
+    trainerProfile = currentProfile;
+    isTrainerViewing = false;
+    showScreen('screen-trainer');
+    loadTrainerView();
+  } else {
+    isTrainerViewing = false;
+    trainerProfile = null;
+    await openPlayerView(currentProfile);
+  }
+}
+
+async function openPlayerView(profile) {
+  currentProfile = profile;
+  document.getElementById('ps-name').textContent = profile.full_name;
+  document.getElementById('ps-meta').textContent = profile.class + ' \u2013 ' + profile.position + (isTrainerViewing ? ' (trener)' : '');
+  var bb = document.getElementById('player-back-btn');
+  bb.textContent = isTrainerViewing ? '\u2190 Tilbake' : 'Logg ut';
+  document.getElementById('player-export-section').style.display = isTrainerViewing ? 'block' : 'none';
+  var sport = profile.sport || 'H\u00e5ndball';
+  var sessionSel = document.getElementById('session-type');
+  if (sessionSel) sessionSel.innerHTML = getSportSessionTypes(sport).map(function(t){ return '<option>'+t+'</option>'; }).join('');
+  showScreen('screen-player');
+  setDefaultDates();
+  await loadPlayerData();
+  renderSkillSliders();
+  renderFocusKravGrid();
+  await loadFocusPeriods();
+  switchTab('kalender');
+}
+
+async function loadPlayerData() {
+  var uid = currentProfile.id;
+  var results = await Promise.all([
+    api('GET', 'sessions?user_id=eq.' + uid + '&order=date.asc&select=*'),
+    api('GET', 'tests?user_id=eq.' + uid + '&order=date.desc&select=*'),
+    api('GET', 'skills?user_id=eq.' + uid + '&order=date.asc&select=*')
+  ]);
+  allSessions = results[0] || [];
+  allTests = results[1] || [];
+  allSkills = results[2] || [];
+  var goals = await api('GET', 'test_goals?user_id=eq.' + uid + '&select=*');
+  testGoals = goals && goals.length ? goals[0] : {};
+  loadGoalInputs();
+}
+
+function loadGoalInputs() {
+  var fields = ['bench','squat','clean','hangup','beep','s20','s40','jump'];
+  fields.forEach(function(f) {
+    var el = document.getElementById('g-' + f);
+    if (el && testGoals[f]) el.value = testGoals[f];
+  });
+  updateProgressBars();
+}
+
+function updateProgressBars() {
+  var latest = allTests[0] || {};
+  var fields = [['bench','p-bench',false],['squat','p-squat',false],['clean','p-clean',false],['hangup','p-hangup',false],['s20','p-s20',true],['s40','p-s40',true],['jump','p-jump',false]];
+  fields.forEach(function(arr) {
+    var f = arr[0]; var pid = arr[1]; var lower = arr[2];
+    var pb = document.getElementById(pid);
+    if (!pb) return;
+    var val = parseFloat(latest[f]);
+    var goal = parseFloat(testGoals[f]);
+    if (!val || !goal) { pb.style.width = '0%'; return; }
+    var pct = lower ? (goal / val * 100) : (val / goal * 100);
+    pct = Math.min(Math.max(pct, 0), 100);
+    pb.style.width = pct + '%';
+    pb.style.background = pct >= 100 ? 'var(--green)' : pct >= 70 ? 'var(--amber)' : 'var(--blue)';
+  });
+}
+
+async function doLogout() {
+  try { localStorage.removeItem('ntg_session'); } catch(e) {}
+  currentUser = null; currentProfile = null; trainerProfile = null; isTrainerViewing = false;
+  allSessions = []; allTests = []; allSkills = []; testGoals = {};
+  showScreen('screen-login');
+}
+
+function handlePlayerBack() {
+  if (isTrainerViewing) {
+    isTrainerViewing = false;
+    currentProfile = trainerProfile;
+    showScreen('screen-trainer');
+  } else {
+    doLogout();
+  }
+}
+
+async function changePassword() {
+  var np = document.getElementById('new-password').value;
+  var cp = document.getElementById('confirm-password').value;
+  var errEl = document.getElementById('pw-error');
+  var okEl = document.getElementById('pw-success');
+  errEl.classList.remove('show'); okEl.classList.remove('show');
+  errEl.style.display = 'none';
+  if (np.length < 6) { errEl.textContent = 'Passordet m\u00e5 v\u00e6re minst 6 tegn.'; errEl.style.display = 'block'; errEl.classList.add('show'); return; }
+  if (np !== cp) { errEl.textContent = 'Passordene stemmer ikke overens.'; errEl.style.display = 'block'; errEl.classList.add('show'); return; }
+  try {
+    await fetch(SB_URL + '/auth/v1/user', {
+      method: 'PUT',
+      headers: {'apikey': SB_KEY, 'Authorization': 'Bearer ' + currentUser.access_token, 'Content-Type': 'application/json'},
+      body: JSON.stringify({password: np})
+    });
+    okEl.classList.add('show');
+    document.getElementById('new-password').value = '';
+    document.getElementById('confirm-password').value = '';
+    setTimeout(function(){ okEl.classList.remove('show'); }, 3000);
+  } catch(e) {
+    errEl.textContent = 'Kunne ikke endre passord.'; errEl.style.display = 'block'; errEl.classList.add('show');
+  }
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById(id).classList.add('active');
+}
+
+function switchTab(tab) {
+  var tabs = ['kalender','dagbok','uke','tester','grafer','ferdigheter','fokus','samtaler','profil'];
+  document.querySelectorAll('.nav-tab').forEach(function(t, i){ t.classList.toggle('active', tabs[i] === tab); });
+  document.querySelectorAll('.tab-content').forEach(function(c){ c.classList.remove('active'); });
+  document.getElementById('tab-' + tab).classList.add('active');
+  if (tab === 'kalender') loadCalendar();
+  if (tab === 'dagbok') renderACWR();
+  if (tab === 'uke') renderWeeklySummary();
+  if (tab === 'grafer') renderGraphs();
+  if (tab === 'tester') { renderTestHistory(); updateProgressBars(); }
+  if (tab === 'ferdigheter') renderSkillsHistory();
+  if (tab === 'samtaler') loadConvList();
+  if (tab === 'profil') renderProfil();
+}
+
+function setDefaultDates() {
+  var today = new Date().toISOString().split('T')[0];
+  ['session-date','test-date','focus-from'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.value = today;
+  });
+  updateFocusTo();
+}
+
+function getWeekLoad(weeksBack) {
+  var now = new Date();
+  var ws = new Date(now);
+  ws.setDate(ws.getDate() - (7 * weeksBack) - ((ws.getDay() + 6) % 7));
+  ws.setHours(0, 0, 0, 0);
+  var we = new Date(ws);
+  we.setDate(we.getDate() + 6);
+  we.setHours(23, 59, 59, 999);
+  return (allSessions || []).filter(function(x) {
+    var d = new Date(x.date);
+    return d >= ws && d <= we;
+  }).reduce(function(a, x) { return a + x.load; }, 0);
+}
+
+function getACWR() {
+  var acute = getWeekLoad(0);
+  var chronic = [1,2,3,4,5,6].reduce(function(a, w) { return a + getWeekLoad(w); }, 0) / 6;
+  if (!chronic) return null;
+  return Math.round((acute / chronic) * 100) / 100;
+}
+
+function getWeekNum(d) {
+  var date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  var day = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - day);
+  var ys = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  return Math.ceil((((date - ys) / 86400000) + 1) / 7);
+}
+
+function updateLoad() {
+  var dur = parseInt(document.getElementById('session-dur').value);
+  var rpe = parseInt(document.getElementById('session-rpe').value);
+  document.getElementById('sl-val').textContent = dur * rpe;
+  document.getElementById('wl-val').textContent = getWeekLoad(0) || '0';
+}
+
+function renderACWR() {
+  var acwr = getACWR();
+  var box = document.getElementById('acwr-display');
+  var alertEl = document.getElementById('load-alert');
+  if (!acwr) {
+    box.innerHTML = '<div class="acwr-box green"><div class="acwr-num">-</div><div style="flex:1"><div class="acwr-lbl">Ingen data enda</div><div class="acwr-desc">Logg de f\u00f8rste \u00f8ktene for \u00e5 beregne belastningsforhold</div></div></div>';
+    alertEl.classList.remove('show');
+  } else {
+    var cls = acwr <= 1.3 ? 'green' : acwr <= 1.5 ? 'yellow' : 'red';
+    var label = acwr <= 1.3 ? 'Optimal sone' : acwr <= 1.5 ? '\u00d8kt risiko' : 'H\u00f8y risiko';
+    var desc = acwr <= 1.3 ? 'Belastningen er godt balansert' : acwr <= 1.5 ? 'Ukesbelastningen er h\u00f8yere enn normalt' : 'Akutt belastning er mye h\u00f8yere enn kronisk';
+    box.innerHTML = '<div class="acwr-box ' + cls + '"><div class="acwr-num">' + acwr.toFixed(2) + '</div><div style="flex:1"><div class="acwr-lbl">' + label + '</div><div class="acwr-desc">' + desc + '</div></div></div>';
+    if (acwr > 1.5) {
+      document.getElementById('load-alert-msg').textContent = 'ACWR er ' + acwr.toFixed(2) + '. Vurder roligere trening de neste dagene.';
+      alertEl.classList.add('show');
+    } else {
+      alertEl.classList.remove('show');
+    }
+  }
+  renderWeekBars();
+  updateLoad();
+}
+
+function renderWeekBars() {
+  var loads = [];
+  for (var i = 5; i >= 0; i--) loads.push(getWeekLoad(i));
+  var max = Math.max.apply(null, loads.concat([1]));
+  var now = new Date();
+  var barsEl = document.getElementById('week-bars');
+  var labsEl = document.getElementById('week-labels');
+  var barsHtml = '';
+  var labsHtml = '';
+  for (var j = 0; j < loads.length; j++) {
+    var h = Math.max(3, Math.round((loads[j] / max) * 68));
+    barsHtml += '<div class="week-bar ' + (j === 5 ? 'current' : '') + '" style="height:' + h + 'px" title="' + loads[j] + ' AU"></div>';
+    var d = new Date(now);
+    d.setDate(d.getDate() - (5 - j) * 7);
+    labsHtml += '<span>U' + getWeekNum(d) + '</span>';
+  }
+  barsEl.innerHTML = barsHtml;
+  labsEl.innerHTML = labsHtml;
+}
+
+async function logSession() {
+  var dur = parseInt(document.getElementById('session-dur').value);
+  var rpe = parseInt(document.getElementById('session-rpe').value);
+  var entry = {
+    user_id: currentProfile.id,
+    date: document.getElementById('session-date').value,
+    type: document.getElementById('session-type').value,
+    duration: dur, rpe: rpe, load: dur * rpe,
+    comment: document.getElementById('session-comment').value || null
+  };
+  await api('POST', 'sessions', entry);
+  allSessions.push(entry);
+  document.getElementById('session-comment').value = '';
+  showToast(); renderACWR();
+}
+
+function renderWeeklySummary() {
+  var now = new Date();
+  var ws = new Date(now);
+  ws.setDate(ws.getDate() - ((ws.getDay() + 6) % 7));
+  ws.setHours(0, 0, 0, 0);
+  var we = new Date(ws);
+  we.setDate(we.getDate() + 6);
+  we.setHours(23, 59, 59, 999);
+  var thisWeek = allSessions.filter(function(x) {
+    var d = new Date(x.date);
+    return d >= ws && d <= we;
+  });
+  var totalLoad = thisWeek.reduce(function(a, x) { return a + x.load; }, 0);
+  var acwr = getACWR();
+  var today = new Date().toISOString().split('T')[0];
+  var fps = allFocusPeriods.filter(function(fp) { return fp.from_date <= today && fp.to_date >= today; });
+  var el = document.getElementById('uke-content');
+  var html = '<div class="metric-grid">'
+    + '<div class="metric-card"><div class="ml">Ukesbelastning</div><div class="mv">' + totalLoad + '</div><div class="mu">AU</div></div>'
+    + '<div class="metric-card"><div class="ml">Antall \u00f8kter</div><div class="mv">' + thisWeek.length + '</div></div>'
+    + '<div class="metric-card"><div class="ml">ACWR</div><div class="mv">' + (acwr ? acwr.toFixed(2) : '-') + '</div></div>'
+    + '<div class="metric-card"><div class="ml">Aktive fokus</div><div class="mv">' + fps.length + '</div></div>'
+    + '</div>';
+  html += '<div class="card"><div class="sec-title">Denne uken (U' + getWeekNum(now) + ')</div>';
+  if (thisWeek.length) {
+    thisWeek.forEach(function(s) {
+      html += '<div class="wsi"><div><span class="stb">' + s.type + '</span><div style="font-size:12px;color:var(--text-muted);margin-top:3px">' + s.date + ' - ' + s.duration + ' min - RPE ' + s.rpe + '</div>' + (s.comment ? '<div style="font-size:12px;color:var(--text);margin-top:3px;font-style:italic">"' + s.comment + '"</div>' : '') + '</div><div style="font-weight:700;color:var(--blue);font-size:14px">' + s.load + ' AU</div></div>';
+    });
+  } else {
+    html += '<div style="font-size:13px;color:var(--text-muted);padding:.5rem 0">Ingen \u00f8kter logget denne uken enda</div>';
+  }
+  html += '</div>';
+  if (fps.length) {
+    html += '<div class="card"><div class="sec-title">Aktive fokusperioder</div>';
+    fps.forEach(function(fp) {
+      html += '<div style="margin-bottom:8px"><div style="font-weight:600;font-size:14px;color:var(--blue)">' + (fp.krav_labels || []).join(' - ') + '</div><div style="font-size:12px;color:var(--text-muted)">' + fp.from_date + ' til ' + fp.to_date + '</div>' + (fp.what ? '<div style="font-size:13px;margin-top:4px">' + fp.what + '</div>' : '') + '</div>';
+    });
+    html += '</div>';
+  }
+  el.innerHTML = html;
+}
+
+async function saveTests() {
+  var entry = {
+    user_id: currentProfile.id,
+    date: document.getElementById('test-date').value,
+    bench: parseFloat(document.getElementById('t-bench').value) || null,
+    squat: parseFloat(document.getElementById('t-squat').value) || null,
+    clean: parseFloat(document.getElementById('t-clean').value) || null,
+    hangup: parseFloat(document.getElementById('t-hangup').value) || null,
+    beep: document.getElementById('t-beep').value || null,
+    s20: parseFloat(document.getElementById('t-s20').value) || null,
+    s40: parseFloat(document.getElementById('t-s40').value) || null,
+    jump: parseFloat(document.getElementById('t-jump').value) || null
+  };
+  await api('POST', 'tests', entry);
+  allTests.unshift(entry);
+  showToast(); renderTestHistory(); updateProgressBars();
+}
+
+async function saveGoals() {
+  var goals = {
+    user_id: currentProfile.id,
+    bench: parseFloat(document.getElementById('g-bench').value) || null,
+    squat: parseFloat(document.getElementById('g-squat').value) || null,
+    clean: parseFloat(document.getElementById('g-clean').value) || null,
+    hangup: parseFloat(document.getElementById('g-hangup').value) || null,
+    beep: document.getElementById('g-beep').value || null,
+    s20: parseFloat(document.getElementById('g-s20').value) || null,
+    s40: parseFloat(document.getElementById('g-s40').value) || null,
+    jump: parseFloat(document.getElementById('g-jump').value) || null
+  };
+  var token = currentUser && currentUser.access_token ? currentUser.access_token : SB_KEY;
+  await fetch(SB_URL + '/rest/v1/test_goals?on_conflict=user_id', {
+    method: 'POST',
+    headers: {
+      'apikey': SB_KEY,
+      'Authorization': 'Bearer ' + token,
+      'Content-Type': 'application/json',
+      'Prefer': 'resolution=merge-duplicates,return=representation'
+    },
+    body: JSON.stringify(goals)
+  });
+  testGoals = goals; showToast(); updateProgressBars();
+}
+
+function renderTestHistory() {
+  var el = document.getElementById('test-history');
+  if (!el || !allTests.length) { if (el) el.innerHTML = ''; return; }
+  var latest = allTests[0];
+  var fields = [['bench','Benkpress','kg'],['squat','Kneb\u00f8y','kg'],['clean','Frivending','kg'],['hangup','Hang ups','reps'],['beep','Beep test',''],['s20','Sprint 20m','s'],['s40','Sprint 40m','s'],['jump','Sergeant jump','cm']];
+  var html = '<div class="sec-title" style="margin-top:1rem">Siste testresultater (' + latest.date + ')</div><div class="metric-grid">';
+  fields.forEach(function(arr) {
+    if (!latest[arr[0]]) return;
+    html += '<div class="metric-card"><div class="ml">' + arr[1] + '</div><div class="mv">' + latest[arr[0]] + '<span class="mu">' + (arr[2] ? ' ' + arr[2] : '') + '</span></div>' + (testGoals[arr[0]] ? '<div style="font-size:11px;color:var(--text-muted)">M\u00e5l: ' + testGoals[arr[0]] + (arr[2] ? ' ' + arr[2] : '') + '</div>' : '') + '</div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function destroyCharts() {
+  Object.values(chartInstances).forEach(function(c) { try { c.destroy(); } catch(e) {} });
+  chartInstances = {};
+}
+
+function makeLegend(id, datasets) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = datasets.map(function(d) {
+    return '<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:3px;background:' + d.borderColor + ';display:inline-block;border-radius:2px"></span><span style="color:var(--text-muted)">' + d.label + '</span></span>';
+  }).join('');
+}
+
+function renderGraphs() {
+  destroyCharts();
+  var loads = [];
+  for (var i = 9; i >= 0; i--) loads.push(getWeekLoad(i));
+  var now = new Date();
+  var wLabels = [];
+  for (var j = 9; j >= 0; j--) {
+    var d = new Date(now);
+    d.setDate(d.getDate() - j * 7);
+    wLabels.push('U' + getWeekNum(d));
+  }
+  chartInstances.load = new Chart(document.getElementById('g-load'), {
+    type: 'bar',
+    data: {
+      labels: wLabels,
+      datasets: [{
+        label: 'AU',
+        data: loads,
+        backgroundColor: loads.map(function(_, i) { return i === 9 ? '#002F6C' : '#A8BFE0'; }),
+        borderRadius: 3
+      }]
+    },
+    options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {display: false}}, scales: {y: {beginAtZero: true, ticks: {font: {size: 10}}}, x: {ticks: {font: {size: 10}}}}}
+  });
+
+  if (allTests.length >= 2) {
+    var sorted = allTests.slice().reverse();
+    var sDS = [
+      {label: 'Benkpress', data: sorted.map(function(t) { return t.bench; }), borderColor: '#002F6C', tension: .3, pointRadius: 4, fill: false},
+      {label: 'Kneb\u00f8y', data: sorted.map(function(t) { return t.squat; }), borderColor: '#E8B84B', tension: .3, pointRadius: 4, fill: false, borderDash: [4,4]},
+      {label: 'Frivending', data: sorted.map(function(t) { return t.clean; }), borderColor: '#1D9E75', tension: .3, pointRadius: 4, fill: false, borderDash: [2,3]}
+    ];
+    makeLegend('g-sl', sDS);
+    chartInstances.strength = new Chart(document.getElementById('g-strength'), {
+      type: 'line',
+      data: {labels: sorted.map(function(t) { return t.date; }), datasets: sDS},
+      options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {display: false}}, scales: {y: {ticks: {font: {size: 10}}}, x: {ticks: {font: {size: 10}}}}}
+    });
+    var pDS = [
+      {label: 'Sergeant jump', data: sorted.map(function(t) { return t.jump; }), borderColor: '#002F6C', tension: .3, pointRadius: 4, fill: false},
+      {label: 'Sprint 20m', data: sorted.map(function(t) { return t.s20; }), borderColor: '#E24B4A', tension: .3, pointRadius: 4, fill: false, borderDash: [4,4]},
+      {label: 'Hang ups', data: sorted.map(function(t) { return t.hangup; }), borderColor: '#1D9E75', tension: .3, pointRadius: 4, fill: false, borderDash: [2,3]}
+    ];
+    makeLegend('g-pl', pDS);
+    chartInstances.physical = new Chart(document.getElementById('g-physical'), {
+      type: 'line',
+      data: {labels: sorted.map(function(t) { return t.date; }), datasets: pDS},
+      options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {display: false}}, scales: {y: {ticks: {font: {size: 10}}}, x: {ticks: {font: {size: 10}}}}}
+    });
+  }
+
+  var saved = allSkills.length ? (allSkills[allSkills.length - 1].data || {}) : {};
+  var sport = currentProfile.sport || 'H\u00e5ndball';
+  var sportCats = getSportCats(sport);
+  function catAvg(items, key) {
+    var vals = items.map(function(x) { return parseInt(saved[key + '_' + skk(x)]) || 5; });
+    return Math.round(vals.reduce(function(a,b){return a+b;},0)/vals.length * 10)/10;
+  }
+  var radarLabels = sportCats.map(function(c){return c.label.replace('Tekniske ferdigheter \u2013 ','').replace('Forst\u00e5else og ','');});
+  radarLabels.push('Psykologisk/sosialt','Holdninger/livsstil');
+  var radarData = sportCats.map(function(c){return catAvg(c.items,c.key);});
+  radarData.push(catAvg(SP,'psyk'), catAvg(SL,'livsstil'));
+  chartInstances.radar = new Chart(document.getElementById('g-radar'), {
+    type: 'radar',
+    data: {
+      labels: radarLabels,
+      datasets: [{label: 'Ferdigheter', data: radarData, backgroundColor: 'rgba(0,47,108,0.15)', borderColor: '#002F6C', pointBackgroundColor: '#E8B84B', pointRadius: 5, pointHoverRadius: 7}]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {legend: {display: false}},
+      scales: {r: {min: 0, max: 10, ticks: {stepSize: 2, font: {size: 11}}, pointLabels: {font: {size: 13, weight: 'bold'}}}}
+    }
+  });
+}
+
+function skk(n) { return n.replace(/\W/g, '_'); }
+
+function renderSkillSliders() {
+  var sport = currentProfile.sport || 'H\u00e5ndball';
+  var sportCats = getSportCats(sport);
+  var saved = allSkills.length ? (allSkills[allSkills.length - 1].data || {}) : {};
+  var container = document.getElementById('sport-skills-container');
+  if (!container) return;
+
+  var html = '';
+  sportCats.forEach(function(cat) {
+    html += '<div class="card"><div class="sec-title">' + cat.label + '</div>';
+    cat.items.forEach(function(item) {
+      var k = cat.key + '_' + skk(item);
+      var val = saved[k] || 5;
+      html += '<div class="slider-group"><div class="slider-row"><span style="font-size:13px">' + item + '</span><strong id="sv_' + k + '">' + val + '</strong></div>'
+        + '<input type="range" min="1" max="10" step="1" value="' + val + '" oninput="document.getElementById(\'sv_' + k + '\').textContent=this.value" data-key="' + k + '" data-cat="' + cat.key + '"></div>';
+    });
+    html += '</div>';
+  });
+
+  // Psyk and Livsstil always shown
+  html += '<div class="card"><div class="sec-title">Psykologisk og sosialt</div>';
+  SP.forEach(function(item) {
+    var k = 'psyk_' + skk(item); var val = saved[k] || 5;
+    html += '<div class="slider-group"><div class="slider-row"><span style="font-size:13px">' + item + '</span><strong id="sv_' + k + '">' + val + '</strong></div>'
+      + '<input type="range" min="1" max="10" step="1" value="' + val + '" oninput="document.getElementById(\'sv_' + k + '\').textContent=this.value;updateCatAvg(\'psyk\')" data-key="' + k + '" data-cat="psyk"></div>';
+  });
+  html += '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">'
+    + '<span style="font-size:13px;color:var(--text-muted);font-weight:600">Snittsk\u00e5r</span>'
+    + '<span class="score-badge" id="psyk-avg">-</span></div></div>';
+
+  html += '<div class="card"><div class="sec-title">Holdninger og livsstil</div>';
+  SL.forEach(function(item) {
+    var k = 'livsstil_' + skk(item); var val = saved[k] || 5;
+    html += '<div class="slider-group"><div class="slider-row"><span style="font-size:13px">' + item + '</span><strong id="sv_' + k + '">' + val + '</strong></div>'
+      + '<input type="range" min="1" max="10" step="1" value="' + val + '" oninput="document.getElementById(\'sv_' + k + '\').textContent=this.value;updateCatAvg(\'livsstil\')" data-key="' + k + '" data-cat="livsstil"></div>';
+  });
+  html += '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">'
+    + '<span style="font-size:13px;color:var(--text-muted);font-weight:600">Snittsk\u00e5r</span>'
+    + '<span class="score-badge" id="livsstil-avg">-</span></div></div>';
+
+  container.innerHTML = html;
+  updateCatAvg('psyk');
+  updateCatAvg('livsstil');
+}
+
+function updateCatAvg(catKey) {
+  var inputs = document.querySelectorAll('input[data-cat="' + catKey + '"]');
+  if (!inputs.length) return;
+  var total = 0;
+  inputs.forEach(function(x) { total += parseInt(x.value); });
+  var avg = (total / inputs.length).toFixed(1);
+  var el = document.getElementById(catKey + '-avg');
+  if (el) el.textContent = avg;
+}
+
+async function saveSkills() {
+  var data = {};
+  document.querySelectorAll('#tab-ferdigheter input[type=range]').forEach(function(el) {
+    data[el.dataset.key] = parseInt(el.value);
+  });
+  var entry = {user_id: currentProfile.id, date: new Date().toISOString().split('T')[0], data: data};
+  await api('POST', 'skills', entry);
+  allSkills.push(entry);
+  showToast(); renderSkillsHistory();
+}
+
+function renderSkillsHistory() {
+  var el = document.getElementById('skills-history');
+  if (!el) return;
+  if (!allSkills.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen selvvurderinger levert enda</div>'; renderSkillsProgress(); return; }
+  var sport = currentProfile.sport || 'H\u00e5ndball';
+  var sportCats = getSportCats(sport);
+  var allCats = sportCats.concat([{key:'psyk',label:'Psyk',items:SP},{key:'livsstil',label:'Livsstil',items:SL}]);
+  el.innerHTML = allSkills.slice().reverse().map(function(s, idx) {
+    var isLatest = idx === 0;
+    var allItems = allCats.reduce(function(a,c){return a.concat(c.items);}, []);
+    var allVals = allItems.map(function(x) {
+      for (var i=0;i<allCats.length;i++){var v=s.data[allCats[i].key+'_'+skk(x)];if(v)return parseInt(v);}
+      return 5;
+    });
+    var avg = (allVals.reduce(function(a,x){return a+x;},0)/allVals.length).toFixed(1);
+    var catHtml = allCats.map(function(cat) {
+      var cv = (cat.items.map(function(x){return parseInt(s.data[cat.key+'_'+skk(x)])||5;}).reduce(function(a,x){return a+x;},0)/cat.items.length).toFixed(1);
+      return '<span style="font-size:12px;background:var(--bg2);border:1px solid var(--border);border-radius:5px;padding:2px 7px">' + cat.label + ': <strong style="color:var(--blue)">' + cv + '</strong></span>';
+    }).join('');
+    return '<div class="shi"><div class="shi-date">' + s.date + (isLatest ? ' \u2013 Siste' : '') + ' \u2013 Snitt: ' + avg + '</div><div style="display:flex;flex-wrap:wrap;gap:6px">' + catHtml + '</div></div>';
+  }).join('');
+  renderSkillsProgress();
+}
+
+function renderSkillsProgress() {
+  var canvas = document.getElementById('g-sp');
+  var emptyEl = document.getElementById('g-sp-empty');
+  if (allSkills.length < 2) { if(canvas)canvas.style.display = 'none'; if(emptyEl)emptyEl.style.display = 'block'; return; }
+  if(canvas)canvas.style.display = 'block'; if(emptyEl)emptyEl.style.display = 'none';
+  try { chartInstances.skillsProg.destroy(); } catch(e) {}
+  var sport = currentProfile.sport || 'H\u00e5ndball';
+  var sportCats = getSportCats(sport);
+  var first = allSkills[0].data || {};
+  var last = allSkills[allSkills.length - 1].data || {};
+  var allItems = sportCats.reduce(function(a,cat){
+    return a.concat(cat.items.map(function(x){return {k:cat.key+'_'+skk(x),lbl:x.substring(0,16)};}));
+  },[]);
+  chartInstances.skillsProg = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: allItems.map(function(x) { return x.lbl; }),
+      datasets: [
+        {label: 'F\u00f8rste (' + allSkills[0].date + ')', data: allItems.map(function(x) { return parseInt(first[x.k]) || 5; }), backgroundColor: 'rgba(0,47,108,0.3)', borderColor: '#002F6C', borderWidth: 1},
+        {label: 'Siste (' + allSkills[allSkills.length - 1].date + ')', data: allItems.map(function(x) { return parseInt(last[x.k]) || 5; }), backgroundColor: 'rgba(232,184,75,0.5)', borderColor: '#E8B84B', borderWidth: 1}
+      ]
+    },
+    options: {indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:true,labels:{font:{size:11},boxWidth:12}}}, scales:{x:{min:0,max:10,ticks:{font:{size:10}}},y:{ticks:{font:{size:10}}}}}
+  });
+}
+
+var selectedFokus = [];
+
+function renderFocusKravGrid() {
+  selectedFokus = [];
+  var sport = currentProfile ? (currentProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball';
+  var sportCats = getSportCats(sport);
+
+  // Render sport-specific sections
+  var sectEl = document.getElementById('focus-sport-sections');
+  if (sectEl) {
+    var html = '';
+    sportCats.forEach(function(cat) {
+      html += '<div class="focus-sec-title">' + cat.label + '</div><div id="focus-krav-' + cat.key + '"></div>';
+    });
+    sectEl.innerHTML = html;
+    sportCats.forEach(function(cat) {
+      var el = document.getElementById('focus-krav-' + cat.key);
+      if (!el) return;
+      el.innerHTML = cat.items.map(function(item) {
+        var id = cat.key + '_' + skk(item);
+        return '<div class="fci" id="fki_' + id + '" onclick="toggleFocusKrav(\'' + id + '\')"><div class="fci-check" id="fkc_' + id + '"></div><span>' + item + '</span></div>';
+      }).join('');
+    });
+  }
+
+  // Render fysisk section
+  var el = document.getElementById('focus-krav-fysisk');
+  if (el) {
+    el.innerHTML = FFYS.map(function(item) {
+      var id = 'p_' + skk(item);
+      return '<div class="fci" id="fki_' + id + '" onclick="toggleFocusKrav(\'' + id + '\')"><div class="fci-check" id="fkc_' + id + '"></div><span>' + item + '</span></div>';
+    }).join('');
+  }
+}
+
+function toggleFocusKrav(id) {
+  var item = document.getElementById('fki_' + id);
+  var chk = document.getElementById('fkc_' + id);
+  var idx = selectedFokus.indexOf(id);
+  if (idx > -1) {
+    selectedFokus.splice(idx, 1);
+    item.classList.remove('selected');
+    chk.textContent = '';
+    document.querySelectorAll('.fci').forEach(function(el) { el.classList.remove('disabled'); });
+  } else {
+    if (selectedFokus.length >= 3) return;
+    selectedFokus.push(id);
+    item.classList.add('selected');
+    chk.textContent = '\u2713';
+    if (selectedFokus.length >= 3) {
+      document.querySelectorAll('.fci').forEach(function(el) {
+        if (selectedFokus.indexOf(el.id.replace('fki_','')) === -1) el.classList.add('disabled');
+      });
+    }
+  }
+}
+
+function updateFocusTo() {
+  var from = document.getElementById('focus-from');
+  var weeks = parseInt(document.getElementById('focus-weeks').value || 4);
+  if (from && from.value) {
+    var d = new Date(from.value);
+    d.setDate(d.getDate() + weeks * 7);
+    document.getElementById('focus-to-display').textContent = d.toISOString().split('T')[0];
+  }
+}
+
+async function saveFocusPeriod() {
+  var selectedIds = selectedFokus.slice();
+  if (!selectedIds.length) { alert('Velg minst ett fokusomr\u00e5de'); return; }
+  var fromVal = document.getElementById('focus-from').value;
+  if (!fromVal) { alert('Velg en startdato'); return; }
+  var weeks = parseInt(document.getElementById('focus-weeks').value);
+  var d = new Date(fromVal); d.setDate(d.getDate() + weeks * 7);
+  var allKrav = [].concat(FOKUS_KRAV.angrep, FOKUS_KRAV.forsvar, FOKUS_KRAV.taktikk, FOKUS_KRAV.fysisk);
+  var kravLabels = selectedIds.map(function(id) { var k = allKrav.find(function(k) { return k.id === id; }); return k ? k.label : id; });
+  var editId = document.getElementById('focus-edit-id').value;
+  var entry = {
+    user_id: currentProfile.id,
+    from_date: fromVal,
+    to_date: d.toISOString().split('T')[0],
+    weeks: weeks,
+    krav_ids: selectedIds,
+    krav_labels: kravLabels,
+    what: document.getElementById('focus-what').value,
+    how: document.getElementById('focus-how').value
+  };
+  if (editId) {
+    await api('PATCH', 'focus_periods?id=eq.' + editId, entry);
+  } else {
+    await api('POST', 'focus_periods', entry);
+  }
+  document.getElementById('focus-what').value = '';
+  document.getElementById('focus-how').value = '';
+  cancelFocusEdit();
+  await loadFocusPeriods();
+  showToast();
+}
+
+function cancelFocusEdit() {
+  document.getElementById('focus-form-title').textContent = 'Ny fokusperiode';
+  document.getElementById('focus-edit-id').value = '';
+  document.getElementById('focus-cancel-btn').style.display = 'none';
+  document.getElementById('focus-what').value = '';
+  document.getElementById('focus-how').value = '';
+  renderFocusKravGrid();
+}
+
+function editFocusPeriod(id, fromDate, weeks, what, how, kravIds) {
+  document.getElementById('focus-edit-id').value = id;
+  document.getElementById('focus-form-title').textContent = 'Rediger fokusperiode';
+  document.getElementById('focus-from').value = fromDate;
+  document.getElementById('focus-weeks').value = weeks;
+  document.getElementById('focus-what').value = what || '';
+  document.getElementById('focus-how').value = how || '';
+  document.getElementById('focus-cancel-btn').style.display = 'block';
+  updateFocusTo();
+  renderFocusKravGrid();
+  if (kravIds && kravIds.length) {
+    kravIds.forEach(function(kid) {
+      var item = document.getElementById('fki_' + kid);
+      var chk = document.getElementById('fkc_' + kid);
+      if (item) {
+        selectedFokus.push(kid);
+        item.classList.add('selected');
+        if (chk) chk.textContent = '\u2713';
+      }
+    });
+    if (selectedFokus.length >= 3) {
+      document.querySelectorAll('.fci').forEach(function(el) {
+        if (selectedFokus.indexOf(el.id.replace('fki_','')) === -1) el.classList.add('disabled');
+      });
+    }
+  }
+  document.getElementById('focus-form-card').scrollIntoView({behavior: 'smooth'});
+}
+
+async function deleteFocusPeriod(id) {
+  if (!confirm('Slette denne fokusperioden?')) return;
+  await api('DELETE', 'focus_periods?id=eq.' + id);
+  await loadFocusPeriods();
+  showToast();
+}
+
+async function saveProgressNote(id) {
+  var note = document.getElementById('pn_' + id).value;
+  await api('PATCH', 'focus_periods?id=eq.' + id, {progress_note: note});
+  showToast();
+}
+
+async function loadFocusPeriods() {
+  var fps = await api('GET', 'focus_periods?user_id=eq.' + currentProfile.id + '&order=created_at.desc&select=*');
+  allFocusPeriods = fps || [];
+  renderFocusList(allFocusPeriods);
+}
+
+function renderFocusList(fps) {
+  var el = document.getElementById('focus-list');
+  if (!el) return;
+  if (!fps.length) { el.innerHTML = ''; return; }
+  var today = new Date().toISOString().split('T')[0];
+  var html = '';
+  fps.forEach(function(fp) {
+    var active = fp.from_date <= today && fp.to_date >= today;
+    var kravIds = fp.krav_ids ? JSON.stringify(fp.krav_ids) : '[]';
+    html += '<div class="focus-period ' + (active ? 'active-p' : '') + '">';
+    html += '<div class="period-hdr"><div class="period-title">' + (fp.krav_labels || []).join(' - ') + '</div><span class="badge ' + (active ? 'badge-active' : 'badge-done') + '">' + (active ? 'Aktiv' : 'Avsluttet') + '</span></div>';
+    html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">' + fp.from_date + ' til ' + fp.to_date + ' (' + fp.weeks + ' uker)</div>';
+    if (fp.krav_labels) fp.krav_labels.forEach(function(l) { html += '<span class="ftag">' + l + '</span>'; });
+    if (fp.what) html += '<div style="margin-top:8px"><div style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:2px">HVA</div><div style="font-size:13px">' + fp.what + '</div></div>';
+    if (fp.how) html += '<div style="margin-top:6px"><div style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:2px">HVORDAN</div><div style="font-size:13px">' + fp.how + '</div></div>';
+    html += '<div style="margin-top:10px"><div style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:4px">PROGRESJONSNOTAT</div>';
+    html += '<textarea id="pn_' + fp.id + '" rows="2" style="font-size:13px;width:100%;border:1.5px solid var(--border);border-radius:7px;padding:7px 9px;background:var(--bg);color:var(--text);font-family:inherit;outline:none;resize:vertical" placeholder="Skriv et notat om fremgangen din...">' + (fp.progress_note || '') + '</textarea>';
+    html += '<button class="btn-sm-blue" style="margin-top:4px" onclick="saveProgressNote(\'' + fp.id + '\')">Lagre notat</button></div>';
+    html += '<div style="display:flex;gap:8px;margin-top:10px">';
+    html += '<button class="btn-sm" onclick="editFocusPeriod(\'' + fp.id + '\',\'' + fp.from_date + '\',' + fp.weeks + ',' + JSON.stringify(fp.what || '') + ',' + JSON.stringify(fp.how || '') + ',' + kravIds + ')">Rediger</button>';
+    html += '<button class="btn-sm" style="color:var(--red)" onclick="deleteFocusPeriod(\'' + fp.id + '\')">Slett</button>';
+    html += '</div></div>';
+  });
+  el.innerHTML = html;
+}
+
+async function loadConvList() {
+  var convs = await api('GET', 'conversations?user_id=eq.' + currentProfile.id + '&order=date.desc&select=*');
+  var el = document.getElementById('conv-list');
+  var emptyEl = document.getElementById('conv-empty');
+  if (!convs || !convs.length) { el.innerHTML = ''; emptyEl.style.display = 'block'; return; }
+  emptyEl.style.display = 'none';
+  var html = '<div class="card">';
+  convs.forEach(function(c) {
+    html += '<div class="conv-item"><div class="conv-meta">' + c.date + ' - ' + c.type + '</div><div class="conv-text">' + c.text + '</div><div class="conv-author">' + c.author + '</div></div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function renderProfil() {
+  var p = currentProfile;
+  document.getElementById('profil-info').innerHTML = '<div class="metric-grid">'
+    + '<div class="metric-card"><div class="ml">Navn</div><div style="font-size:15px;font-weight:700;color:var(--blue)">' + p.full_name + '</div></div>'
+    + '<div class="metric-card"><div class="ml">Klasse</div><div style="font-size:15px;font-weight:700;color:var(--blue)">' + p.class + '</div></div>'
+    + '<div class="metric-card"><div class="ml">Posisjon</div><div style="font-size:15px;font-weight:700;color:var(--blue)">' + p.position + '</div></div>'
+    + '<div class="metric-card"><div class="ml">Idrett</div><div style="font-size:15px;font-weight:700;color:var(--blue)">' + (p.sport||'H\u00e5ndball') + '</div></div>'
+    + '<div class="metric-card"><div class="ml">Totalt \u00f8kter</div><div class="mv">' + allSessions.length + '</div></div>'
+    + '</div>';
+  // Load club info
+  document.getElementById('club-name').value = p.club_name || '';
+  document.getElementById('club-coach-name').value = p.club_coach_name || '';
+  document.getElementById('club-coach-phone').value = p.club_coach_phone || '';
+  document.getElementById('club-coach-email').value = p.club_coach_email || '';
+}
+
+async function saveClubInfo() {
+  var update = {
+    club_name: document.getElementById('club-name').value,
+    club_coach_name: document.getElementById('club-coach-name').value,
+    club_coach_phone: document.getElementById('club-coach-phone').value,
+    club_coach_email: document.getElementById('club-coach-email').value
+  };
+  await api('PATCH', 'profiles?id=eq.' + currentProfile.id, update);
+  Object.assign(currentProfile, update);
+  var ok = document.getElementById('club-save-ok');
+  ok.classList.add('show');
+  setTimeout(function(){ ok.classList.remove('show'); }, 2000);
+}
+
+function updateStudentPositions() {
+  var sport = document.getElementById('new-student-sport').value;
+  var sel = document.getElementById('new-student-pos');
+  if (sel) sel.innerHTML = getSportPositions(sport).map(function(p){ return '<option>'+p+'</option>'; }).join('');
+}
+
+async function loadTrainerView() {
+  document.getElementById('tr-loading').style.display = 'block';
+  document.getElementById('tr-table').style.display = 'none';
+  await loadGroups();
+  await loadEvents();
+  var today = new Date().toISOString().split('T')[0];
+  document.getElementById('ev-date').value = today;
+  var trainerSport = trainerProfile ? (trainerProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball';
+  document.getElementById('tr-sport-label').textContent = trainerSport;
+  // Set sport default for new student form
+  var sportSel = document.getElementById('new-student-sport');
+  if (sportSel) { sportSel.value = trainerSport; updateStudentPositions(); }
+  var profiles = await api('GET', 'profiles?is_trainer=eq.false&is_superuser=eq.false&sport=eq.' + encodeURIComponent(trainerSport) + '&order=full_name.asc&select=*');
+  var sel = document.getElementById('tr-conv-player');
+  sel.innerHTML = profiles.map(function(p) { return '<option value="' + p.id + '">' + p.full_name + '</option>'; }).join('');
+  var overload = 0; var missing = 0; var logged = 0;
+  var alerts = '';
+  var rows = await Promise.all(profiles.map(async function(p) {
+    var results = await Promise.all([
+      api('GET', 'sessions?user_id=eq.' + p.id + '&order=date.asc&select=*'),
+      api('GET', 'tests?user_id=eq.' + p.id + '&order=date.desc&limit=1&select=*')
+    ]);
+    var pS = results[0] || [];
+    var pT = results[1] || [];
+    var now = new Date();
+    var ws = new Date(now); ws.setDate(ws.getDate() - ((ws.getDay() + 6) % 7)); ws.setHours(0, 0, 0, 0);
+    var we = new Date(ws); we.setDate(we.getDate() + 6); we.setHours(23, 59, 59, 999);
+    var thisWeek = pS.filter(function(s) { var d = new Date(s.date); return d >= ws && d <= we; });
+    if (thisWeek.length) logged++;
+    var chronic = 0;
+    for (var w = 1; w <= 6; w++) {
+      var ws2 = new Date(now); ws2.setDate(ws2.getDate() - 7 * w - ((ws2.getDay() + 6) % 7)); ws2.setHours(0, 0, 0, 0);
+      var we2 = new Date(ws2); we2.setDate(we2.getDate() + 6); we2.setHours(23, 59, 59, 999);
+      chronic += pS.filter(function(x) { var d = new Date(x.date); return d >= ws2 && d <= we2; }).reduce(function(a, x) { return a + x.load; }, 0);
+    }
+    chronic = chronic / 6;
+    var acute = thisWeek.reduce(function(a, x) { return a + x.load; }, 0);
+    var acwr = chronic > 0 ? Math.round((acute / chronic) * 100) / 100 : null;
+    var acwrCls = 'g';
+    if (acwr) { if (acwr > 1.5) { acwrCls = 'r'; overload++; } else if (acwr > 1.3) acwrCls = 'y'; }
+    if (acwr && acwr > 1.5) alerts += '<div class="alert alert-red show" style="margin-bottom:.5rem"><div><div class="alert-title">' + p.full_name + '</div><div class="alert-msg">ACWR ' + acwr.toFixed(2) + ' - vurder redusert belastning</div></div></div>';
+    if (!pT.length) missing++;
+    var lastS = pS.length ? pS[pS.length - 1].date : '-';
+    var lastT = pT.length ? pT[0].date : '-';
+    var dot = thisWeek.length ? 'dot-g' : 'dot-y';
+    return '<tr><td><span class="status-dot ' + dot + '"></span>' + p.full_name + '</td><td>' + p.class + '<br><span style="font-size:11px;color:var(--text-muted)">' + (p.sport||'H\u00e5ndball') + (p.group_name ? ' / ' + p.group_name : '') + '</span></td><td><span class="acwr-pill ' + acwrCls + '">' + (acwr ? acwr.toFixed(2) : '-') + '</span></td><td style="font-size:12px">' + lastS + '</td><td style="font-size:12px">' + lastT + '</td><td><button class="btn-sm-blue" onclick="openPlayerAsTrainer(\'' + p.id + '\')">&#197;pne</button> <button class="btn-sm" onclick="startEditStudent(\'' + p.id + '\',\'' + p.full_name.replace(/'/g,"\\'") + '\',\'' + p.class + '\',\'' + p.position + '\',\'' + (p.group_name||'') + '\',\'' + (p.sport||'H\u00e5ndball') + '\')">Rediger</button></td></tr>';
+  }));
+  document.getElementById('trainer-tbody').innerHTML = rows.join('');
+  document.getElementById('tr-total').textContent = profiles.length;
+  document.getElementById('tr-logged').textContent = logged;
+  document.getElementById('tr-overload').textContent = overload;
+  document.getElementById('tr-missing').textContent = missing;
+  document.getElementById('tr-alerts').innerHTML = alerts;
+  document.getElementById('tr-loading').style.display = 'none';
+  document.getElementById('tr-table').style.display = 'table';
+}
+
+async function openPlayerAsTrainer(pid) {
+  var profiles = await api('GET', 'profiles?id=eq.' + pid + '&select=*');
+  isTrainerViewing = true;
+  await openPlayerView(profiles[0]);
+}
+
+async function saveStudent() {
+  var editId = document.getElementById('edit-student-id').value;
+  var name = document.getElementById('new-student-name').value.trim();
+  var email = document.getElementById('new-student-email').value.trim();
+  var cls = document.getElementById('new-student-class').value;
+  var pos = document.getElementById('new-student-pos').value;
+  var pass = document.getElementById('new-student-pass').value;
+  var grp = document.getElementById('new-student-group').value;
+  var spt = document.getElementById('new-student-sport').value;
+  var errEl = document.getElementById('student-error');
+  var okEl = document.getElementById('student-success');
+  errEl.classList.remove('show'); okEl.classList.remove('show');
+  errEl.style.display = 'none';
+  if (!name) { errEl.textContent = 'Navn er p\u00e5krevd.'; errEl.style.display = 'block'; errEl.classList.add('show'); return; }
+  try {
+    if (editId) {
+      await api('PATCH', 'profiles?id=eq.' + editId, {full_name: name, class: cls, position: pos, group_name: grp || null, sport: spt});
+      document.getElementById('student-success-msg').textContent = 'Elev oppdatert!';
+    } else {
+      if (!email) { errEl.textContent = 'E-post er p\u00e5krevd.'; errEl.style.display = 'block'; errEl.classList.add('show'); return; }
+      var adminRes = await fetch(SB_URL + '/auth/v1/admin/users', {
+        method: 'POST',
+        headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
+        body: JSON.stringify({email: email, password: pass, email_confirm: true})
+      });
+      var adminData = await adminRes.json();
+      if (!adminRes.ok || !adminData.id) throw new Error(adminData.message || 'Kunne ikke opprette bruker');
+      await api('POST', 'profiles', {id: adminData.id, full_name: name, class: cls, position: pos, group_name: grp || null, sport: spt, is_trainer: false, is_superuser: false});
+      document.getElementById('student-success-msg').textContent = 'Elev opprettet!';
+    }
+    okEl.classList.add('show');
+    document.getElementById('new-student-name').value = '';
+    document.getElementById('new-student-email').value = '';
+    document.getElementById('new-student-pass').value = 'NTG2026';
+    cancelStudentEdit();
+    setTimeout(function() { okEl.classList.remove('show'); }, 3000);
+    loadTrainerView();
+  } catch(e) {
+    errEl.textContent = 'Feil: ' + e.message; errEl.style.display = 'block'; errEl.classList.add('show');
+  }
+}
+
+function startEditStudent(id, name, cls, pos, grp, spt) {
+  document.getElementById('edit-student-id').value = id;
+  document.getElementById('student-form-title').textContent = 'Rediger elev';
+  document.getElementById('new-student-name').value = name;
+  document.getElementById('new-student-class').value = cls;
+  document.getElementById('new-student-pos').value = pos;
+  document.getElementById('new-student-group').value = grp || '';
+  document.getElementById('new-student-sport').value = spt || 'H\u00e5ndball';
+  document.getElementById('password-field').style.display = 'none';
+  document.getElementById('edit-cancel-btn').style.display = 'block';
+  document.getElementById('student-form-title').scrollIntoView({behavior: 'smooth'});
+}
+
+function cancelStudentEdit() {
+  document.getElementById('edit-student-id').value = '';
+  document.getElementById('student-form-title').textContent = 'Opprett elev';
+  document.getElementById('new-student-name').value = '';
+  document.getElementById('new-student-email').value = '';
+  document.getElementById('new-student-pass').value = 'NTG2026';
+  document.getElementById('password-field').style.display = 'block';
+  document.getElementById('edit-cancel-btn').style.display = 'none';
+}
+
+async function saveTrainerConv() {
+  var pid = document.getElementById('tr-conv-player').value;
+  var text = document.getElementById('tr-conv-text').value.trim();
+  if (!text) return;
+  await api('POST', 'conversations', {
+    user_id: pid,
+    date: new Date().toISOString().split('T')[0],
+    type: document.getElementById('tr-conv-type').value,
+    text: text,
+    author: 'Trener'
+  });
+  document.getElementById('tr-conv-text').value = '';
+  var t = document.getElementById('tr-toast');
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 2500);
+}
+
+function downloadFile(content, filename, type) {
+  var blob = new Blob(['\uFEFF' + content], {type: type});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportPlayerCSV() {
+  var csv = 'Dato,Type,Varighet (min),RPE,Session Load (AU),Kommentar\n';
+  allSessions.forEach(function(x) { csv += x.date + ',"' + x.type + '",' + x.duration + ',' + x.rpe + ',' + x.load + ',"' + (x.comment || '') + '"\n'; });
+  downloadFile(csv, currentProfile.full_name + '_treningsdagbok.csv', 'text/csv;charset=utf-8');
+}
+
+function exportPlayerTests() {
+  var csv = 'Dato,Benkpress,Kneb\u00f8y,Frivending,Hang ups,Beep test,Sprint 20m,Sprint 40m,Sergeant jump\n';
+  allTests.slice().reverse().forEach(function(x) { csv += x.date + ',' + (x.bench||'') + ',' + (x.squat||'') + ',' + (x.clean||'') + ',' + (x.hangup||'') + ',' + (x.beep||'') + ',' + (x.s20||'') + ',' + (x.s40||'') + ',' + (x.jump||'') + '\n'; });
+  downloadFile(csv, currentProfile.full_name + '_testresultater.csv', 'text/csv;charset=utf-8');
+}
+
+async function exportAllCSV() {
+  var profiles = await api('GET', 'profiles?is_trainer=eq.false&select=*');
+  var csv = 'Elev,Klasse,Dato,Type,Varighet (min),RPE,Session Load (AU),Kommentar\n';
+  for (var i = 0; i < profiles.length; i++) {
+    var p = profiles[i];
+    var s = await api('GET', 'sessions?user_id=eq.' + p.id + '&order=date.asc&select=*');
+    (s || []).forEach(function(x) { csv += '"' + p.full_name + '",' + p.class + ',' + x.date + ',"' + x.type + '",' + x.duration + ',' + x.rpe + ',' + x.load + ',"' + (x.comment || '') + '"\n'; });
+  }
+  downloadFile(csv, 'NTG_Bergen_treningsdagboker.csv', 'text/csv;charset=utf-8');
+}
+
+async function exportAllTests() {
+  var profiles = await api('GET', 'profiles?is_trainer=eq.false&select=*');
+  var csv = 'Elev,Klasse,Dato,Benkpress,Kneb\u00f8y,Frivending,Hang ups,Beep test,Sprint 20m,Sprint 40m,Sergeant jump\n';
+  for (var i = 0; i < profiles.length; i++) {
+    var p = profiles[i];
+    var t = await api('GET', 'tests?user_id=eq.' + p.id + '&order=date.asc&select=*');
+    (t || []).forEach(function(x) { csv += '"' + p.full_name + '",' + p.class + ',' + x.date + ',' + (x.bench||'') + ',' + (x.squat||'') + ',' + (x.clean||'') + ',' + (x.hangup||'') + ',' + (x.beep||'') + ',' + (x.s20||'') + ',' + (x.s40||'') + ',' + (x.jump||'') + '\n'; });
+  }
+  downloadFile(csv, 'NTG_Bergen_testresultater.csv', 'text/csv;charset=utf-8');
+}
+
+function openSnakkeLink(e) {
+  e.preventDefault();
+  var name = currentProfile ? currentProfile.full_name : 'Elev';
+  var subject = encodeURIComponent('Trenger noen å snakke med');
+  var body = encodeURIComponent('Hei,\n\nJeg heter ' + name + ' og trenger å snakke med noen.\n\nMvh\n' + name);
+  window.location.href = 'mailto:solhyl@ntg.no?subject=' + subject + '&body=' + body;
+}
+
+// ---- KALENDER ----
+async function loadCalendar() {
+  var el = document.getElementById('kalender-content');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div>Laster \u00f8kter...</div>';
+  var today = new Date().toISOString().split('T')[0];
+  var sport = currentProfile.sport || 'H\u00e5ndball';
+  var events = await api('GET', 'training_events?date=gte.' + today + '&sport=eq.' + encodeURIComponent(sport) + '&order=date.asc,time.asc&select=*');
+  var regs = await api('GET', 'event_registrations?user_id=eq.' + currentProfile.id + '&select=event_id,status');
+  var myRegs = {};
+  (regs || []).forEach(function(r) { myRegs[r.event_id] = r.status; });
+  renderCalendarList(events || [], myRegs);
+}
+
+function renderCalendarList(events, myRegs) {
+  var el = document.getElementById('kalender-content');
+  if (!events.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text-muted);padding:.5rem 0">Ingen kommende \u00f8kter for din gruppe</div>'; return; }
+  var days = {};
+  events.forEach(function(ev) {
+    if (!days[ev.date]) days[ev.date] = [];
+    days[ev.date].push(ev);
+  });
+  var html = '';
+  Object.keys(days).forEach(function(date) {
+    var d = new Date(date + 'T12:00:00');
+    var dayStr = d.toLocaleDateString('nb-NO', {weekday:'long', day:'numeric', month:'long'});
+    dayStr = dayStr.charAt(0).toUpperCase() + dayStr.slice(1);
+    html += '<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 6px;padding-top:8px;border-top:1px solid var(--border)">' + dayStr + '</div>';
+    days[date].forEach(function(ev) {
+      var status = myRegs[ev.id];
+      var isPaameldt = status === 'paameldt';
+      var isAvmeldt = status === 'avmeldt';
+      var btnBg = isPaameldt ? 'var(--green-light)' : isAvmeldt ? 'var(--red-light)' : 'var(--bg2)';
+      var btnColor = isPaameldt ? 'var(--green-dark)' : isAvmeldt ? 'var(--red-dark)' : 'var(--text-muted)';
+      var btnBorder = isPaameldt ? 'var(--green)' : isAvmeldt ? 'var(--red)' : 'var(--border)';
+      var btnText = isPaameldt ? '&#10003; Meldt p\u00e5' : isAvmeldt ? '&#10007; Meldt av' : 'Meld p\u00e5';
+      html += '<div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--bg2);border-radius:9px;margin-bottom:6px;border:1px solid var(--border)">'
+        + '<div style="flex:1">'
+        + '<div style="font-size:14px;font-weight:700;color:var(--blue)">' + ev.title + '</div>'
+        + '<div style="font-size:12px;color:var(--text-muted);margin-top:2px">' + ev.time + (ev.location ? ' \u2022 ' + ev.location : '') + '</div>'
+        + '<div style="font-size:11px;margin-top:3px"><span class="stb">' + ev.type + '</span></div>'
+        + '</div>'
+        + '<button onclick="toggleRegistration(\'' + ev.id + '\')" style="background:' + btnBg + ';color:' + btnColor + ';border:1px solid ' + btnBorder + ';border-radius:7px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">' + btnText + '</button>'
+        + '</div>';
+    });
+  });
+  el.innerHTML = html;
+}
+
+async function toggleRegistration(eventId) {
+  var regs = await api('GET', 'event_registrations?user_id=eq.' + currentProfile.id + '&event_id=eq.' + eventId + '&select=id,status');
+  var token = currentUser && currentUser.access_token ? currentUser.access_token : SB_KEY;
+  if (regs && regs.length) {
+    var newStatus = regs[0].status === 'paameldt' ? 'avmeldt' : 'paameldt';
+    await api('PATCH', 'event_registrations?id=eq.' + regs[0].id, {status: newStatus});
+  } else {
+    await fetch(SB_URL + '/rest/v1/event_registrations', {
+      method: 'POST',
+      headers: {'apikey': SB_KEY, 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', 'Prefer': 'return=representation'},
+      body: JSON.stringify({event_id: eventId, user_id: currentProfile.id, status: 'paameldt'})
+    });
+  }
+  showToast();
+  loadCalendar();
+}
+
+// ---- GROUPS ----
+var allGroups = [];
+
+async function loadGroups() {
+  var sport = trainerProfile ? (trainerProfile.sport || 'H\u00e5ndball') : (currentProfile ? (currentProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball');
+  allGroups = await api('GET', 'groups?sport=eq.' + encodeURIComponent(sport) + '&order=name.asc&select=*') || [];
+  renderGroupsList();
+  renderEventGroupsSelect();
+  updateStudentGroupDropdown();
+}
+
+function renderGroupsList() {
+  var el = document.getElementById('groups-list'); if (!el) return;
+  if (!allGroups.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen grupper opprettet enda</div>'; return; }
+  el.innerHTML = allGroups.map(function(g) {
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)">'
+      + '<span style="font-size:14px;font-weight:600;color:var(--blue)">' + g.name + '</span>'
+      + '<button class="btn-sm" style="color:var(--red)" onclick="deleteGroup(\'' + g.id + '\')">Slett</button>'
+      + '</div>';
+  }).join('');
+}
+
+function updateStudentGroupDropdown() {
+  var sel = document.getElementById('new-student-group'); if (!sel) return;
+  sel.innerHTML = '<option value="">Ingen gruppe</option>' + allGroups.map(function(g) { return '<option value="' + g.name + '">' + g.name + '</option>'; }).join('');
+}
+
+function renderEventGroupsSelect() {
+  var el = document.getElementById('ev-groups-select'); if (!el) return;
+  el.innerHTML = allGroups.map(function(g) {
+    return '<div id="evg_' + g.id + '" onclick="toggleEventGroup(\'' + g.name + '\')" style="padding:5px 12px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-muted)">' + g.name + '</div>';
+  }).join('');
+}
+
+var selectedEventGroups = [];
+
+function toggleEventGroup(name) {
+  var idx = selectedEventGroups.indexOf(name);
+  if (idx > -1) selectedEventGroups.splice(idx, 1);
+  else selectedEventGroups.push(name);
+  renderEventGroupsSelect();
+  selectedEventGroups.forEach(function(n) {
+    var g = allGroups.find(function(g) { return g.name === n; });
+    if (g) {
+      var el = document.getElementById('evg_' + g.id);
+      if (el) { el.style.borderColor = 'var(--blue)'; el.style.background = 'var(--blue-light)'; el.style.color = 'var(--blue)'; }
+    }
+  });
+}
+
+async function saveGroup() {
+  var name = document.getElementById('new-group-name').value.trim();
+  if (!name) return;
+  var sport = trainerProfile ? (trainerProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball';
+  await api('POST', 'groups', {name: name, sport: sport});
+  document.getElementById('new-group-name').value = '';
+  await loadGroups();
+  var t = document.getElementById('group-toast'); t.classList.add('show'); setTimeout(function(){ t.classList.remove('show'); }, 2000);
+}
+
+async function deleteGroup(id) {
+  if (!confirm('Slette denne gruppen?')) return;
+  await api('DELETE', 'groups?id=eq.' + id);
+  await loadGroups();
+}
+
+// ---- EVENTS ----
+var allTrainerEvents = [];
+
+async function loadEvents() {
+  var sport = trainerProfile ? (trainerProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball';
+  // Populate ev-type dropdown with sport-specific types
+  var evType = document.getElementById('ev-type');
+  if (evType) evType.innerHTML = getSportSessionTypes(sport).map(function(t){ return '<option>'+t+'</option>'; }).join('');
+  var today = new Date().toISOString().split('T')[0];
+  allTrainerEvents = await api('GET', 'training_events?sport=eq.' + encodeURIComponent(sport) + '&order=date.asc,time.asc&select=*') || [];
+  var events = allTrainerEvents;
+  var el = document.getElementById('tr-events-list'); if (!el) return;
+  if (!events.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen \u00f8kter opprettet enda</div>'; return; }
+  el.innerHTML = events.map(function(ev) {
+    var isPast = ev.date < today;
+    return '<div style="padding:10px;border:1px solid var(--border);border-radius:9px;margin-bottom:8px;opacity:' + (isPast ? '.6' : '1') + '">'
+      + '<div style="display:flex;justify-content:space-between;align-items:flex-start">'
+      + '<div><div style="font-size:14px;font-weight:700;color:var(--blue)">' + ev.title + '</div>'
+      + '<div style="font-size:12px;color:var(--text-muted);margin-top:2px">' + ev.date + ' kl.' + ev.time + (ev.location ? ' &bull; ' + ev.location : '') + '</div>'
+      + '<div style="font-size:11px;margin-top:3px"><span class="stb">' + ev.type + '</span>'
+      + (ev.group_names && ev.group_names.length ? ' <span style="color:var(--text-muted)">' + ev.group_names.join(', ') + '</span>' : ' <span style="color:var(--text-muted)">Alle grupper</span>') + '</div>'
+      + '</div>'
+      + '<button class="btn-sm-blue" data-eid="' + ev.id + '" data-etitle="' + ev.title.replace(/"/g,'&quot;') + '" data-egroups="' + (ev.group_names || []).join('|') + '" onclick="handleShowRegs(this)">P&aring;meldte</button>'
+      + '</div>'
+      + '<div style="display:flex;gap:6px;margin-top:8px">'
+      + '<button class="btn-sm" data-ev-id="' + ev.id + '" onclick="handleEditEvent(this)">Rediger</button>'
+      + '<button class="btn-sm" style="color:var(--red)" data-del-id="' + ev.id + '" onclick="deleteEvent(this.getAttribute(\'data-del-id\'))">Slett</button>'
+      + '</div></div>';
+  }).join('');
+}
+
+function handleShowRegs(btn) {
+  var eventId = btn.getAttribute('data-eid');
+  var title = btn.getAttribute('data-etitle');
+  var groupsStr = btn.getAttribute('data-egroups');
+  var groupNames = groupsStr ? groupsStr.split('|').filter(function(g){ return g.length > 0; }) : [];
+  showEventRegs(eventId, title, groupNames);
+}
+
+function handleEditEvent(btn) {
+  var evId = btn.getAttribute('data-ev-id');
+  var ev = allTrainerEvents.find(function(e) { return e.id === evId; });
+  if (ev) editEvent(ev);
+}
+
+async function showEventRegs(eventId, title, groupNames) {
+  var regs = await api('GET', 'event_registrations?event_id=eq.' + eventId + '&select=user_id,status,profiles(full_name,class)') || [];
+  var allProfiles = await api('GET', 'profiles?is_trainer=eq.false&order=full_name.asc&select=id,full_name,class,group_name') || [];
+
+  // Filter profiles relevant to this event
+  var groups = groupNames && groupNames.length ? groupNames : null;
+  var relevant = groups
+    ? allProfiles.filter(function(p) { return groups.indexOf(p.group_name) > -1; })
+    : allProfiles;
+
+  var regMap = {};
+  regs.forEach(function(r) { regMap[r.user_id] = {status: r.status, name: r.profiles ? r.profiles.full_name : r.user_id, cls: r.profiles ? r.profiles.class : ''}; });
+
+  var paameldt = regs.filter(function(r) { return r.status === 'paameldt'; });
+  var avmeldt = regs.filter(function(r) { return r.status === 'avmeldt'; });
+  var svartIds = Object.keys(regMap);
+  var ikkeSvart = relevant.filter(function(p) { return svartIds.indexOf(p.id) === -1; });
+
+  var html = '<div style="margin-bottom:1rem"><div style="font-size:16px;font-weight:700;color:var(--blue);margin-bottom:4px">' + title + '</div></div>';
+
+  html += '<div style="margin-bottom:12px">'
+    + '<div style="font-size:12px;font-weight:700;color:var(--green-dark);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">&#10003; Meldt p\u00e5 (' + paameldt.length + ')</div>';
+  if (paameldt.length) {
+    paameldt.forEach(function(r) { html += '<div style="font-size:13px;padding:5px 0;border-bottom:1px solid var(--border)">' + (r.profiles ? r.profiles.full_name : '') + ' <span style="color:var(--text-muted);font-size:11px">' + (r.profiles ? r.profiles.class : '') + '</span></div>'; });
+  } else { html += '<div style="font-size:13px;color:var(--text-muted)">Ingen</div>'; }
+  html += '</div>';
+
+  html += '<div style="margin-bottom:12px">'
+    + '<div style="font-size:12px;font-weight:700;color:var(--red-dark);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">&#10007; Meldt av (' + avmeldt.length + ')</div>';
+  if (avmeldt.length) {
+    avmeldt.forEach(function(r) { html += '<div style="font-size:13px;padding:5px 0;border-bottom:1px solid var(--border)">' + (r.profiles ? r.profiles.full_name : '') + ' <span style="color:var(--text-muted);font-size:11px">' + (r.profiles ? r.profiles.class : '') + '</span></div>'; });
+  } else { html += '<div style="font-size:13px;color:var(--text-muted)">Ingen</div>'; }
+  html += '</div>';
+
+  html += '<div>'
+    + '<div style="font-size:12px;font-weight:700;color:var(--amber-dark);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">&#8212; Ikke svart (' + ikkeSvart.length + ')</div>';
+  if (ikkeSvart.length) {
+    ikkeSvart.forEach(function(p) { html += '<div style="font-size:13px;padding:5px 0;border-bottom:1px solid var(--border)">' + p.full_name + ' <span style="color:var(--text-muted);font-size:11px">' + p.class + '</span></div>'; });
+  } else { html += '<div style="font-size:13px;color:var(--text-muted)">Alle har svart</div>'; }
+  html += '</div>';
+
+  // Show in a modal-style overlay
+  var overlay = document.getElementById('regs-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'regs-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:flex-end;justify-content:center';
+    overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+    document.body.appendChild(overlay);
+  }
+  overlay.innerHTML = '<div style="background:var(--bg);border-radius:16px 16px 0 0;padding:1.5rem;width:100%;max-width:680px;max-height:80vh;overflow-y:auto">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">'
+    + '<div style="font-size:15px;font-weight:700;color:var(--blue)">P\u00e5meldingsstatus</div>'
+    + '<button onclick="document.getElementById(\'regs-overlay\').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted)">&times;</button>'
+    + '</div>' + html + '</div>';
+}
+
+async function saveEvent() {
+  var editId = document.getElementById('edit-event-id').value;
+  var title = document.getElementById('ev-title').value.trim();
+  var errEl = document.getElementById('event-error');
+  errEl.classList.remove('show'); errEl.style.display = 'none';
+  if (!title) { errEl.textContent = 'Tittel er p\u00e5krevd.'; errEl.style.display = 'block'; errEl.classList.add('show'); return; }
+  var entry = {
+    title: title,
+    date: document.getElementById('ev-date').value,
+    time: document.getElementById('ev-time').value,
+    location: document.getElementById('ev-location').value,
+    type: document.getElementById('ev-type').value,
+    group_names: selectedEventGroups.slice(),
+    sport: trainerProfile ? (trainerProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball',
+    created_by: trainerProfile ? trainerProfile.id : currentProfile.id
+  };
+  if (editId) { await api('PATCH', 'training_events?id=eq.' + editId, entry); }
+  else { await api('POST', 'training_events', entry); }
+  cancelEventEdit();
+  var okEl = document.getElementById('event-success');
+  document.getElementById('event-success-msg').textContent = editId ? '\u00d8kt oppdatert!' : '\u00d8kt opprettet!';
+  okEl.classList.add('show'); setTimeout(function(){ okEl.classList.remove('show'); }, 2500);
+  loadEvents();
+}
+
+function editEvent(ev) {
+  document.getElementById('edit-event-id').value = ev.id;
+  document.getElementById('event-form-title').textContent = 'Rediger \u00f8kt';
+  document.getElementById('ev-title').value = ev.title;
+  document.getElementById('ev-date').value = ev.date;
+  document.getElementById('ev-time').value = ev.time;
+  document.getElementById('ev-location').value = ev.location || '';
+  document.getElementById('ev-type').value = ev.type;
+  selectedEventGroups = ev.group_names ? ev.group_names.slice() : [];
+  renderEventGroupsSelect();
+  selectedEventGroups.forEach(function(n) {
+    var g = allGroups.find(function(g) { return g.name === n; });
+    if (g) {
+      var el = document.getElementById('evg_' + g.id);
+      if (el) { el.style.borderColor = 'var(--blue)'; el.style.background = 'var(--blue-light)'; el.style.color = 'var(--blue)'; }
+    }
+  });
+  document.getElementById('event-cancel-btn').style.display = 'block';
+  document.getElementById('event-form-title').scrollIntoView({behavior: 'smooth'});
+}
+
+function cancelEventEdit() {
+  document.getElementById('edit-event-id').value = '';
+  document.getElementById('event-form-title').textContent = 'Legg inn trenings\u00f8kt';
+  document.getElementById('ev-title').value = '';
+  document.getElementById('ev-location').value = '';
+  document.getElementById('ev-time').value = '16:00';
+  selectedEventGroups = [];
+  renderEventGroupsSelect();
+  document.getElementById('event-cancel-btn').style.display = 'none';
+}
+
+async function deleteEvent(id) {
+  if (typeof id !== 'string') return;
+  if (!confirm('Slette denne \u00f8kten?')) return;
+  await api('DELETE', 'training_events?id=eq.' + id);
+  loadEvents();
+}
+
+function renderGroupsSelect() {}
+
+function showToast() {
+  var t = document.getElementById('save-toast');
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 2000);
+}
+
+document.getElementById('login-password').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') doLogin();
+});
+
+// Håndter magic link og passord-reset ved oppstart
+async function handleAuthRedirect() {
+  var hash = window.location.hash;
+  if (!hash) { tryAutoLogin(); return; }
+  var params = new URLSearchParams(hash.replace('#', ''));
+  var accessToken = params.get('access_token');
+  var type = params.get('type');
+  if (accessToken && (type === 'magiclink' || type === 'recovery')) {
+    try {
+      var res = await fetch(SB_URL + '/auth/v1/user', {
+        headers: {'apikey': SB_KEY, 'Authorization': 'Bearer ' + accessToken}
+      });
+      var user = await res.json();
+      if (user.id) {
+        currentUser = {access_token: accessToken, user: user};
+        localStorage.setItem('ntg_session', JSON.stringify({access_token: accessToken, user_id: user.id}));
+        window.history.replaceState(null, '', window.location.pathname);
+        await loadProfile(user.id);
+        return;
+      }
+    } catch(e) {}
+  }
+  tryAutoLogin();
+}
+
+// Prøv automatisk innlogging ved oppstart
+handleAuthRedirect();
+</script>
+</body>
+</html>
