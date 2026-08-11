@@ -2157,18 +2157,23 @@ async function sendPlayerMessage() {
   if (!body) { errEl.textContent = 'Skriv en melding f\u00f8rst.'; errEl.style.display = 'block'; errEl.classList.add('show'); return; }
   if (!selectedChatTrainers.length) { errEl.textContent = 'Velg minst \u00e9n trener.'; errEl.style.display = 'block'; errEl.classList.add('show'); return; }
   try {
-    var msg = await api('POST', 'messages', {
-      sender_id: currentProfile.id,
-      body: body,
-      sport: currentProfile.sport || 'H\u00e5ndball'
+    var token = currentUser && currentUser.access_token ? currentUser.access_token : SB_KEY;
+    // Insert message and get ID back
+    var msgRes = await fetch(SB_URL + '/rest/v1/messages', {
+      method: 'POST',
+      headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json', 'Prefer': 'return=representation'},
+      body: JSON.stringify({sender_id: currentProfile.id, body: body, sport: currentProfile.sport || 'H\u00e5ndball'})
     });
-    // Need to get the inserted message id
-    var msgs = await api('GET', 'messages?sender_id=eq.' + currentProfile.id + '&order=created_at.desc&limit=1&select=id');
-    var msgId = msgs && msgs[0] ? msgs[0].id : null;
-    if (msgId) {
-      for (var i = 0; i < selectedChatTrainers.length; i++) {
-        await api('POST', 'message_recipients', {message_id: msgId, recipient_id: selectedChatTrainers[i]});
-      }
+    var msgData = await msgRes.json();
+    var msgId = Array.isArray(msgData) ? msgData[0].id : msgData.id;
+    if (!msgId) throw new Error('Kunne ikke opprette melding');
+    // Insert recipients
+    for (var i = 0; i < selectedChatTrainers.length; i++) {
+      await fetch(SB_URL + '/rest/v1/message_recipients', {
+        method: 'POST',
+        headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
+        body: JSON.stringify({message_id: msgId, recipient_id: selectedChatTrainers[i]})
+      });
     }
     document.getElementById('chat-msg-body').value = '';
     okEl.classList.add('show');
@@ -2303,13 +2308,20 @@ async function sendTrainerMessage() {
   if (!recipientIds.length) { errEl.textContent = 'Ingen mottakere valgt.'; errEl.style.display = 'block'; errEl.classList.add('show'); return; }
   try {
     var senderId = trainerProfile ? trainerProfile.id : currentProfile.id;
-    await api('POST', 'messages', {sender_id: senderId, body: body, sport: sport});
-    var msgs = await api('GET', 'messages?sender_id=eq.' + senderId + '&order=created_at.desc&limit=1&select=id');
-    var msgId = msgs && msgs[0] ? msgs[0].id : null;
-    if (msgId) {
-      for (var i = 0; i < recipientIds.length; i++) {
-        await api('POST', 'message_recipients', {message_id: msgId, recipient_id: recipientIds[i]});
-      }
+    var msgRes = await fetch(SB_URL + '/rest/v1/messages', {
+      method: 'POST',
+      headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json', 'Prefer': 'return=representation'},
+      body: JSON.stringify({sender_id: senderId, body: body, sport: sport})
+    });
+    var msgData = await msgRes.json();
+    var msgId = Array.isArray(msgData) ? msgData[0].id : msgData.id;
+    if (!msgId) throw new Error('Kunne ikke opprette melding');
+    for (var i = 0; i < recipientIds.length; i++) {
+      await fetch(SB_URL + '/rest/v1/message_recipients', {
+        method: 'POST',
+        headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
+        body: JSON.stringify({message_id: msgId, recipient_id: recipientIds[i]})
+      });
     }
     document.getElementById('tr-chat-body').value = '';
     okEl.classList.add('show');
@@ -2373,7 +2385,11 @@ async function sendTrainerReply(msgId, senderId) {
   var body = input ? input.value.trim() : '';
   if (!body) return;
   var tid = trainerProfile ? trainerProfile.id : null;
-  await api('POST', 'message_replies', {message_id: msgId, sender_id: tid, body: body});
+  await fetch(SB_URL + '/rest/v1/message_replies', {
+    method: 'POST',
+    headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
+    body: JSON.stringify({message_id: msgId, sender_id: tid, body: body})
+  });
   if (input) input.value = '';
   loadTrainerInbox();
 }
