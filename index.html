@@ -2213,22 +2213,39 @@ async function loadPlayerInbox() {
           body: JSON.stringify({read_at: new Date().toISOString()})
         });
       }
-      var label = isSent ? 'Melding til trener' : 'Melding fra trener';
-      var bgColor = isSent ? 'var(--blue-light)' : 'var(--green-light)';
+      // Look up trainer name for received messages
+      var trainerName = '';
+      if (!isSent) {
+        var sp = await api('GET', 'profiles?id=eq.' + m.sender_id + '&select=full_name') || [];
+        trainerName = sp[0] ? sp[0].full_name : 'Trener';
+      }
+      var fromLine = isSent
+        ? 'Fra deg – ' + m.created_at.split('T')[0]
+        : 'Fra: ' + trainerName + ' – ' + m.created_at.split('T')[0];
+      var toLine = isSent
+        ? 'Til: trenere'
+        : (m.recipients_label ? 'Til: ' + m.recipients_label : 'Til: deg');
       html += '<div style="border:1px solid var(--border);border-radius:9px;padding:12px;margin-bottom:10px">';
-      html += '<div style="font-size:11px;color:var(--text-muted);font-weight:600;margin-bottom:6px">' + label + ' \u2013 ' + m.created_at.split('T')[0] + '</div>';
-      html += '<div style="font-size:14px;padding:8px;background:' + bgColor + ';border-radius:7px;margin-bottom:6px">' + m.body + '</div>';
+      html += '<div style="font-size:11px;color:var(--text-muted);font-weight:600;margin-bottom:2px">' + fromLine + '</div>';
+      html += '<div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">' + toLine + '</div>';
+      html += '<div style="font-size:14px;padding:8px;background:' + (isSent ? 'var(--blue-light)' : 'var(--green-light)') + ';border-radius:7px;margin-bottom:6px">' + m.body + '</div>';
       if (replies.length) {
         replies.forEach(function(r) {
-          var rBg = r.sender_id === currentProfile.id ? 'var(--blue-light)' : 'var(--green-light)';
-          var rLabel = r.sender_id === currentProfile.id ? 'Du' : 'Trener';
-          html += '<div style="font-size:13px;padding:7px;background:' + rBg + ';border-radius:7px;margin-top:4px">'
-            + '<strong>' + rLabel + ':</strong> ' + r.body
+          var isMe = r.sender_id === currentProfile.id;
+          html += '<div style="font-size:13px;padding:7px;background:' + (isMe ? 'var(--blue-light)' : 'var(--green-light)') + ';border-radius:7px;margin-top:4px">'
+            + '<strong>' + (isMe ? 'Du' : (trainerName || 'Trener')) + ':</strong> ' + r.body
             + '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + r.created_at.split('T')[0] + '</div>'
             + '</div>';
         });
-      } else if (isSent) {
+      }
+      if (isSent && !replies.length) {
         html += '<div style="font-size:12px;color:var(--text-muted);font-style:italic">Ikke svart enda</div>';
+      }
+      if (!isSent) {
+        html += '<div style="display:flex;gap:6px;margin-top:8px">'
+          + '<input type="text" id="preply_' + m.id + '" placeholder="Svar trener..." style="flex:1;font-size:13px;border:1.5px solid var(--border);border-radius:7px;padding:7px 10px;outline:none">'
+          + '<button class="btn-sm-blue" onclick="sendPlayerReply(\'' + m.id + '\')">Send svar</button>'
+          + '</div>';
       }
       html += '</div>';
     }
@@ -2237,6 +2254,20 @@ async function loadPlayerInbox() {
     el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Kunne ikke laste meldinger</div>';
   }
 }
+
+async function sendPlayerReply(msgId) {
+  var input = document.getElementById('preply_' + msgId);
+  var body = input ? input.value.trim() : '';
+  if (!body) return;
+  await fetch(SB_URL + '/rest/v1/message_replies', {
+    method: 'POST',
+    headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
+    body: JSON.stringify({message_id: msgId, sender_id: currentProfile.id, body: body})
+  });
+  if (input) input.value = '';
+  loadPlayerInbox();
+}
+
 
 async function checkPlayerUnread() {
   var msgs = await api('GET', 'messages?sender_id=eq.' + currentProfile.id + '&select=id') || [];
