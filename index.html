@@ -216,6 +216,7 @@ input[type=range]{width:100%;accent-color:var(--blue)}
     <button class="nav-tab" onclick="switchTab('grafer')">Grafer</button>
     <button class="nav-tab" onclick="switchTab('ferdigheter')">Ferdigheter</button>
     <button class="nav-tab" onclick="switchTab('fokus')">Fokus</button>
+    <button class="nav-tab" onclick="switchTab('chat')">Chat <span id="chat-badge" style="display:none;background:var(--red);color:#fff;border-radius:50%;padding:1px 6px;font-size:10px;font-weight:700;margin-left:3px">!</span></button>
     <button class="nav-tab" onclick="switchTab('samtaler')">Samtaler</button>
     <button class="nav-tab" onclick="switchTab('profil')">Profil</button>
   </div>
@@ -344,7 +345,26 @@ input[type=range]{width:100%;accent-color:var(--blue)}
     <div id="focus-list"></div>
   </div>
 
-  <div class="tab-content" id="tab-samtaler">
+  <div class="tab-content" id="tab-chat">
+    <div class="card">
+      <div class="sec-title">Send melding til trener</div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label>Velg mottaker(e)</label>
+        <div id="chat-trainer-select" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px"></div>
+      </div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label>Melding</label>
+        <textarea id="chat-msg-body" rows="4" placeholder="Skriv meldingen din her..." style="width:100%;font-size:14px;border:1.5px solid var(--border);border-radius:7px;padding:9px 11px;font-family:inherit;resize:vertical;outline:none"></textarea>
+      </div>
+      <div class="alert alert-green" id="chat-send-ok"><div><div class="alert-title">Melding sendt!</div></div></div>
+      <div class="login-error" id="chat-send-err"></div>
+      <button class="btn btn-primary" onclick="sendPlayerMessage()">Send melding</button>
+    </div>
+    <div class="card">
+      <div class="sec-title">Mine meldinger</div>
+      <div id="chat-inbox"><div class="loading"><div class="spinner"></div>Laster...</div></div>
+    </div>
+  </div>
     <div id="conv-list"></div>
     <div style="font-size:13px;color:var(--text-muted);padding:.5rem 0" id="conv-empty">Ingen samtaler logget enda. Samtaler logges av trener.</div>
   </div>
@@ -430,6 +450,32 @@ input[type=range]{width:100%;accent-color:var(--blue)}
   <div class="card">
     <div class="sec-title">Planlagte &oslash;kter</div>
     <div id="tr-events-list"><div class="loading"><div class="spinner"></div>Laster...</div></div>
+  </div>
+
+  <div class="card">
+    <div class="sec-title">Send melding til utøvere</div>
+    <div class="form-group" style="margin-bottom:10px">
+      <label>Send til</label>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
+        <div id="tr-chat-all" onclick="toggleTrChatTarget('all')" style="padding:5px 12px;border:1.5px solid var(--blue);border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;background:var(--blue-light);color:var(--blue)">Alle i idretten</div>
+        <div id="tr-chat-groups-toggle" onclick="toggleTrChatTarget('groups')" style="padding:5px 12px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-muted)">Velg grupper</div>
+        <div id="tr-chat-players-toggle" onclick="toggleTrChatTarget('players')" style="padding:5px 12px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-muted)">Velg utøvere</div>
+      </div>
+      <div id="tr-chat-groups-select" style="display:none;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
+      <div id="tr-chat-players-select" style="display:none;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
+    </div>
+    <div class="form-group" style="margin-bottom:10px">
+      <label>Melding</label>
+      <textarea id="tr-chat-body" rows="4" placeholder="Skriv meldingen din her..." style="width:100%;font-size:14px;border:1.5px solid var(--border);border-radius:7px;padding:9px 11px;font-family:inherit;resize:vertical;outline:none"></textarea>
+    </div>
+    <div class="alert alert-green" id="tr-chat-ok"><div><div class="alert-title">Melding sendt!</div></div></div>
+    <div class="login-error" id="tr-chat-err"></div>
+    <button class="btn btn-primary" onclick="sendTrainerMessage()">Send melding</button>
+  </div>
+
+  <div class="card">
+    <div class="sec-title">Innboks <span id="tr-inbox-badge" style="display:none;background:var(--red);color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:700;margin-left:6px">!</span></div>
+    <div id="tr-chat-inbox"><div class="loading"><div class="spinner"></div>Laster...</div></div>
   </div>
 
   <div class="card">
@@ -853,7 +899,7 @@ function showScreen(id) {
 }
 
 function switchTab(tab) {
-  var tabs = ['kalender','dagbok','uke','tester','grafer','ferdigheter','fokus','samtaler','profil'];
+  var tabs = ['kalender','dagbok','uke','tester','grafer','ferdigheter','fokus','chat','samtaler','profil'];
   document.querySelectorAll('.nav-tab').forEach(function(t, i){ t.classList.toggle('active', tabs[i] === tab); });
   document.querySelectorAll('.tab-content').forEach(function(c){ c.classList.remove('active'); });
   document.getElementById('tab-' + tab).classList.add('active');
@@ -863,6 +909,7 @@ function switchTab(tab) {
   if (tab === 'grafer') renderGraphs();
   if (tab === 'tester') { renderTestHistory(); updateProgressBars(); }
   if (tab === 'ferdigheter') renderSkillsHistory();
+  if (tab === 'chat') loadPlayerChat();
   if (tab === 'samtaler') loadConvList();
   if (tab === 'profil') renderProfil();
 }
@@ -1515,6 +1562,7 @@ async function loadTrainerView() {
   document.getElementById('tr-table').style.display = 'none';
   await loadGroups();
   await loadEvents();
+  await loadTrainerChat();
   var today = new Date().toISOString().split('T')[0];
   document.getElementById('ev-date').value = today;
   var trainerSport = trainerProfile ? (trainerProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball';
@@ -2063,8 +2111,258 @@ async function deleteEvent(id) {
 
 function renderGroupsSelect() {}
 
+// ---- CHAT ----
+var chatTrainers = [];
+var selectedChatTrainers = [];
+var trChatTarget = 'all';
+var trChatSelectedGroups = [];
+var trChatSelectedPlayers = [];
+
+async function loadPlayerChat() {
+  // Load trainers for this sport
+  var sport = currentProfile.sport || 'H\u00e5ndball';
+  chatTrainers = await api('GET', 'profiles?is_trainer=eq.true&sport=eq.' + encodeURIComponent(sport) + '&select=id,full_name') || [];
+  selectedChatTrainers = chatTrainers.map(function(t){ return t.id; }); // default: all selected
+  renderChatTrainerSelect();
+  await loadPlayerInbox();
+  checkPlayerUnread();
+}
+
+function renderChatTrainerSelect() {
+  var el = document.getElementById('chat-trainer-select'); if(!el) return;
+  if (!chatTrainers.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen trenere funnet for din idrett</div>'; return; }
+  el.innerHTML = chatTrainers.map(function(t) {
+    var sel = selectedChatTrainers.indexOf(t.id) > -1;
+    return '<div onclick="toggleChatTrainer(\'' + t.id + '\')" style="padding:6px 12px;border:1.5px solid ' + (sel ? 'var(--blue)' : 'var(--border)') + ';border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;background:' + (sel ? 'var(--blue-light)' : 'var(--bg2)') + ';color:' + (sel ? 'var(--blue)' : 'var(--text-muted)') + '" id="ctr_' + t.id + '">' + t.full_name + '</div>';
+  }).join('');
+}
+
+function toggleChatTrainer(id) {
+  var idx = selectedChatTrainers.indexOf(id);
+  if (idx > -1) selectedChatTrainers.splice(idx, 1);
+  else selectedChatTrainers.push(id);
+  renderChatTrainerSelect();
+}
+
+async function sendPlayerMessage() {
+  var body = document.getElementById('chat-msg-body').value.trim();
+  var errEl = document.getElementById('chat-send-err');
+  var okEl = document.getElementById('chat-send-ok');
+  errEl.classList.remove('show'); errEl.style.display = 'none'; okEl.classList.remove('show');
+  if (!body) { errEl.textContent = 'Skriv en melding f\u00f8rst.'; errEl.style.display = 'block'; errEl.classList.add('show'); return; }
+  if (!selectedChatTrainers.length) { errEl.textContent = 'Velg minst \u00e9n trener.'; errEl.style.display = 'block'; errEl.classList.add('show'); return; }
+  try {
+    var msg = await api('POST', 'messages', {
+      sender_id: currentProfile.id,
+      body: body,
+      sport: currentProfile.sport || 'H\u00e5ndball'
+    });
+    // Need to get the inserted message id
+    var msgs = await api('GET', 'messages?sender_id=eq.' + currentProfile.id + '&order=created_at.desc&limit=1&select=id');
+    var msgId = msgs && msgs[0] ? msgs[0].id : null;
+    if (msgId) {
+      for (var i = 0; i < selectedChatTrainers.length; i++) {
+        await api('POST', 'message_recipients', {message_id: msgId, recipient_id: selectedChatTrainers[i]});
+      }
+    }
+    document.getElementById('chat-msg-body').value = '';
+    okEl.classList.add('show');
+    setTimeout(function(){ okEl.classList.remove('show'); }, 2500);
+    loadPlayerInbox();
+  } catch(e) {
+    errEl.textContent = 'Feil: ' + e.message; errEl.style.display = 'block'; errEl.classList.add('show');
+  }
+}
+
+async function loadPlayerInbox() {
+  var el = document.getElementById('chat-inbox'); if (!el) return;
+  var msgs = await api('GET', 'messages?sender_id=eq.' + currentProfile.id + '&order=created_at.desc&select=*') || [];
+  if (!msgs.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen meldinger enda</div>'; return; }
+  var html = '';
+  for (var i = 0; i < msgs.length; i++) {
+    var m = msgs[i];
+    var replies = await api('GET', 'message_replies?message_id=eq.' + m.id + '&order=created_at.asc&select=*,profiles(full_name)') || [];
+    // Mark unread replies as read
+    var unread = replies.filter(function(r){ return !r.read_at; });
+    for (var j = 0; j < unread.length; j++) {
+      await api('PATCH', 'message_replies?id=eq.' + unread[j].id, {read_at: new Date().toISOString()});
+    }
+    html += '<div style="border:1px solid var(--border);border-radius:9px;padding:12px;margin-bottom:10px">';
+    html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">' + m.created_at.split('T')[0] + '</div>';
+    html += '<div style="font-size:14px;margin-bottom:8px;padding:8px;background:var(--blue-light);border-radius:7px">' + m.body + '</div>';
+    if (replies.length) {
+      replies.forEach(function(r) {
+        var rName = r.profiles ? r.profiles.full_name : 'Trener';
+        html += '<div style="font-size:13px;margin-top:6px;padding:8px;background:var(--green-light);border-radius:7px">'
+          + '<strong>' + rName + ':</strong> ' + r.body
+          + '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + r.created_at.split('T')[0] + '</div>'
+          + '</div>';
+      });
+    } else {
+      html += '<div style="font-size:12px;color:var(--text-muted);font-style:italic">Ikke svart enda</div>';
+    }
+    html += '</div>';
+  }
+  el.innerHTML = html;
+}
+
+async function checkPlayerUnread() {
+  var msgs = await api('GET', 'messages?sender_id=eq.' + currentProfile.id + '&select=id') || [];
+  var hasUnread = false;
+  for (var i = 0; i < msgs.length; i++) {
+    var replies = await api('GET', 'message_replies?message_id=eq.' + msgs[i].id + '&read_at=is.null&select=id') || [];
+    if (replies.length) { hasUnread = true; break; }
+  }
+  var badge = document.getElementById('chat-badge');
+  if (badge) badge.style.display = hasUnread ? 'inline' : 'none';
+}
+
+// ---- TRAINER CHAT ----
+var trChatAllProfiles = [];
+
+async function loadTrainerChat() {
+  var sport = trainerProfile ? (trainerProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball';
+  trChatAllProfiles = await api('GET', 'profiles?is_trainer=eq.false&is_superuser=eq.false&sport=eq.' + encodeURIComponent(sport) + '&order=full_name.asc&select=*') || [];
+  renderTrChatGroupsSelect();
+  renderTrChatPlayersSelect();
+  loadTrainerInbox();
+}
+
+function toggleTrChatTarget(target) {
+  trChatTarget = target;
+  ['all','groups','players'].forEach(function(t) {
+    var el = document.getElementById('tr-chat-' + t + (t === 'all' ? '' : '-toggle'));
+    if (!el) return;
+    var active = t === target;
+    el.style.borderColor = active ? 'var(--blue)' : 'var(--border)';
+    el.style.background = active ? 'var(--blue-light)' : 'var(--bg2)';
+    el.style.color = active ? 'var(--blue)' : 'var(--text-muted)';
+  });
+  document.getElementById('tr-chat-groups-select').style.display = target === 'groups' ? 'flex' : 'none';
+  document.getElementById('tr-chat-players-select').style.display = target === 'players' ? 'flex' : 'none';
+}
+
+function renderTrChatGroupsSelect() {
+  var el = document.getElementById('tr-chat-groups-select'); if (!el) return;
+  trChatSelectedGroups = [];
+  el.innerHTML = allGroups.map(function(g) {
+    return '<div onclick="toggleTrChatGroup(\'' + g.name + '\')" id="trcg_' + g.id + '" style="padding:5px 12px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-muted)">' + g.name + '</div>';
+  }).join('');
+}
+
+function toggleTrChatGroup(name) {
+  var idx = trChatSelectedGroups.indexOf(name);
+  if (idx > -1) trChatSelectedGroups.splice(idx, 1);
+  else trChatSelectedGroups.push(name);
+  var g = allGroups.find(function(g){ return g.name === name; });
+  if (g) {
+    var el = document.getElementById('trcg_' + g.id);
+    var sel = trChatSelectedGroups.indexOf(name) > -1;
+    if (el) { el.style.borderColor = sel ? 'var(--blue)' : 'var(--border)'; el.style.background = sel ? 'var(--blue-light)' : 'var(--bg2)'; el.style.color = sel ? 'var(--blue)' : 'var(--text-muted)'; }
+  }
+}
+
+function renderTrChatPlayersSelect() {
+  var el = document.getElementById('tr-chat-players-select'); if (!el) return;
+  trChatSelectedPlayers = [];
+  el.innerHTML = trChatAllProfiles.map(function(p) {
+    return '<div onclick="toggleTrChatPlayer(\'' + p.id + '\')" id="trcp_' + p.id + '" style="padding:5px 12px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-muted)">' + p.full_name + '</div>';
+  }).join('');
+}
+
+function toggleTrChatPlayer(id) {
+  var idx = trChatSelectedPlayers.indexOf(id);
+  if (idx > -1) trChatSelectedPlayers.splice(idx, 1);
+  else trChatSelectedPlayers.push(id);
+  var el = document.getElementById('trcp_' + id);
+  var sel = trChatSelectedPlayers.indexOf(id) > -1;
+  if (el) { el.style.borderColor = sel ? 'var(--blue)' : 'var(--border)'; el.style.background = sel ? 'var(--blue-light)' : 'var(--bg2)'; el.style.color = sel ? 'var(--blue)' : 'var(--text-muted)'; }
+}
+
+async function sendTrainerMessage() {
+  var body = document.getElementById('tr-chat-body').value.trim();
+  var errEl = document.getElementById('tr-chat-err');
+  var okEl = document.getElementById('tr-chat-ok');
+  errEl.classList.remove('show'); errEl.style.display = 'none'; okEl.classList.remove('show');
+  if (!body) { errEl.textContent = 'Skriv en melding f\u00f8rst.'; errEl.style.display = 'block'; errEl.classList.add('show'); return; }
+  var sport = trainerProfile ? (trainerProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball';
+  // Determine recipients
+  var recipientIds = [];
+  if (trChatTarget === 'all') {
+    recipientIds = trChatAllProfiles.map(function(p){ return p.id; });
+  } else if (trChatTarget === 'groups') {
+    recipientIds = trChatAllProfiles.filter(function(p){ return trChatSelectedGroups.indexOf(p.group_name) > -1; }).map(function(p){ return p.id; });
+  } else {
+    recipientIds = trChatSelectedPlayers.slice();
+  }
+  if (!recipientIds.length) { errEl.textContent = 'Ingen mottakere valgt.'; errEl.style.display = 'block'; errEl.classList.add('show'); return; }
+  try {
+    var senderId = trainerProfile ? trainerProfile.id : currentProfile.id;
+    await api('POST', 'messages', {sender_id: senderId, body: body, sport: sport});
+    var msgs = await api('GET', 'messages?sender_id=eq.' + senderId + '&order=created_at.desc&limit=1&select=id');
+    var msgId = msgs && msgs[0] ? msgs[0].id : null;
+    if (msgId) {
+      for (var i = 0; i < recipientIds.length; i++) {
+        await api('POST', 'message_recipients', {message_id: msgId, recipient_id: recipientIds[i]});
+      }
+    }
+    document.getElementById('tr-chat-body').value = '';
+    okEl.classList.add('show');
+    setTimeout(function(){ okEl.classList.remove('show'); }, 2500);
+  } catch(e) {
+    errEl.textContent = 'Feil: ' + e.message; errEl.style.display = 'block'; errEl.classList.add('show');
+  }
+}
+
+async function loadTrainerInbox() {
+  var el = document.getElementById('tr-chat-inbox'); if (!el) return;
+  var tid = trainerProfile ? trainerProfile.id : null; if (!tid) return;
+  var msgs = await api('GET', 'messages?select=*,profiles!sender_id(full_name)&order=created_at.desc') || [];
+  // Filter: only messages sent TO this trainer
+  var myMsgs = await api('GET', 'message_recipients?recipient_id=eq.' + tid + '&select=message_id,read_at') || [];
+  var myMsgIds = myMsgs.map(function(r){ return r.message_id; });
+  var inboxMsgs = msgs.filter(function(m){ return myMsgIds.indexOf(m.id) > -1; });
+  if (!inboxMsgs.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen meldinger enda</div>';
+    document.getElementById('tr-inbox-badge').style.display = 'none'; return; }
+  var unreadCount = 0;
+  var html = '';
+  inboxMsgs.forEach(function(m) {
+    var recRow = myMsgs.find(function(r){ return r.message_id === m.id; });
+    var isUnread = recRow && !recRow.read_at;
+    if (isUnread) unreadCount++;
+    var senderName = m.profiles ? m.profiles.full_name : 'Ukjent';
+    html += '<div style="border:1px solid ' + (isUnread ? 'var(--blue)' : 'var(--border)') + ';border-radius:9px;padding:12px;margin-bottom:10px;background:' + (isUnread ? 'var(--blue-light)' : 'var(--bg)') + '">'
+      + '<div style="display:flex;justify-content:space-between;margin-bottom:6px">'
+      + '<strong style="font-size:13px">' + senderName + '</strong>'
+      + '<span style="font-size:12px;color:var(--text-muted)">' + m.created_at.split('T')[0] + (isUnread ? ' \u2022 Ny' : '') + '</span>'
+      + '</div>'
+      + '<div style="font-size:14px;margin-bottom:8px">' + m.body + '</div>'
+      + '<div style="display:flex;gap:6px">'
+      + '<input type="text" id="reply_' + m.id + '" placeholder="Svar..." style="flex:1;font-size:13px;border:1.5px solid var(--border);border-radius:7px;padding:7px 10px;outline:none">'
+      + '<button class="btn-sm-blue" onclick="sendTrainerReply(\'' + m.id + '\',\'' + m.sender_id + '\')">Send svar</button>'
+      + '</div>'
+      + '</div>';
+    // Mark as read
+    if (isUnread) {
+      api('PATCH', 'message_recipients?message_id=eq.' + m.id + '&recipient_id=eq.' + tid, {read_at: new Date().toISOString()});
+    }
+  });
+  el.innerHTML = html;
+  var badge = document.getElementById('tr-inbox-badge');
+  if (badge) { badge.style.display = unreadCount > 0 ? 'inline' : 'none'; badge.textContent = unreadCount; }
+}
+
+async function sendTrainerReply(msgId, senderId) {
+  var input = document.getElementById('reply_' + msgId);
+  var body = input ? input.value.trim() : '';
+  if (!body) return;
+  var tid = trainerProfile ? trainerProfile.id : null;
+  await api('POST', 'message_replies', {message_id: msgId, sender_id: tid, body: body});
+  if (input) input.value = '';
+  loadTrainerInbox();
+}
+
 function showToast() {
-  var t = document.getElementById('save-toast');
   t.classList.add('show');
   setTimeout(function() { t.classList.remove('show'); }, 2000);
 }
