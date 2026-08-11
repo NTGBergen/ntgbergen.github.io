@@ -2499,7 +2499,8 @@ async function sendTrainerReply(msgId, senderId) {
 }
 
 function showToast() {
-  t.classList.add('show');
+  var t = document.getElementById('save-toast');
+  if (!t) return;
   setTimeout(function() { t.classList.remove('show'); }, 2000);
 }
 
