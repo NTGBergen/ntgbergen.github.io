@@ -1619,14 +1619,17 @@ async function saveStudent() {
   }
 }
 
-function startEditStudent(id, name, cls, pos, grp, spt) {
+async function startEditStudent(id, name, cls, pos, grp, spt) {
   document.getElementById('edit-student-id').value = id;
   document.getElementById('student-form-title').textContent = 'Rediger elev';
   document.getElementById('new-student-name').value = name;
   document.getElementById('new-student-class').value = cls;
-  document.getElementById('new-student-pos').value = pos;
-  document.getElementById('new-student-group').value = grp || '';
   document.getElementById('new-student-sport').value = spt || 'H\u00e5ndball';
+  updateStudentPositions();
+  document.getElementById('new-student-pos').value = pos;
+  // Make sure groups are loaded before setting value
+  await loadGroups();
+  document.getElementById('new-student-group').value = grp || '';
   document.getElementById('password-field').style.display = 'none';
   document.getElementById('edit-cancel-btn').style.display = 'block';
   document.getElementById('student-form-title').scrollIntoView({behavior: 'smooth'});
@@ -1717,12 +1720,13 @@ async function loadCalendar() {
   var sport = currentProfile.sport || 'H\u00e5ndball';
   var query = 'training_events?date=gte.' + today + '&sport=eq.' + encodeURIComponent(sport) + '&order=date.asc,time.asc&select=*';
   var events = await api('GET', query) || [];
-  // Filter by student's group if they have one
-  if (currentProfile.group_name) {
-    events = events.filter(function(ev) {
-      return !ev.group_names || ev.group_names.length === 0 || ev.group_names.indexOf(currentProfile.group_name) > -1;
-    });
-  }
+  var group = currentProfile.group_name || null;
+  events = events.filter(function(ev) {
+    var gn = Array.isArray(ev.group_names) ? ev.group_names : [];
+    if (gn.length === 0) return true; // No group = visible to all
+    if (!group) return true; // Student has no group = show all
+    return gn.indexOf(group) > -1; // Only show if student's group is included
+  });
   var regs = await api('GET', 'event_registrations?user_id=eq.' + currentProfile.id + '&select=event_id,status');
   var myRegs = {};
   (regs || []).forEach(function(r) { myRegs[r.event_id] = r.status; });
