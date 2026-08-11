@@ -1562,7 +1562,7 @@ async function loadTrainerView() {
   document.getElementById('tr-table').style.display = 'none';
   await loadGroups();
   await loadEvents();
-  await loadTrainerChat();
+  loadTrainerChat().catch(function(e){ console.log('Chat load error:', e); });
   var today = new Date().toISOString().split('T')[0];
   document.getElementById('ev-date').value = today;
   var trainerSport = trainerProfile ? (trainerProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball';
@@ -2317,39 +2317,50 @@ async function sendTrainerMessage() {
 async function loadTrainerInbox() {
   var el = document.getElementById('tr-chat-inbox'); if (!el) return;
   var tid = trainerProfile ? trainerProfile.id : null; if (!tid) return;
-  var msgs = await api('GET', 'messages?select=*,profiles!sender_id(full_name)&order=created_at.desc') || [];
-  // Filter: only messages sent TO this trainer
-  var myMsgs = await api('GET', 'message_recipients?recipient_id=eq.' + tid + '&select=message_id,read_at') || [];
-  var myMsgIds = myMsgs.map(function(r){ return r.message_id; });
-  var inboxMsgs = msgs.filter(function(m){ return myMsgIds.indexOf(m.id) > -1; });
-  if (!inboxMsgs.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen meldinger enda</div>';
-    document.getElementById('tr-inbox-badge').style.display = 'none'; return; }
-  var unreadCount = 0;
-  var html = '';
-  inboxMsgs.forEach(function(m) {
-    var recRow = myMsgs.find(function(r){ return r.message_id === m.id; });
-    var isUnread = recRow && !recRow.read_at;
-    if (isUnread) unreadCount++;
-    var senderName = m.profiles ? m.profiles.full_name : 'Ukjent';
-    html += '<div style="border:1px solid ' + (isUnread ? 'var(--blue)' : 'var(--border)') + ';border-radius:9px;padding:12px;margin-bottom:10px;background:' + (isUnread ? 'var(--blue-light)' : 'var(--bg)') + '">'
-      + '<div style="display:flex;justify-content:space-between;margin-bottom:6px">'
-      + '<strong style="font-size:13px">' + senderName + '</strong>'
-      + '<span style="font-size:12px;color:var(--text-muted)">' + m.created_at.split('T')[0] + (isUnread ? ' \u2022 Ny' : '') + '</span>'
-      + '</div>'
-      + '<div style="font-size:14px;margin-bottom:8px">' + m.body + '</div>'
-      + '<div style="display:flex;gap:6px">'
-      + '<input type="text" id="reply_' + m.id + '" placeholder="Svar..." style="flex:1;font-size:13px;border:1.5px solid var(--border);border-radius:7px;padding:7px 10px;outline:none">'
-      + '<button class="btn-sm-blue" onclick="sendTrainerReply(\'' + m.id + '\',\'' + m.sender_id + '\')">Send svar</button>'
-      + '</div>'
-      + '</div>';
-    // Mark as read
-    if (isUnread) {
-      api('PATCH', 'message_recipients?message_id=eq.' + m.id + '&recipient_id=eq.' + tid, {read_at: new Date().toISOString()});
+  try {
+    var myMsgs = await api('GET', 'message_recipients?recipient_id=eq.' + tid + '&select=message_id,read_at') || [];
+    if (!myMsgs.length) {
+      el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen meldinger enda</div>';
+      document.getElementById('tr-inbox-badge').style.display = 'none';
+      return;
     }
-  });
-  el.innerHTML = html;
-  var badge = document.getElementById('tr-inbox-badge');
-  if (badge) { badge.style.display = unreadCount > 0 ? 'inline' : 'none'; badge.textContent = unreadCount; }
+    var msgIds = myMsgs.map(function(r){ return r.message_id; }).join(',');
+    var msgs = await api('GET', 'messages?id=in.(' + msgIds + ')&order=created_at.desc&select=*') || [];
+    if (!msgs.length) {
+      el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen meldinger enda</div>';
+      document.getElementById('tr-inbox-badge').style.display = 'none';
+      return;
+    }
+    var unreadCount = 0;
+    var html = '';
+    for (var i = 0; i < msgs.length; i++) {
+      var m = msgs[i];
+      var recRow = myMsgs.find(function(r){ return r.message_id === m.id; });
+      var isUnread = recRow && !recRow.read_at;
+      if (isUnread) unreadCount++;
+      var senderProfile = await api('GET', 'profiles?id=eq.' + m.sender_id + '&select=full_name') || [];
+      var senderName = senderProfile[0] ? senderProfile[0].full_name : 'Ukjent';
+      html += '<div style="border:1px solid ' + (isUnread ? 'var(--blue)' : 'var(--border)') + ';border-radius:9px;padding:12px;margin-bottom:10px;background:' + (isUnread ? 'var(--blue-light)' : 'var(--bg)') + '">'
+        + '<div style="display:flex;justify-content:space-between;margin-bottom:6px">'
+        + '<strong style="font-size:13px">' + senderName + '</strong>'
+        + '<span style="font-size:12px;color:var(--text-muted)">' + m.created_at.split('T')[0] + (isUnread ? ' \u2022 Ny' : '') + '</span>'
+        + '</div>'
+        + '<div style="font-size:14px;margin-bottom:8px">' + m.body + '</div>'
+        + '<div style="display:flex;gap:6px">'
+        + '<input type="text" id="reply_' + m.id + '" placeholder="Svar..." style="flex:1;font-size:13px;border:1.5px solid var(--border);border-radius:7px;padding:7px 10px;outline:none">'
+        + '<button class="btn-sm-blue" onclick="sendTrainerReply(\'' + m.id + '\',\'' + m.sender_id + '\')">Send svar</button>'
+        + '</div></div>';
+      if (isUnread) {
+        api('PATCH', 'message_recipients?message_id=eq.' + m.id + '&recipient_id=eq.' + tid, {read_at: new Date().toISOString()});
+      }
+    }
+    el.innerHTML = html;
+    var badge = document.getElementById('tr-inbox-badge');
+    if (badge) { badge.style.display = unreadCount > 0 ? 'inline' : 'none'; badge.textContent = unreadCount; }
+  } catch(e) {
+    el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Kunne ikke laste meldinger</div>';
+    console.log('Inbox error:', e);
+  }
 }
 
 async function sendTrainerReply(msgId, senderId) {
