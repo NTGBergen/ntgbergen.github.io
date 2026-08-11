@@ -10,6 +10,7 @@
 <meta name="theme-color" content="#002F6C">
 <title>NTG Bergen</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <style>
 :root{
   --blue:#002F6C;--blue-mid:#1A4A8A;--blue-light:#E8F0FA;
@@ -814,6 +815,8 @@ async function openPlayerView(profile) {
   renderFocusKravGrid();
   await loadFocusPeriods();
   switchTab('kalender');
+  // Ask for notification permission
+  setTimeout(requestNotificationPermission, 3000);
 }
 
 async function loadPlayerData() {
@@ -2499,7 +2502,59 @@ document.getElementById('login-password').addEventListener('keydown', function(e
   if (e.key === 'Enter') doLogin();
 });
 
-// Håndter magic link og passord-reset ved oppstart
+// ---- ONESIGNAL PUSH NOTIFICATIONS ----
+var OS_APP_ID = 'e3ff81e2-292b-42cc-bc13-1e2169285824';
+
+function initOneSignal() {
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  window.OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: OS_APP_ID,
+      notifyButton: { enable: false },
+      allowLocalhostAsSecureOrigin: true
+    });
+  });
+}
+
+async function requestNotificationPermission() {
+  if (!window.OneSignal) return;
+  try {
+    await window.OneSignal.Notifications.requestPermission();
+    var uid = currentProfile ? currentProfile.id : null;
+    if (uid) {
+      window.OneSignal.login(uid);
+    }
+  } catch(e) {
+    console.log('Notification permission error:', e);
+  }
+}
+
+async function sendPushNotification(message, title) {
+  // Send via OneSignal REST API using admin key stored server-side
+  // For now, tag users and send via OneSignal dashboard or API
+  try {
+    await fetch('https://onesignal.com/api/v1/notifications', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Basic ' + OS_APP_ID
+      },
+      body: JSON.stringify({
+        app_id: OS_APP_ID,
+        included_segments: ['All'],
+        contents: { en: message, nb: message },
+        headings: { en: title || 'NTG Bergen', nb: title || 'NTG Bergen' }
+      })
+    });
+  } catch(e) {
+    console.log('Push error:', e);
+  }
+}
+
+// Initialize OneSignal
+initOneSignal();
+
+// ---- AUTO LOGIN ----
 async function handleAuthRedirect() {
   var hash = window.location.hash;
   if (!hash) { tryAutoLogin(); return; }
