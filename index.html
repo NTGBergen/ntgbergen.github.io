@@ -841,6 +841,7 @@ async function loadProfile(uid) {
     isTrainerViewing = false;
     showScreen('screen-trainer');
     loadTrainerView();
+    initRealtime();
   } else {
     isTrainerViewing = false;
     trainerProfile = null;
@@ -867,6 +868,7 @@ async function openPlayerView(profile) {
   switchTab('kalender');
   // Ask for notification permission
   setTimeout(requestNotificationPermission, 3000);
+  initRealtime();
 }
 
 async function loadPlayerData() {
@@ -2769,6 +2771,87 @@ async function sendPushNotification(message, title) {
     });
   } catch(e) {
     console.log('Push error:', e);
+  }
+}
+
+// ---- SUPABASE REALTIME ----
+var realtimeSocket = null;
+var realtimeRef = 0;
+var realtimeHeartbeat = null;
+
+function initRealtime() {
+  if (realtimeSocket) { try { realtimeSocket.close(); } catch(e) {} }
+  var token = currentUser && currentUser.access_token ? currentUser.access_token : SB_KEY;
+  var wsUrl = SB_URL.replace('https://', 'wss://') + '/realtime/v1/websocket?apikey=' + SB_KEY + '&vsn=1.0.0';
+  var socket = new WebSocket(wsUrl);
+  realtimeSocket = socket;
+
+  socket.onopen = function() {
+    // Join channel for all public table changes
+    socket.send(JSON.stringify({
+      topic: 'realtime:public',
+      event: 'phx_join',
+      payload: {
+        config: {
+          postgres_changes: [
+            {event: '*', schema: 'public', table: 'training_events'},
+            {event: '*', schema: 'public', table: 'event_registrations'},
+            {event: '*', schema: 'public', table: 'messages'},
+            {event: '*', schema: 'public', table: 'message_replies'},
+            {event: '*', schema: 'public', table: 'message_recipients'}
+          ]
+        },
+        access_token: token
+      },
+      ref: String(++realtimeRef)
+    }));
+    realtimeHeartbeat = setInterval(function() {
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({topic: 'phoenix', event: 'heartbeat', payload: {}, ref: String(++realtimeRef)}));
+      }
+    }, 25000);
+  };
+
+  socket.onmessage = function(e) {
+    try {
+      var msg = JSON.parse(e.data);
+      if (msg.event === 'postgres_changes' && msg.payload && msg.payload.data) {
+        handleRealtimeChange(msg.payload.data.table);
+      }
+    } catch(err) {}
+  };
+
+  socket.onclose = function() {
+    clearInterval(realtimeHeartbeat);
+    // Reconnect after 5 seconds if still logged in
+    if (currentUser) setTimeout(initRealtime, 5000);
+  };
+
+  socket.onerror = function() {
+    // Silent fail - will reconnect on close
+  };
+}
+
+function handleRealtimeChange(table) {
+  var playerScreen = document.getElementById('screen-player');
+  var trainerScreen = document.getElementById('screen-trainer');
+  var isPlayer = playerScreen && playerScreen.style.display !== 'none' && !isTrainerViewing;
+  var isTrainer = trainerScreen && trainerScreen.style.display !== 'none';
+
+  if (table === 'training_events' || table === 'event_registrations') {
+    if (isPlayer || isTrainerViewing) {
+      var calTab = document.getElementById('tab-kalender');
+      if (calTab && calTab.classList.contains('active')) loadCalendar();
+    }
+    if (isTrainer) loadEvents();
+  }
+  if (table === 'messages' || table === 'message_replies' || table === 'message_recipients') {
+    if (isPlayer || isTrainerViewing) {
+      checkPlayerUnread();
+      var chatTab = document.getElementById('tab-chat');
+      if (chatTab && chatTab.classList.contains('active')) loadPlayerInbox();
+    }
+    if (isTrainer) loadTrainerInbox();
   }
 }
 
