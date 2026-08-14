@@ -70,6 +70,7 @@ textarea{resize:vertical}
 .nav-tab{flex:0 0 auto;padding:7px 10px;font-size:11px;font-weight:700;color:rgba(255,255,255,.6);background:none;border:none;border-radius:6px;cursor:pointer;text-align:center;white-space:nowrap}
 .nav-tab.active{background:var(--gold);color:var(--blue)}
 .tab-content{display:none}.tab-content.active{display:block}
+@keyframes fadeInUp{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 .metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:1rem}
 .metric-card{background:var(--bg2);border-radius:8px;padding:10px 12px;border:1px solid var(--border)}
 .metric-card .ml{font-size:11px;color:var(--text-muted);margin-bottom:3px;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
@@ -1722,7 +1723,7 @@ async function saveStudent() {
       document.getElementById('student-success-msg').textContent = 'Elev opprettet!';
     }
     okEl.classList.add('show');
-    document.getElementById('new-student-name').value = '';
+    showGlobalToast('\u2713 ' + document.getElementById('student-success-msg').textContent);
     document.getElementById('new-student-email').value = '';
     document.getElementById('new-student-pass').value = 'NTG2026';
     cancelStudentEdit();
@@ -1843,6 +1844,10 @@ async function loadCalendar() {
   var group = currentProfile.group_name || null;
   allEvents = allEvents.filter(function(ev) {
     var gn = Array.isArray(ev.group_names) ? ev.group_names : [];
+    // Personal game - only show to creator
+    if (gn.some(function(g){ return g.indexOf('player:') === 0; })) {
+      return gn.indexOf('player:' + currentProfile.id) > -1;
+    }
     if (gn.length === 0) return true;
     if (!group) return true;
     return gn.indexOf(group) > -1;
@@ -2018,7 +2023,8 @@ async function saveGroup() {
   await api('POST', 'groups', {name: name, sport: sport});
   document.getElementById('new-group-name').value = '';
   await loadGroups();
-  var t = document.getElementById('group-toast'); t.classList.add('show'); setTimeout(function(){ t.classList.remove('show'); }, 2000);
+  document.getElementById('new-group-name').value = '';
+  showGlobalToast('\u2713 Gruppe lagret!');
 }
 
 async function deleteGroup(id) {
@@ -2154,14 +2160,12 @@ async function saveEvent() {
     for (var w = 0; w < weeks; w++) {
       var d = new Date(baseDate); d.setDate(d.getDate() + w * 7);
       var weekEntry = Object.assign({}, entry);
-      weekEntry.date = d.toISOString().split('T')[0];
+      weekEntry.date = localDateStr(d);
       await api('POST', 'training_events', weekEntry);
     }
   }
   cancelEventEdit();
-  var okEl = document.getElementById('event-success');
-  document.getElementById('event-success-msg').textContent = editId ? '\u00d8kt oppdatert!' : '\u00d8kt opprettet!';
-  okEl.classList.add('show'); setTimeout(function(){ okEl.classList.remove('show'); }, 2500);
+  showGlobalToast(editId ? '\u2713 \u00d8kt oppdatert!' : '\u2713 \u00d8kt(er) opprettet!');
   loadEvents();
 }
 
@@ -2597,23 +2601,26 @@ function setCalView(view) {
   if (view === 'grid') renderCalGrid(calEvents);
 }
 
+// Local date string helper – avoids UTC timezone offset bug
+function localDateStr(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
 function renderCalGrid(events) {
   var el = document.getElementById('cal-grid-view'); if (!el) return;
   var today = new Date(); today.setHours(0,0,0,0);
   var days = ['Man','Tir','Ons','Tor','Fre','L\u00f8r','S\u00f8n'];
-  // Build event map by date string
   var evMap = {};
   events.forEach(function(ev) { if (!evMap[ev.date]) evMap[ev.date] = []; evMap[ev.date].push(ev); });
-  // Start from current Monday
   var start = new Date(today);
-  var dow = (today.getDay() + 6) % 7; // 0=Mon
+  var dow = (today.getDay() + 6) % 7;
   start.setDate(start.getDate() - dow);
   var html = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:8px">';
   days.forEach(function(d){ html += '<div style="font-size:10px;font-weight:700;color:var(--text-muted);text-align:center;padding:3px 0">' + d + '</div>'; });
   html += '</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">';
   for (var i = 0; i < 28; i++) {
     var d = new Date(start); d.setDate(start.getDate() + i);
-    var ds = d.toISOString().split('T')[0];
+    var ds = localDateStr(d);
     var isToday = d.getTime() === today.getTime();
     var hasEv = evMap[ds] && evMap[ds].length > 0;
     var isPast = d < today;
@@ -2641,13 +2648,16 @@ function showDayEvents(dateStr) {
   overlay.onclick = function(e){ if(e.target===overlay) overlay.remove(); };
   var evHtml = dayEvents.length
     ? dayEvents.map(function(ev){
+        var isPersonal = ev.created_by === currentProfile.id && ev.type === 'Kamp';
         var isReg = ev._status === 'paameldt';
         var isAv = ev._status === 'avmeldt';
+        var regBtn = isPersonal ? '' :
+          '<button onclick="toggleRegistration(\'' + ev.id + '\');this.closest(\'div[style*=fixed]\').remove();loadCalendar();" style="margin-top:8px;background:' + (isReg ? 'var(--red-light)' : 'var(--blue-light)') + ';color:' + (isReg ? 'var(--red-dark)' : 'var(--blue)') + ';border:1px solid ' + (isReg ? 'var(--red)' : 'var(--blue)') + ';border-radius:7px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">' + (isReg ? '\u274C Meld av' : isAv ? '\u2713 Meld p\u00e5' : 'Meld p\u00e5') + '</button>';
         return '<div style="padding:10px;background:var(--bg2);border-radius:9px;margin-bottom:8px;border:1px solid var(--border)">'
           + '<div style="font-size:14px;font-weight:700;color:var(--blue)">' + ev.title + '</div>'
           + '<div style="font-size:12px;color:var(--text-muted);margin-top:2px">' + ev.time + (ev.location ? ' \u2022 ' + ev.location : '') + '</div>'
-          + '<div style="font-size:11px;margin-top:3px"><span class="stb">' + ev.type + '</span></div>'
-          + '<button onclick="toggleRegistration(\'' + ev.id + '\');this.closest(\'div[style*=fixed]\').remove();loadCalendar();" style="margin-top:8px;background:' + (isReg ? 'var(--red-light)' : 'var(--blue-light)') + ';color:' + (isReg ? 'var(--red-dark)' : 'var(--blue)') + ';border:1px solid ' + (isReg ? 'var(--red)' : 'var(--blue)') + ';border-radius:7px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">' + (isReg ? '\u274C Meld av' : isAv ? '\u2713 Meld p\u00e5' : 'Meld p\u00e5') + '</button>'
+          + '<div style="font-size:11px;margin-top:3px"><span class="stb">' + ev.type + '</span>' + (isPersonal ? ' <span style="font-size:11px;color:var(--text-muted)">Min kamp</span>' : '') + '</div>'
+          + regBtn
           + '</div>';
       }).join('')
     : '<div style="font-size:13px;color:var(--text-muted)">Ingen \u00f8kter denne dagen</div>';
@@ -2666,24 +2676,32 @@ async function saveMyGame() {
   var date = document.getElementById('my-game-date').value;
   var time = document.getElementById('my-game-time').value;
   var loc = document.getElementById('my-game-location').value;
-  if (!opp || !date) { alert('Fyll inn motstander og dato'); return; }
+  if (!opp || !date) { showGlobalToast('Fyll inn motstander og dato', 'error'); return; }
   var title = (home === 'Hjemme' ? 'Hjemmekamp' : 'Bortekamp') + ' mot ' + opp;
-  var res = await fetch(SB_URL + '/rest/v1/training_events', {
+  await fetch(SB_URL + '/rest/v1/training_events', {
     method: 'POST',
-    headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json', 'Prefer': 'return=representation'},
-    body: JSON.stringify({title: title, date: date, time: time, location: loc, type: 'Kamp', sport: currentProfile.sport || 'H\u00e5ndball', group_names: [], created_by: currentProfile.id})
+    headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
+    body: JSON.stringify({title: title, date: date, time: time, location: loc, type: 'Kamp', sport: currentProfile.sport || 'H\u00e5ndball', group_names: ['player:' + currentProfile.id], created_by: currentProfile.id})
   });
   document.getElementById('my-game-opp').value = '';
   document.getElementById('my-game-location').value = '';
-  var ok = document.getElementById('my-game-ok'); ok.classList.add('show');
-  setTimeout(function(){ ok.classList.remove('show'); }, 2500);
+  showGlobalToast('Kamp lagt til! \u2713');
   loadCalendar();
 }
 
+function showGlobalToast(msg, type) {
+  var existing = document.getElementById('global-toast');
+  if (existing) existing.remove();
+  var t = document.createElement('div');
+  t.id = 'global-toast';
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:' + (type === 'error' ? '#e24b4a' : '#1D9E75') + ';color:#fff;padding:10px 20px;border-radius:20px;font-size:14px;font-weight:700;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.2);white-space:nowrap;animation:fadeInUp .25s ease';
+  document.body.appendChild(t);
+  setTimeout(function(){ if(t.parentNode) t.remove(); }, 2500);
+}
+
 function showToast() {
-  var t = document.getElementById('save-toast');
-  if (!t) return;
-  setTimeout(function() { t.classList.remove('show'); }, 2000);
+  showGlobalToast('\u2713 Lagret');
 }
 
 document.getElementById('login-password').addEventListener('keydown', function(e) {
