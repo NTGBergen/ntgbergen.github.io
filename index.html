@@ -243,9 +243,34 @@ input[type=range]{width:100%;accent-color:var(--blue)}
       <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">F&aring; beskjed n&aring;r trener legger inn nye &oslash;kter eller sender deg en melding.</div>
       <button onclick="enableNotifications()" style="background:#E8B84B;color:#3A2A00;border:none;border-radius:8px;padding:10px 18px;font-size:14px;font-weight:700;cursor:pointer;width:100%">Sl&aring; p&aring; varsler</button>
     </div>
+
     <div class="card">
-      <div class="sec-title">Kommende &oslash;kter for din gruppe</div>
-      <div id="kalender-content"><div class="loading"><div class="spinner"></div>Laster &oslash;kter...</div></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div class="sec-title" style="margin-bottom:0">Kalender</div>
+        <div style="display:flex;gap:6px">
+          <button id="cal-btn-grid" onclick="setCalView('grid')" style="padding:5px 12px;border:1.5px solid var(--blue);border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;background:var(--blue);color:#fff">Kalender</button>
+          <button id="cal-btn-list" onclick="setCalView('list')" style="padding:5px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;background:var(--bg2);color:var(--text-muted)">Liste</button>
+        </div>
+      </div>
+      <div id="cal-grid-view"></div>
+      <div id="kalender-content" style="display:none"></div>
+    </div>
+
+    <div class="card">
+      <div class="sec-title">Legg inn kamp</div>
+      <div class="form-row">
+        <div class="form-group"><label>Motstander</label><input type="text" id="my-game-opp" placeholder="f.eks. Nest-Sotra IL"></div>
+        <div class="form-group"><label>Hjemme/borte</label>
+          <select id="my-game-home"><option value="Hjemme">Hjemme</option><option value="Borte">Borte</option></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Dato</label><input type="date" id="my-game-date"></div>
+        <div class="form-group"><label>Tid</label><input type="time" id="my-game-time" value="18:00"></div>
+      </div>
+      <div class="form-group" style="margin-bottom:10px"><label>Sted</label><input type="text" id="my-game-location" placeholder="f.eks. Arnatveit idrettspark"></div>
+      <div class="alert alert-green" id="my-game-ok"><div><div class="alert-title">Kamp lagt til!</div></div></div>
+      <button class="btn btn-primary" onclick="saveMyGame()">Legg til kamp</button>
     </div>
   </div>
 
@@ -459,6 +484,15 @@ input[type=range]{width:100%;accent-color:var(--blue)}
     <div class="form-group" style="margin-bottom:10px">
       <label>Synlig for grupper (velg ingen = alle ser den)</label>
       <div id="ev-groups-select" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px"></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:10px;background:var(--bg2);border-radius:8px;border:1px solid var(--border)">
+      <input type="checkbox" id="ev-recurring" onchange="document.getElementById('ev-weeks-wrap').style.display=this.checked?'flex':'none'" style="width:18px;height:18px;cursor:pointer">
+      <label for="ev-recurring" style="font-size:13px;font-weight:600;cursor:pointer;margin:0">Gjentakende &oslash;kt</label>
+      <div id="ev-weeks-wrap" style="display:none;align-items:center;gap:6px;margin-left:auto">
+        <span style="font-size:13px;color:var(--text-muted)">Gjenta i</span>
+        <input type="number" id="ev-weeks" min="2" max="52" value="8" style="width:60px;padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:13px">
+        <span style="font-size:13px;color:var(--text-muted)">uker</span>
+      </div>
     </div>
     <div class="login-error" id="event-error"></div>
     <div class="alert alert-green" id="event-success"><div><div class="alert-title" id="event-success-msg">Økt lagret!</div></div></div>
@@ -1593,7 +1627,16 @@ async function loadTrainerView() {
   // Set sport default for new student form
   var sportSel = document.getElementById('new-student-sport');
   if (sportSel) { sportSel.value = trainerSport; updateStudentPositions(); }
-  var profiles = await api('GET', 'profiles?is_trainer=eq.false&is_superuser=eq.false&sport=eq.' + encodeURIComponent(trainerSport) + '&order=full_name.asc&select=*');
+  var profiles = await api('GET', 'profiles?is_trainer=eq.false&is_superuser=eq.false&sport=eq.' + encodeURIComponent(trainerSport) + '&select=*') || [];
+  // Sort by most recent session date
+  var allLatestSess = await api('GET', 'sessions?order=date.desc&select=user_id,date') || [];
+  profiles.sort(function(a, b) {
+    var aS = allLatestSess.find(function(s){ return s.user_id === a.id; });
+    var bS = allLatestSess.find(function(s){ return s.user_id === b.id; });
+    if (!aS && !bS) return a.full_name.localeCompare(b.full_name);
+    if (!aS) return 1; if (!bS) return -1;
+    return bS.date.localeCompare(aS.date);
+  });
   var sel = document.getElementById('tr-conv-player');
   sel.innerHTML = profiles.map(function(p) { return '<option value="' + p.id + '">' + p.full_name + '</option>'; }).join('');
   var overload = 0; var missing = 0; var logged = 0;
@@ -1785,24 +1828,42 @@ function openSnakkeLink(e) {
 
 // ---- KALENDER ----
 async function loadCalendar() {
-  var el = document.getElementById('kalender-content');
-  el.innerHTML = '<div class="loading"><div class="spinner"></div>Laster \u00f8kter...</div>';
+  var gridEl = document.getElementById('cal-grid-view');
+  var listEl = document.getElementById('kalender-content');
+  if (gridEl) gridEl.innerHTML = '<div class="loading"><div class="spinner"></div>Laster...</div>';
   var today = new Date().toISOString().split('T')[0];
-  var sport = currentProfile.sport || 'H\u00e5ndball';
-  var query = 'training_events?date=gte.' + today + '&sport=eq.' + encodeURIComponent(sport) + '&order=date.asc,time.asc&select=*';
-  var events = await api('GET', query) || [];
-  var group = currentProfile.group_name || null;
-  events = events.filter(function(ev) {
-    var gn = Array.isArray(ev.group_names) ? ev.group_names : [];
-    if (gn.length === 0) return true; // No group = visible to all
-    if (!group) return true; // Student has no group = show all
-    return gn.indexOf(group) > -1; // Only show if student's group is included
+  var sport = currentProfile.sport || 'Håndball';
+  var sportEvents = await api('GET', 'training_events?sport=eq.' + encodeURIComponent(sport) + '&order=date.asc,time.asc&select=*') || [];
+  var myGames = await api('GET', 'training_events?created_by=eq.' + currentProfile.id + '&order=date.asc&select=*') || [];
+  var allIds = {};
+  var allEvents = [];
+  sportEvents.concat(myGames).forEach(function(ev) {
+    if (!allIds[ev.id]) { allIds[ev.id] = true; allEvents.push(ev); }
   });
-  var regs = await api('GET', 'event_registrations?user_id=eq.' + currentProfile.id + '&select=event_id,status');
+  var group = currentProfile.group_name || null;
+  allEvents = allEvents.filter(function(ev) {
+    var gn = Array.isArray(ev.group_names) ? ev.group_names : [];
+    if (gn.length === 0) return true;
+    if (!group) return true;
+    return gn.indexOf(group) > -1;
+  });
+  var regs = await api('GET', 'event_registrations?user_id=eq.' + currentProfile.id + '&select=event_id,status') || [];
   var myRegs = {};
-  (regs || []).forEach(function(r) { myRegs[r.event_id] = r.status; });
-  renderCalendarList(events, myRegs);
+  regs.forEach(function(r){ myRegs[r.event_id] = r.status; });
+  allEvents.forEach(function(ev){ ev._status = myRegs[ev.id] || null; });
+  calEvents = allEvents;
+  if (calView === 'grid') {
+    renderCalGrid(calEvents);
+    if (listEl) listEl.style.display = 'none';
+    if (gridEl) gridEl.style.display = 'block';
+  } else {
+    if (gridEl) gridEl.style.display = 'none';
+    if (listEl) listEl.style.display = 'block';
+    var future = calEvents.filter(function(ev){ return ev.date >= today; });
+    renderCalendarList(future, myRegs);
+  }
 }
+
 
 function renderCalendarList(events, myRegs) {
   var el = document.getElementById('kalender-content');
@@ -2085,7 +2146,18 @@ async function saveEvent() {
     created_by: trainerProfile ? trainerProfile.id : currentProfile.id
   };
   if (editId) { await api('PATCH', 'training_events?id=eq.' + editId, entry); }
-  else { await api('POST', 'training_events', entry); }
+  else {
+    var weeks = 1;
+    var isRecurring = document.getElementById('ev-recurring') && document.getElementById('ev-recurring').checked;
+    if (isRecurring) weeks = parseInt(document.getElementById('ev-weeks').value) || 1;
+    var baseDate = new Date(entry.date + 'T12:00:00');
+    for (var w = 0; w < weeks; w++) {
+      var d = new Date(baseDate); d.setDate(d.getDate() + w * 7);
+      var weekEntry = Object.assign({}, entry);
+      weekEntry.date = d.toISOString().split('T')[0];
+      await api('POST', 'training_events', weekEntry);
+    }
+  }
   cancelEventEdit();
   var okEl = document.getElementById('event-success');
   document.getElementById('event-success-msg').textContent = editId ? '\u00d8kt oppdatert!' : '\u00d8kt opprettet!';
@@ -2506,6 +2578,106 @@ async function sendTrainerReply(msgId, senderId) {
   });
   if (input) input.value = '';
   loadTrainerInbox();
+}
+
+// ---- CALENDAR VIEW ----
+var calView = 'grid';
+var calEvents = [];
+
+function setCalView(view) {
+  calView = view;
+  document.getElementById('cal-btn-grid').style.background = view === 'grid' ? 'var(--blue)' : 'var(--bg2)';
+  document.getElementById('cal-btn-grid').style.color = view === 'grid' ? '#fff' : 'var(--text-muted)';
+  document.getElementById('cal-btn-grid').style.borderColor = view === 'grid' ? 'var(--blue)' : 'var(--border)';
+  document.getElementById('cal-btn-list').style.background = view === 'list' ? 'var(--blue)' : 'var(--bg2)';
+  document.getElementById('cal-btn-list').style.color = view === 'list' ? '#fff' : 'var(--text-muted)';
+  document.getElementById('cal-btn-list').style.borderColor = view === 'list' ? 'var(--blue)' : 'var(--border)';
+  document.getElementById('cal-grid-view').style.display = view === 'grid' ? 'block' : 'none';
+  document.getElementById('kalender-content').style.display = view === 'list' ? 'block' : 'none';
+  if (view === 'grid') renderCalGrid(calEvents);
+}
+
+function renderCalGrid(events) {
+  var el = document.getElementById('cal-grid-view'); if (!el) return;
+  var today = new Date(); today.setHours(0,0,0,0);
+  var days = ['Man','Tir','Ons','Tor','Fre','L\u00f8r','S\u00f8n'];
+  // Build event map by date string
+  var evMap = {};
+  events.forEach(function(ev) { if (!evMap[ev.date]) evMap[ev.date] = []; evMap[ev.date].push(ev); });
+  // Start from current Monday
+  var start = new Date(today);
+  var dow = (today.getDay() + 6) % 7; // 0=Mon
+  start.setDate(start.getDate() - dow);
+  var html = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:8px">';
+  days.forEach(function(d){ html += '<div style="font-size:10px;font-weight:700;color:var(--text-muted);text-align:center;padding:3px 0">' + d + '</div>'; });
+  html += '</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">';
+  for (var i = 0; i < 28; i++) {
+    var d = new Date(start); d.setDate(start.getDate() + i);
+    var ds = d.toISOString().split('T')[0];
+    var isToday = d.getTime() === today.getTime();
+    var hasEv = evMap[ds] && evMap[ds].length > 0;
+    var isPast = d < today;
+    html += '<div onclick="showDayEvents(\'' + ds + '\')" style="'
+      + 'border-radius:8px;padding:6px 4px;text-align:center;cursor:pointer;'
+      + 'background:' + (isToday ? 'var(--blue)' : hasEv ? 'var(--blue-light)' : 'var(--bg2)') + ';'
+      + 'border:1.5px solid ' + (isToday ? 'var(--blue)' : hasEv ? 'var(--blue)' : 'var(--border)') + ';'
+      + 'opacity:' + (isPast && !isToday ? '.5' : '1') + ';'
+      + '">'
+      + '<div style="font-size:11px;font-weight:' + (isToday ? '800' : '600') + ';color:' + (isToday ? '#fff' : hasEv ? 'var(--blue)' : 'var(--text-muted)') + '">' + d.getDate() + '</div>'
+      + (hasEv ? '<div style="width:6px;height:6px;border-radius:50%;background:' + (isToday ? '#fff' : 'var(--blue)') + ';margin:2px auto 0"></div>' : '')
+      + '</div>';
+  }
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function showDayEvents(dateStr) {
+  var d = new Date(dateStr + 'T12:00:00');
+  var dayLabel = d.toLocaleDateString('nb-NO', {weekday:'long', day:'numeric', month:'long'});
+  dayLabel = dayLabel.charAt(0).toUpperCase() + dayLabel.slice(1);
+  var dayEvents = calEvents.filter(function(ev){ return ev.date === dateStr; });
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:flex-end;justify-content:center';
+  overlay.onclick = function(e){ if(e.target===overlay) overlay.remove(); };
+  var evHtml = dayEvents.length
+    ? dayEvents.map(function(ev){
+        var isReg = ev._status === 'paameldt';
+        var isAv = ev._status === 'avmeldt';
+        return '<div style="padding:10px;background:var(--bg2);border-radius:9px;margin-bottom:8px;border:1px solid var(--border)">'
+          + '<div style="font-size:14px;font-weight:700;color:var(--blue)">' + ev.title + '</div>'
+          + '<div style="font-size:12px;color:var(--text-muted);margin-top:2px">' + ev.time + (ev.location ? ' \u2022 ' + ev.location : '') + '</div>'
+          + '<div style="font-size:11px;margin-top:3px"><span class="stb">' + ev.type + '</span></div>'
+          + '<button onclick="toggleRegistration(\'' + ev.id + '\');this.closest(\'div[style*=fixed]\').remove();loadCalendar();" style="margin-top:8px;background:' + (isReg ? 'var(--red-light)' : 'var(--blue-light)') + ';color:' + (isReg ? 'var(--red-dark)' : 'var(--blue)') + ';border:1px solid ' + (isReg ? 'var(--red)' : 'var(--blue)') + ';border-radius:7px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">' + (isReg ? '\u274C Meld av' : isAv ? '\u2713 Meld p\u00e5' : 'Meld p\u00e5') + '</button>'
+          + '</div>';
+      }).join('')
+    : '<div style="font-size:13px;color:var(--text-muted)">Ingen \u00f8kter denne dagen</div>';
+  overlay.innerHTML = '<div style="background:var(--bg);border-radius:16px 16px 0 0;padding:1.5rem;width:100%;max-width:680px;max-height:80vh;overflow-y:auto">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
+    + '<div style="font-size:15px;font-weight:700;color:var(--blue)">' + dayLabel + '</div>'
+    + '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted)">&times;</button>'
+    + '</div>' + evHtml + '</div>';
+  document.body.appendChild(overlay);
+}
+
+// ---- PLAYER GAME ----
+async function saveMyGame() {
+  var opp = document.getElementById('my-game-opp').value.trim();
+  var home = document.getElementById('my-game-home').value;
+  var date = document.getElementById('my-game-date').value;
+  var time = document.getElementById('my-game-time').value;
+  var loc = document.getElementById('my-game-location').value;
+  if (!opp || !date) { alert('Fyll inn motstander og dato'); return; }
+  var title = (home === 'Hjemme' ? 'Hjemmekamp' : 'Bortekamp') + ' mot ' + opp;
+  var res = await fetch(SB_URL + '/rest/v1/training_events', {
+    method: 'POST',
+    headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json', 'Prefer': 'return=representation'},
+    body: JSON.stringify({title: title, date: date, time: time, location: loc, type: 'Kamp', sport: currentProfile.sport || 'H\u00e5ndball', group_names: [], created_by: currentProfile.id})
+  });
+  document.getElementById('my-game-opp').value = '';
+  document.getElementById('my-game-location').value = '';
+  var ok = document.getElementById('my-game-ok'); ok.classList.add('show');
+  setTimeout(function(){ ok.classList.remove('show'); }, 2500);
+  loadCalendar();
 }
 
 function showToast() {
