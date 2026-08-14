@@ -1874,38 +1874,34 @@ async function loadCalendar() {
 
 function renderCalendarList(events, myRegs) {
   var el = document.getElementById('kalender-content');
-  if (!events.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text-muted);padding:.5rem 0">Ingen kommende \u00f8kter for din gruppe</div>'; return; }
+  if (!el) return;
+  if (!events.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text-muted);padding:.5rem 0">Ingen kommende \u00f8kter</div>'; return; }
   var days = {};
   events.forEach(function(ev) {
     if (!days[ev.date]) days[ev.date] = [];
     days[ev.date].push(ev);
   });
   var html = '';
-  Object.keys(days).forEach(function(date) {
+  Object.keys(days).sort().forEach(function(date) {
     var d = new Date(date + 'T12:00:00');
     var dayStr = d.toLocaleDateString('nb-NO', {weekday:'long', day:'numeric', month:'long'});
     dayStr = dayStr.charAt(0).toUpperCase() + dayStr.slice(1);
     html += '<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 6px;padding-top:8px;border-top:1px solid var(--border)">' + dayStr + '</div>';
     days[date].forEach(function(ev) {
-      var status = myRegs[ev.id];
+      var isPersonal = ev.created_by === currentProfile.id && ev.type === 'Kamp';
+      var status = ev._status || myRegs[ev.id];
       var isPaameldt = status === 'paameldt';
       var isAvmeldt = status === 'avmeldt';
-      var btnHtml;
-      if (isPaameldt) {
-        btnHtml = '<button onclick="toggleRegistration(\'' + ev.id + '\')" style="background:var(--red-light);color:var(--red-dark);border:1px solid var(--red);border-radius:7px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">\u274C Meld av</button>';
-      } else if (isAvmeldt) {
-        btnHtml = '<button onclick="toggleRegistration(\'' + ev.id + '\')" style="background:var(--green-light);color:var(--green-dark);border:1px solid var(--green);border-radius:7px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">\u2713 Meld p\u00e5</button>';
-      } else {
-        btnHtml = '<button onclick="toggleRegistration(\'' + ev.id + '\')" style="background:var(--blue-light);color:var(--blue);border:1px solid var(--blue);border-radius:7px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Meld p\u00e5</button>';
-      }
+      var btnHtml = isPersonal ? '<span style="font-size:11px;color:var(--text-muted);font-style:italic">Min kamp</span>' :
+        isPaameldt ? '<button onclick="toggleRegistration(\'' + ev.id + '\')" style="background:var(--red-light);color:var(--red-dark);border:1px solid var(--red);border-radius:7px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">\u274C Meld av</button>' :
+        isAvmeldt ? '<button onclick="toggleRegistration(\'' + ev.id + '\')" style="background:var(--green-light);color:var(--green-dark);border:1px solid var(--green);border-radius:7px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">\u2713 Meld p\u00e5</button>' :
+        '<button onclick="toggleRegistration(\'' + ev.id + '\')" style="background:var(--blue-light);color:var(--blue);border:1px solid var(--blue);border-radius:7px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Meld p\u00e5</button>';
       html += '<div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--bg2);border-radius:9px;margin-bottom:6px;border:1px solid var(--border)">'
         + '<div style="flex:1">'
         + '<div style="font-size:14px;font-weight:700;color:var(--blue)">' + ev.title + '</div>'
         + '<div style="font-size:12px;color:var(--text-muted);margin-top:2px">' + ev.time + (ev.location ? ' \u2022 ' + ev.location : '') + '</div>'
         + '<div style="font-size:11px;margin-top:3px"><span class="stb">' + ev.type + '</span></div>'
-        + '</div>'
-        + btnHtml
-        + '</div>';
+        + '</div>' + btnHtml + '</div>';
     });
   });
   el.innerHTML = html;
@@ -2462,7 +2458,7 @@ async function sendTrainerMessage() {
   } else if (trChatTarget === 'groups') {
     recipientsLabel = trChatSelectedGroups.join(', ');
   } else {
-    recipientsLabel = trChatAllProfiles.filter(function(p){ return trChatSelectedPlayers.indexOf(p.id) > -1; }).map(function(p){ return p.full_name.split(' ')[0]; }).join(', ');
+    recipientsLabel = trChatAllProfiles.filter(function(p){ return trChatSelectedPlayers.indexOf(p.id) > -1; }).map(function(p){ return p.full_name; }).join(', ');
   }
   try {
     var senderId = trainerProfile ? trainerProfile.id : currentProfile.id;
@@ -2626,14 +2622,18 @@ function renderCalGrid(events) {
     var isToday = d.getTime() === today.getTime();
     var hasEv = evMap[ds] && evMap[ds].length > 0;
     var isPast = d < today;
+    var showMonth = d.getDate() === 1 || i === 0;
+    var dateLabel = showMonth
+      ? d.getDate() + ' ' + d.toLocaleDateString('nb-NO', {month:'short'})
+      : String(d.getDate());
     html += '<div onclick="showDayEvents(\'' + ds + '\')" style="'
-      + 'border-radius:8px;padding:6px 4px;text-align:center;cursor:pointer;'
+      + 'border-radius:8px;padding:5px 2px;text-align:center;cursor:pointer;'
       + 'background:' + (isToday ? 'var(--blue)' : hasEv ? 'var(--blue-light)' : 'var(--bg2)') + ';'
       + 'border:1.5px solid ' + (isToday ? 'var(--blue)' : hasEv ? 'var(--blue)' : 'var(--border)') + ';'
       + 'opacity:' + (isPast && !isToday ? '.5' : '1') + ';'
       + '">'
-      + '<div style="font-size:11px;font-weight:' + (isToday ? '800' : '600') + ';color:' + (isToday ? '#fff' : hasEv ? 'var(--blue)' : 'var(--text-muted)') + '">' + d.getDate() + '</div>'
-      + (hasEv ? '<div style="width:6px;height:6px;border-radius:50%;background:' + (isToday ? '#fff' : 'var(--blue)') + ';margin:2px auto 0"></div>' : '')
+      + '<div style="font-size:' + (showMonth ? '9' : '11') + 'px;font-weight:' + (isToday ? '800' : '600') + ';color:' + (isToday ? '#fff' : hasEv ? 'var(--blue)' : 'var(--text-muted)') + ';line-height:1.2">' + dateLabel + '</div>'
+      + (hasEv ? '<div style="width:5px;height:5px;border-radius:50%;background:' + (isToday ? '#fff' : 'var(--blue)') + ';margin:2px auto 0"></div>' : '')
       + '</div>';
   }
   html += '</div>';
