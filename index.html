@@ -2060,7 +2060,11 @@ async function loadEvents() {
   var evType = document.getElementById('ev-type');
   if (evType) evType.innerHTML = getSportSessionTypes(sport).map(function(t){ return '<option>'+t+'</option>'; }).join('');
   var today = new Date().toISOString().split('T')[0];
-  allTrainerEvents = await api('GET', 'training_events?sport=eq.' + encodeURIComponent(sport) + '&order=date.asc,time.asc&select=*') || [];
+  allTrainerEvents = (await api('GET', 'training_events?sport=eq.' + encodeURIComponent(sport) + '&order=date.asc,time.asc&select=*') || [])
+    .filter(function(ev) {
+      var gn = Array.isArray(ev.group_names) ? ev.group_names : [];
+      return !gn.some(function(g){ return g.indexOf('player:') === 0; });
+    });
   var events = allTrainerEvents;
   var el = document.getElementById('tr-events-list'); if (!el) return;
   if (!events.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen \u00f8kter opprettet enda</div>'; return; }
