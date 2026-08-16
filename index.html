@@ -419,13 +419,21 @@ input[type=range]{width:100%;accent-color:var(--blue)}
   <div class="tab-content" id="tab-profil">
     <div class="card"><div class="sec-title">Min profil</div><div id="profil-info"></div></div>
     <div class="card">
-      <div class="sec-title">Klubbinformasjon</div>
-      <div class="form-group" style="margin-bottom:10px"><label>Klubb</label><input type="text" id="club-name" placeholder="Navn p&aring; klubben din"></div>
-      <div class="form-group" style="margin-bottom:10px"><label>Klubbtrener</label><input type="text" id="club-coach-name" placeholder="Navn p&aring; klubbtrener"></div>
-      <div class="form-group" style="margin-bottom:10px"><label>Telefon klubbtrener</label><input type="text" id="club-coach-phone" placeholder="Telefonnummer"></div>
-      <div class="form-group" style="margin-bottom:10px"><label>E-post klubbtrener</label><input type="email" id="club-coach-email" placeholder="epost@klubb.no"></div>
-      <div class="alert alert-green" id="club-save-ok"><div><div class="alert-title">Lagret!</div></div></div>
-      <button class="btn btn-primary" onclick="saveClubInfo()">Lagre klubbinformasjon</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div class="sec-title" style="margin-bottom:0">Klubbinformasjon</div>
+        <button id="club-edit-btn" onclick="toggleClubEdit(true)" class="btn-sm-blue">Rediger</button>
+      </div>
+      <div id="club-info-display"></div>
+      <div id="club-info-form" style="display:none">
+        <div class="form-group" style="margin-bottom:10px"><label>Klubb</label><input type="text" id="club-name" placeholder="Navn p&aring; klubben din"></div>
+        <div class="form-group" style="margin-bottom:10px"><label>Klubbtrener</label><input type="text" id="club-coach-name" placeholder="Navn p&aring; klubbtrener"></div>
+        <div class="form-group" style="margin-bottom:10px"><label>Telefon klubbtrener</label><input type="text" id="club-coach-phone" placeholder="Telefonnummer"></div>
+        <div class="form-group" style="margin-bottom:10px"><label>E-post klubbtrener</label><input type="email" id="club-coach-email" placeholder="epost@klubb.no"></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="saveClubInfo()">Lagre</button>
+          <button class="btn btn-secondary" onclick="toggleClubEdit(false)">Avbryt</button>
+        </div>
+      </div>
     </div>
     <div class="card">
       <div class="sec-title">Endre passord</div>
@@ -536,6 +544,9 @@ input[type=range]{width:100%;accent-color:var(--blue)}
 
   <div class="card">
     <div class="sec-title">Elevstatus</div>
+    <div style="margin-bottom:10px">
+      <button class="btn-sm-blue" onclick="exportTrainerCSV()">Last ned alle utøvere (CSV)</button>
+    </div>
     <div id="tr-loading" class="loading"><div class="spinner"></div>Laster elever...</div>
     <table class="trainer-table" id="tr-table" style="display:none">
       <thead><tr><th>Elev</th><th>Klasse</th><th>ACWR</th><th>Siste &oslash;kt</th><th>Siste test</th><th></th></tr></thead>
@@ -1610,11 +1621,33 @@ function renderProfil() {
     + '<div class="metric-card"><div class="ml">Idrett</div><div style="font-size:15px;font-weight:700;color:var(--blue)">' + (p.sport||'H\u00e5ndball') + '</div></div>'
     + '<div class="metric-card"><div class="ml">Totalt \u00f8kter</div><div class="mv">' + allSessions.length + '</div></div>'
     + '</div>';
-  // Load club info
+  // Set club form values
   document.getElementById('club-name').value = p.club_name || '';
   document.getElementById('club-coach-name').value = p.club_coach_name || '';
   document.getElementById('club-coach-phone').value = p.club_coach_phone || '';
   document.getElementById('club-coach-email').value = p.club_coach_email || '';
+  renderClubDisplay();
+}
+
+function renderClubDisplay() {
+  var p = currentProfile;
+  var el = document.getElementById('club-info-display'); if (!el) return;
+  if (!p.club_name && !p.club_coach_name) {
+    el.innerHTML = '<div style="font-size:13px;color:var(--text-muted);font-style:italic">Ingen klubbinformasjon lagt inn</div>';
+    return;
+  }
+  var html = '';
+  if (p.club_name) html += '<div style="margin-bottom:8px"><div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase">Klubb</div><div style="font-size:14px;font-weight:600">' + p.club_name + '</div></div>';
+  if (p.club_coach_name) html += '<div style="margin-bottom:8px"><div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase">Klubbtrener</div><div style="font-size:14px;font-weight:600">' + p.club_coach_name + '</div></div>';
+  if (p.club_coach_phone) html += '<div style="margin-bottom:8px"><div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase">Telefon</div><div style="font-size:14px">' + p.club_coach_phone + '</div></div>';
+  if (p.club_coach_email) html += '<div style="margin-bottom:8px"><div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase">E-post</div><div style="font-size:14px">' + p.club_coach_email + '</div></div>';
+  el.innerHTML = html;
+}
+
+function toggleClubEdit(show) {
+  document.getElementById('club-info-display').style.display = show ? 'none' : 'block';
+  document.getElementById('club-info-form').style.display = show ? 'block' : 'none';
+  document.getElementById('club-edit-btn').style.display = show ? 'none' : 'inline-block';
 }
 
 async function saveClubInfo() {
@@ -1626,9 +1659,9 @@ async function saveClubInfo() {
   };
   await api('PATCH', 'profiles?id=eq.' + currentProfile.id, update);
   Object.assign(currentProfile, update);
-  var ok = document.getElementById('club-save-ok');
-  ok.classList.add('show');
-  setTimeout(function(){ ok.classList.remove('show'); }, 2000);
+  toggleClubEdit(false);
+  renderClubDisplay();
+  showGlobalToast('\u2713 Klubbinformasjon lagret!');
 }
 
 function updateStudentPositions() {
@@ -1660,6 +1693,7 @@ async function loadTrainerView() {
     if (!aS) return 1; if (!bS) return -1;
     return bS.date.localeCompare(aS.date);
   });
+  window._trainerProfilesData = profiles;
   var sel = document.getElementById('tr-conv-player');
   sel.innerHTML = profiles.map(function(p) { return '<option value="' + p.id + '">' + p.full_name + '</option>'; }).join('');
   var overload = 0; var missing = 0; var logged = 0;
@@ -2754,6 +2788,26 @@ async function saveMyGame() {
   document.getElementById('my-game-location').value = '';
   showGlobalToast('Kamp lagt til! \u2713');
   loadCalendar();
+}
+
+function exportTrainerCSV() {
+  var sport = trainerProfile ? (trainerProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball';
+  var profiles = Array.from(document.querySelectorAll('#tr-body tr')).map(function(row) {
+    return row.cells[0] ? row.cells[0].textContent.trim() : '';
+  }).filter(Boolean);
+  // Use allTrainerProfiles if available
+  var data = window._trainerProfilesData || [];
+  if (!data.length) { showGlobalToast('Last inn siden p\u00e5 nytt f\u00f8rst', 'error'); return; }
+  var csv = 'Navn,Klasse,Gruppe,Posisjon,Idrett,Klubb,Klubbtrener,Telefon klubbtrener,E-post klubbtrener\n';
+  data.forEach(function(p) {
+    csv += '"' + (p.full_name||'') + '","' + (p.class||'') + '","' + (p.group_name||'') + '","'
+      + (p.position||'') + '","' + (p.sport||'') + '","' + (p.club_name||'') + '","'
+      + (p.club_coach_name||'') + '","' + (p.club_coach_phone||'') + '","' + (p.club_coach_email||'') + '"\n';
+  });
+  var blob = new Blob(['\uFEFF' + csv], {type: 'text/csv;charset=utf-8'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a'); a.href = url; a.download = 'NTG-' + sport + '-utovere.csv'; a.click();
+  URL.revokeObjectURL(url);
 }
 
 function showGlobalToast(msg, type) {
