@@ -597,6 +597,26 @@ var SB_URL = 'https://plkutjfeahzkfsakwbkb.supabase.co';
 var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsa3V0amZlYWh6a2ZzYWt3YmtiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4OTcxNTcsImV4cCI6MjA5NTQ3MzE1N30.iieNM0ADFwLGBkckS7zZOecu-S5ekuxWKVARAupop6Q';
 var SB_ADMIN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsa3V0amZlYWh6a2ZzYWt3YmtiIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTg5NzE1NywiZXhwIjoyMDk1NDczMTU3fQ.k0ua_SumcQ3Igp8jKrUaehXINv597zeiccCZsPzyLC0';
 
+async function sendPush(title, message, recipientIds) {
+  try {
+    await fetch(SB_URL + '/functions/v1/send-notification', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + SB_KEY,
+        'apikey': SB_KEY
+      },
+      body: JSON.stringify({
+        title: title,
+        message: message,
+        external_ids: recipientIds || []
+      })
+    });
+  } catch(e) {
+    console.log('Push error:', e);
+  }
+}
+
 var SP = ['Eierskap til egen utvikling','Disiplin og gjennomf\u00f8ringskraft','Evne til \u00e5 holde fokus','T\u00e5le motgang','Energi','Samarbeidsevne','T\u00e5le trening \u2013 fysisk og psykisk'];
 var SL = ['Systematikk i treningsarbeid','S\u00f8vnmengde','Kosthold','24-timersut\u00f8ver'];
 var FFYS = ['Utholdenhet','Plyometri','Styrke'];
@@ -969,7 +989,7 @@ function switchTab(tab) {
   if (tab === 'grafer') renderGraphs();
   if (tab === 'tester') { renderTestHistory(); updateProgressBars(); }
   if (tab === 'ferdigheter') renderSkillsHistory();
-  if (tab === 'chat') loadPlayerChat();
+  if (tab === 'chat') { loadPlayerChat(); checkPlayerUnread(); }
   if (tab === 'samtaler') loadConvList();
   if (tab === 'profil') renderProfil();
 }
@@ -2165,6 +2185,13 @@ async function saveEvent() {
   cancelEventEdit();
   showGlobalToast(editId ? '\u2713 \u00d8kt oppdatert!' : '\u2713 \u00d8kt(er) opprettet!');
   loadEvents();
+  // Send push to relevant recipients
+  if (!editId) {
+    var sport = trainerProfile ? (trainerProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball';
+    var notifTitle = 'Ny trenings\u00f8kt lagt inn';
+    var notifMsg = entry.title + ' \u2013 ' + entry.date + ' kl.' + entry.time;
+    sendPush(notifTitle, notifMsg, []);
+  }
 }
 
 function editEvent(ev) {
@@ -2279,69 +2306,80 @@ async function sendPlayerMessage() {
 async function loadPlayerInbox() {
   var el = document.getElementById('chat-inbox'); if (!el) return;
   try {
-    // Messages sent BY player
     var sentMsgs = await api('GET', 'messages?sender_id=eq.' + currentProfile.id + '&order=created_at.desc&select=*') || [];
-    // Messages sent TO player (from trainer)
     var recRows = await api('GET', 'message_recipients?recipient_id=eq.' + currentProfile.id + '&select=message_id,read_at') || [];
     var recMsgIds = recRows.map(function(r){ return r.message_id; });
     var recMsgs = [];
     for (var i = 0; i < recMsgIds.length; i++) {
       var m = await api('GET', 'messages?id=eq.' + recMsgIds[i] + '&select=*');
-      if (m && m[0]) recMsgs.push(m[0]);
+      if (m && m[0]) recMsgs.push({msg: m[0], recRow: recRows.find(function(r){ return r.message_id === recMsgIds[i]; })});
     }
-    var allMsgs = sentMsgs.concat(recMsgs).sort(function(a,b){ return b.created_at.localeCompare(a.created_at); });
+    var allMsgs = sentMsgs.map(function(m){ return {msg:m, isSent:true}; })
+      .concat(recMsgs.map(function(r){ return {msg:r.msg, isSent:false, recRow:r.recRow}; }))
+      .sort(function(a,b){ return b.msg.created_at.localeCompare(a.msg.created_at); });
     if (!allMsgs.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen meldinger enda</div>'; return; }
     var html = '';
     for (var j = 0; j < allMsgs.length; j++) {
-      var m = allMsgs[j];
-      var isSent = m.sender_id === currentProfile.id;
+      var item = allMsgs[j];
+      var m = item.msg;
+      var isSent = item.isSent;
+      var isUnread = !isSent && item.recRow && !item.recRow.read_at;
       var replies = await api('GET', 'message_replies?message_id=eq.' + m.id + '&order=created_at.asc&select=*') || [];
-      // Mark unread replies as read
-      var unread = replies.filter(function(r){ return !r.read_at && isSent; });
-      for (var k = 0; k < unread.length; k++) {
-        await fetch(SB_URL + '/rest/v1/message_replies?id=eq.' + unread[k].id, {
+      // Count unread replies
+      var unreadReplies = isSent ? replies.filter(function(r){ return !r.read_at; }) : [];
+      // Mark received message as read
+      if (isUnread) {
+        fetch(SB_URL + '/rest/v1/message_recipients?message_id=eq.' + m.id + '&recipient_id=eq.' + currentProfile.id, {
           method: 'PATCH',
           headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
           body: JSON.stringify({read_at: new Date().toISOString()})
         });
       }
-      // Look up trainer name for received messages
+      // Mark unread replies as read
+      for (var k = 0; k < unreadReplies.length; k++) {
+        fetch(SB_URL + '/rest/v1/message_replies?id=eq.' + unreadReplies[k].id, {
+          method: 'PATCH',
+          headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
+          body: JSON.stringify({read_at: new Date().toISOString()})
+        });
+      }
       var trainerName = '';
       if (!isSent) {
         var sp = await api('GET', 'profiles?id=eq.' + m.sender_id + '&select=full_name') || [];
         trainerName = sp[0] ? sp[0].full_name : 'Trener';
       }
-      var fromLine = isSent
-        ? 'Fra deg – ' + m.created_at.split('T')[0]
-        : 'Fra: ' + trainerName + ' – ' + m.created_at.split('T')[0];
-      var toLine = isSent
-        ? 'Til: trenere'
-        : (m.recipients_label ? 'Til: ' + m.recipients_label : 'Til: deg');
-      html += '<div style="border:1px solid var(--border);border-radius:9px;padding:12px;margin-bottom:10px">';
-      html += '<div style="font-size:11px;color:var(--text-muted);font-weight:600;margin-bottom:2px">' + fromLine + '</div>';
+      var hasNewContent = isUnread || unreadReplies.length > 0;
+      var fromLine = isSent ? 'Fra deg \u2013 ' + m.created_at.split('T')[0] : 'Fra: ' + trainerName + ' \u2013 ' + m.created_at.split('T')[0];
+      var toLine = isSent ? 'Til: trenere' : (m.recipients_label ? 'Til: ' + m.recipients_label : 'Til: deg');
+      html += '<div style="border:1.5px solid ' + (hasNewContent ? 'var(--blue)' : 'var(--border)') + ';border-radius:9px;padding:12px;margin-bottom:10px;background:' + (hasNewContent ? 'var(--blue-light)' : 'var(--bg)') + '">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:2px">'
+        + '<div style="font-size:11px;color:' + (hasNewContent ? 'var(--blue)' : 'var(--text-muted)') + ';font-weight:700">' + fromLine + '</div>'
+        + (hasNewContent ? '<span style="background:var(--red);color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700">Ny</span>' : '')
+        + '</div>';
       html += '<div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">' + toLine + '</div>';
-      html += '<div style="font-size:14px;padding:8px;background:' + (isSent ? 'var(--blue-light)' : 'var(--green-light)') + ';border-radius:7px;margin-bottom:6px">' + m.body + '</div>';
+      html += '<div style="font-size:14px;padding:8px;background:' + (isSent ? 'rgba(0,47,108,.08)' : 'rgba(29,158,117,.08)') + ';border-radius:7px;margin-bottom:6px">' + m.body + '</div>';
       if (replies.length) {
         replies.forEach(function(r) {
           var isMe = r.sender_id === currentProfile.id;
-          html += '<div style="font-size:13px;padding:7px;background:' + (isMe ? 'var(--blue-light)' : 'var(--green-light)') + ';border-radius:7px;margin-top:4px">'
+          var isNewReply = !r.read_at && isSent;
+          html += '<div style="font-size:13px;padding:7px;background:' + (isMe ? 'rgba(0,47,108,.08)' : 'rgba(29,158,117,.08)') + ';border-radius:7px;margin-top:4px;border-left:3px solid ' + (isNewReply ? 'var(--blue)' : 'transparent') + '">'
             + '<strong>' + (isMe ? 'Du' : (trainerName || 'Trener')) + ':</strong> ' + r.body
-            + '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + r.created_at.split('T')[0] + '</div>'
-            + '</div>';
+            + '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + r.created_at.split('T')[0] + '</div></div>';
         });
       }
       if (isSent && !replies.length) {
-        html += '<div style="font-size:12px;color:var(--text-muted);font-style:italic">Ikke svart enda</div>';
+        html += '<div style="font-size:12px;color:var(--text-muted);font-style:italic;margin-top:4px">Ikke svart enda</div>';
       }
       if (!isSent) {
         html += '<div style="display:flex;gap:6px;margin-top:8px">'
           + '<input type="text" id="preply_' + m.id + '" placeholder="Svar trener..." style="flex:1;font-size:13px;border:1.5px solid var(--border);border-radius:7px;padding:7px 10px;outline:none">'
-          + '<button class="btn-sm-blue" onclick="sendPlayerReply(\'' + m.id + '\')">Send svar</button>'
-          + '</div>';
+          + '<button class="btn-sm-blue" onclick="sendPlayerReply(\'' + m.id + '\')">Send svar</button></div>';
       }
       html += '</div>';
     }
     el.innerHTML = html;
+    // Update badge after reading
+    setTimeout(checkPlayerUnread, 500);
   } catch(e) {
     el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Kunne ikke laste meldinger</div>';
   }
@@ -2362,14 +2400,23 @@ async function sendPlayerReply(msgId) {
 
 
 async function checkPlayerUnread() {
-  var msgs = await api('GET', 'messages?sender_id=eq.' + currentProfile.id + '&select=id') || [];
-  var hasUnread = false;
-  for (var i = 0; i < msgs.length; i++) {
-    var replies = await api('GET', 'message_replies?message_id=eq.' + msgs[i].id + '&read_at=is.null&select=id') || [];
-    if (replies.length) { hasUnread = true; break; }
+  var unreadCount = 0;
+  // Check unread replies on player's sent messages
+  var sentMsgs = await api('GET', 'messages?sender_id=eq.' + currentProfile.id + '&select=id') || [];
+  for (var i = 0; i < sentMsgs.length; i++) {
+    var replies = await api('GET', 'message_replies?message_id=eq.' + sentMsgs[i].id + '&read_at=is.null&select=id') || [];
+    unreadCount += replies.length;
   }
+  // Check unread messages received from trainer
+  var recRows = await api('GET', 'message_recipients?recipient_id=eq.' + currentProfile.id + '&read_at=is.null&select=message_id') || [];
+  unreadCount += recRows.length;
   var badge = document.getElementById('chat-badge');
-  if (badge) badge.style.display = hasUnread ? 'inline' : 'none';
+  if (badge) {
+    badge.style.display = unreadCount > 0 ? 'inline' : 'none';
+    badge.textContent = unreadCount > 9 ? '9+' : String(unreadCount);
+    badge.style.padding = '1px 5px';
+    badge.style.borderRadius = '10px';
+  }
 }
 
 // ---- TRAINER CHAT ----
@@ -2480,6 +2527,9 @@ async function sendTrainerMessage() {
     document.getElementById('tr-chat-body').value = '';
     okEl.classList.add('show');
     setTimeout(function(){ okEl.classList.remove('show'); }, 2500);
+    // Send push to recipients
+    var senderName = trainerProfile ? trainerProfile.full_name : 'Trener';
+    sendPush('Ny melding fra ' + senderName, body.substring(0, 100), recipientIds);
   } catch(e) {
     errEl.textContent = 'Feil: ' + e.message; errEl.style.display = 'block'; errEl.classList.add('show');
   }
@@ -2573,12 +2623,15 @@ async function sendTrainerReply(msgId, senderId) {
   var body = input ? input.value.trim() : '';
   if (!body) return;
   var tid = trainerProfile ? trainerProfile.id : null;
+  var tName = trainerProfile ? trainerProfile.full_name : 'Trener';
   await fetch(SB_URL + '/rest/v1/message_replies', {
     method: 'POST',
     headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
     body: JSON.stringify({message_id: msgId, sender_id: tid, body: body})
   });
   if (input) input.value = '';
+  // Send push to original sender
+  sendPush('Svar fra ' + tName, body.substring(0, 100), [senderId]);
   loadTrainerInbox();
 }
 
@@ -2596,7 +2649,15 @@ function setCalView(view) {
   document.getElementById('cal-btn-list').style.borderColor = view === 'list' ? 'var(--blue)' : 'var(--border)';
   document.getElementById('cal-grid-view').style.display = view === 'grid' ? 'block' : 'none';
   document.getElementById('kalender-content').style.display = view === 'list' ? 'block' : 'none';
-  if (view === 'grid') renderCalGrid(calEvents);
+  if (view === 'grid') {
+    renderCalGrid(calEvents);
+  } else {
+    var today = new Date().toISOString().split('T')[0];
+    var future = calEvents.filter(function(ev){ return ev.date >= today; });
+    var myRegs = {};
+    calEvents.forEach(function(ev){ if(ev._status) myRegs[ev.id] = ev._status; });
+    renderCalendarList(future, myRegs);
+  }
 }
 
 // Local date string helper – avoids UTC timezone offset bug
@@ -2739,14 +2800,14 @@ async function enableNotifications() {
     var card = document.getElementById('notif-opt-in-card');
     if (window.OneSignal) {
       await window.OneSignal.Notifications.requestPermission();
-      if (currentProfile) window.OneSignal.login(currentProfile.id);
-    } else {
-      var permission = await Notification.requestPermission();
-      if (permission === 'granted') {
-        if (card) card.style.display = 'none';
+      if (currentProfile) {
+        await window.OneSignal.login(currentProfile.id);
       }
+    } else {
+      await Notification.requestPermission();
     }
     if (card) card.style.display = 'none';
+    showGlobalToast('\u2713 Varsler aktivert!');
   } catch(e) {
     console.log('Notification error:', e);
   }
