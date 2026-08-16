@@ -117,6 +117,25 @@ input:focus{border-color:var(--blue)}
     </div>
 
     <div class="card">
+      <div class="sec-title">QR-kode for registrering</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px">Generer en QR-kode utøverne kan scanne for å opprette sin egen bruker.</div>
+      <div class="form-group" style="margin-bottom:12px">
+        <label>Idrett</label>
+        <select id="qr-sport">
+          <option>Håndball</option><option>Fotball</option><option>Basketball</option>
+          <option>Golf</option><option>Sykkel</option><option>Svømming</option>
+          <option>Fekting</option><option>Tennis</option><option>Padel</option><option>Mix</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" onclick="generateQR()">Generer QR-kode</button>
+      <div id="qr-output" style="margin-top:16px;text-align:center;display:none">
+        <div id="qr-canvas" style="margin:0 auto 12px;display:inline-block"></div>
+        <div id="qr-url" style="font-size:12px;color:var(--text-muted);word-break:break-all;margin-bottom:8px"></div>
+        <button class="btn" style="background:var(--gold);color:var(--blue);font-weight:700;padding:8px 16px;border:none;border-radius:8px;cursor:pointer" onclick="downloadQR()">Last ned QR-kode</button>
+      </div>
+    </div>
+
+    <div class="card">
       <div class="sec-title">Eksport</div>
       <div class="export-row">
         <button class="btn btn-primary" onclick="exportAllStudents()">Eksport – alle utøvere (CSV)</button>
@@ -160,6 +179,7 @@ input:focus{border-color:var(--blue)}
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 var SB_URL = 'https://plkutjfeahzkfsakwbkb.supabase.co';
 var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsa3V0amZlYWh6a2ZzYWt3YmtiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4OTcxNTcsImV4cCI6MjA5NTQ3MzE1N30.iieNM0ADFwLGBkckS7zZOecu-S5ekuxWKVARAupop6Q';
@@ -185,6 +205,33 @@ async function authApi(path, body) {
   var data = await res.json();
   if (!res.ok) throw new Error(data.error_description || data.message || 'Feil');
   return data;
+}
+
+function generateQR() {
+  var sport = document.getElementById('qr-sport').value;
+  var url = 'https://ntgbergen.github.io/register.html?sport=' + encodeURIComponent(sport);
+  var container = document.getElementById('qr-canvas');
+  container.innerHTML = '';
+  new QRCode(container, {
+    text: url,
+    width: 200,
+    height: 200,
+    colorDark: '#002F6C',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.H
+  });
+  document.getElementById('qr-url').textContent = url;
+  document.getElementById('qr-output').style.display = 'block';
+}
+
+function downloadQR() {
+  var sport = document.getElementById('qr-sport').value;
+  var canvas = document.querySelector('#qr-canvas canvas');
+  if (!canvas) { var img = document.querySelector('#qr-canvas img'); if(!img) return; }
+  var link = document.createElement('a');
+  link.download = 'NTG-registrering-' + sport + '.png';
+  link.href = canvas ? canvas.toDataURL() : document.querySelector('#qr-canvas img').src;
+  link.click();
 }
 
 async function doLogin() {
