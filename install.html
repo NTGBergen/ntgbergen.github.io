@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NTG Bergen – Kom i gang</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f6f8;color:#1a1a1a;min-height:100vh}
+:root{--blue:#002F6C;--blue-light:#E8F0FA;--gold:#E8B84B;--green:#1D9E75;--green-light:#E1F5EE;--border:rgba(0,0,0,.11)}
+
+.hero{background:var(--blue);color:#fff;padding:3rem 1.5rem 2rem;text-align:center}
+.logo{width:72px;height:72px;background:var(--gold);border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;color:var(--blue);font-size:22px;font-weight:900;font-family:Arial,sans-serif}
+.hero h1{font-size:28px;font-weight:800;margin-bottom:.5rem}
+.hero p{font-size:16px;opacity:.8;max-width:480px;margin:0 auto}
+
+.container{max-width:700px;margin:0 auto;padding:2rem 1rem}
+
+.step-card{background:#fff;border-radius:14px;padding:1.5rem;margin-bottom:1rem;border:1px solid var(--border);box-shadow:0 2px 12px rgba(0,47,108,.06)}
+.step-header{display:flex;align-items:center;gap:14px;margin-bottom:1rem}
+.step-num{width:36px;height:36px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;flex-shrink:0}
+.step-title{font-size:17px;font-weight:700;color:var(--blue)}
+
+.qr-section{text-align:center;padding:1.5rem 0}
+#qr-box{display:inline-block;padding:16px;background:#fff;border-radius:12px;border:2px solid var(--blue);margin:1rem 0}
+.qr-url{font-size:13px;color:#666;margin-top:8px;word-break:break-all}
+
+.phone-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px}
+@media(max-width:520px){.phone-grid{grid-template-columns:1fr}}
+
+.phone-card{background:var(--blue-light);border-radius:10px;padding:1rem}
+.phone-card h3{font-size:14px;font-weight:700;color:var(--blue);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.phone-card ol{padding-left:18px}
+.phone-card li{font-size:13px;color:#333;margin-bottom:6px;line-height:1.5}
+
+.icon-step{display:inline-flex;align-items:center;gap:4px;background:var(--blue);color:#fff;border-radius:5px;padding:1px 7px;font-size:12px;font-weight:600;vertical-align:middle}
+
+.tip{background:#FFF8E7;border:1px solid var(--gold);border-radius:10px;padding:12px 16px;margin-top:1rem;font-size:13px;color:#5a3e00}
+.tip strong{color:var(--blue)}
+
+.register-section{background:var(--green-light);border:1px solid var(--green);border-radius:14px;padding:1.5rem;text-align:center;margin-bottom:1rem}
+.register-section h2{font-size:18px;font-weight:700;color:#085041;margin-bottom:.5rem}
+.register-section p{font-size:14px;color:#0a6350;margin-bottom:1rem}
+#qr-register{display:inline-block;padding:12px;background:#fff;border-radius:10px;border:2px solid var(--green)}
+
+.sport-selector{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:1rem}
+.sport-btn{padding:6px 14px;border:1.5px solid var(--border);border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;background:#fff;color:#666;transition:all .15s}
+.sport-btn.active{border-color:var(--green);background:var(--green-light);color:#085041}
+
+.footer{text-align:center;padding:2rem 1rem;color:#999;font-size:13px}
+
+@media print {
+  body{background:#fff}
+  .hero{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .step-card{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="logo">NTG</div>
+  <h1>Kom i gang med NTG Bergen-appen</h1>
+  <p>Følg stegene nedenfor for å registrere deg og lagre appen på hjemskjermen</p>
+</div>
+
+<div class="container">
+
+  <!-- STEG 1: Registrer deg -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-num">1</div>
+      <div class="step-title">Registrer deg – scan QR-koden</div>
+    </div>
+    <p style="font-size:14px;color:#555;margin-bottom:12px">Velg din idrett og scan QR-koden for å opprette bruker:</p>
+    <div class="sport-selector" id="sport-selector"></div>
+    <div class="register-section">
+      <div id="qr-register"></div>
+      <div class="qr-url" id="register-url"></div>
+      <p style="font-size:13px;color:#0a6350;margin-top:10px">Fyll inn navn, e-post (<strong>@elev.ntg.no</strong>), passord og klasse</p>
+    </div>
+    <div class="tip">
+      <strong>Allerede bruker?</strong> Hopp til steg 2 – du trenger ikke registrere deg på nytt.
+    </div>
+  </div>
+
+  <!-- STEG 2: Åpne appen -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-num">2</div>
+      <div class="step-title">Åpne appen i nettleseren</div>
+    </div>
+    <div class="qr-section">
+      <p style="font-size:14px;color:#555;margin-bottom:8px">Scan for å åpne appen:</p>
+      <div id="qr-box"></div>
+      <div class="qr-url">ntgbergen.github.io</div>
+    </div>
+    <p style="font-size:14px;color:#555">Logg inn med din <strong>@elev.ntg.no</strong>-adresse og passordet du valgte.</p>
+  </div>
+
+  <!-- STEG 3: Legg til på hjemskjerm -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-num">3</div>
+      <div class="step-title">Lagre appen på hjemskjermen</div>
+    </div>
+    <p style="font-size:14px;color:#555;margin-bottom:14px">Da fungerer den akkurat som en vanlig app – uten å måtte åpne nettleseren hver gang.</p>
+    <div class="phone-grid">
+      <div class="phone-card">
+        <h3>🍎 iPhone (Safari)</h3>
+        <ol>
+          <li>Åpne lenken i <strong>Safari</strong> (ikke Chrome)</li>
+          <li>Trykk på <span class="icon-step">Del ↑</span>-ikonet nederst på skjermen</li>
+          <li>Scroll ned og trykk <strong>«Legg til på hjemskjerm»</strong></li>
+          <li>Trykk <strong>«Legg til»</strong> øverst til høyre</li>
+          <li>Appen dukker nå opp på hjemskjermen din ✓</li>
+        </ol>
+      </div>
+      <div class="phone-card">
+        <h3>🤖 Android (Chrome)</h3>
+        <ol>
+          <li>Åpne lenken i <strong>Chrome</strong></li>
+          <li>Trykk på <span class="icon-step">⋮</span>-menyen øverst til høyre</li>
+          <li>Trykk <strong>«Legg til på startskjerm»</strong></li>
+          <li>Trykk <strong>«Legg til»</strong> i dialogen</li>
+          <li>Appen dukker nå opp på startskjermen din ✓</li>
+        </ol>
+      </div>
+    </div>
+    <div class="tip" style="margin-top:14px">
+      <strong>Tips:</strong> Neste gang du åpner appen fra hjemskjermen, er du automatisk innlogget og slipper å skrive passord.
+    </div>
+  </div>
+
+  <!-- STEG 4: Slå på varsler -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-num">4</div>
+      <div class="step-title">Slå på varsler</div>
+    </div>
+    <p style="font-size:14px;color:#555">Første gang du åpner appen fra hjemskjermen vil du se en gul boks øverst i kalenderen:</p>
+    <div style="background:#FFF8E7;border:1px solid var(--gold);border-radius:10px;padding:14px;margin:12px 0;text-align:center">
+      <div style="font-size:14px;font-weight:700;color:#7A5C00;margin-bottom:6px">🔔 Slå på varsler</div>
+      <div style="font-size:13px;color:#6a4e00;margin-bottom:10px">Få beskjed når trener legger inn nye økter eller sender deg en melding.</div>
+      <div style="background:#E8B84B;color:#3A2A00;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;display:inline-block">Slå på varsler</div>
+    </div>
+    <p style="font-size:14px;color:#555">Trykk på knappen og godta varsler – da får du beskjed direkte på telefonen! 🔔</p>
+  </div>
+
+</div>
+
+<div class="footer">NTG Bergen &bull; ntgbergen.github.io</div>
+
+<script>
+var SPORTS = ['Håndball','Fotball','Basketball','Golf','Sykkel','Svømming','Fekting','Tennis','Padel','Mix'];
+var currentSport = 'Håndball';
+var registerQR = null;
+
+// Build sport selector
+var sel = document.getElementById('sport-selector');
+SPORTS.forEach(function(sport) {
+  var btn = document.createElement('button');
+  btn.className = 'sport-btn' + (sport === currentSport ? ' active' : '');
+  btn.textContent = sport;
+  btn.onclick = function() {
+    currentSport = sport;
+    document.querySelectorAll('.sport-btn').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    updateRegisterQR();
+  };
+  sel.appendChild(btn);
+});
+
+// Generate main app QR
+new QRCode(document.getElementById('qr-box'), {
+  text: 'https://ntgbergen.github.io',
+  width: 180,
+  height: 180,
+  colorDark: '#002F6C',
+  colorLight: '#ffffff',
+  correctLevel: QRCode.CorrectLevel.H
+});
+
+// Generate register QR
+function updateRegisterQR() {
+  var url = 'https://ntgbergen.github.io/register.html?sport=' + encodeURIComponent(currentSport);
+  document.getElementById('register-url').textContent = url;
+  var container = document.getElementById('qr-register');
+  container.innerHTML = '';
+  new QRCode(container, {
+    text: url,
+    width: 180,
+    height: 180,
+    colorDark: '#1D9E75',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.H
+  });
+}
+
+updateRegisterQR();
+</script>
+</body>
+</html>
