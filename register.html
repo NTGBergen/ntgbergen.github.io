@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NTG Bergen – Opprett bruker</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f6f8;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem}
+:root{--blue:#002F6C;--blue-light:#E8F0FA;--blue-mid:#1A4A8A;--green:#1D9E75;--green-light:#E1F5EE;--red:#E24B4A;--red-light:#FCEBEB;--border:rgba(0,0,0,.11);--text:#1a1a1a;--text-muted:#666;--bg:#fff;--r:10px}
+.card{background:var(--bg);border:1px solid var(--border);border-radius:16px;padding:2rem;width:100%;max-width:420px;box-shadow:0 4px 24px rgba(0,47,108,.08)}
+.logo{width:64px;height:64px;background:var(--blue);border-radius:15px;display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;color:#E8B84B;font-size:20px;font-weight:900;font-family:Arial,sans-serif}
+.title{font-size:22px;font-weight:800;text-align:center;color:var(--blue);margin-bottom:.25rem}
+.sub{font-size:13px;color:var(--text-muted);text-align:center;margin-bottom:1.5rem}
+.form-group{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.form-group label{font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.03em}
+input,select{font-size:14px;border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;width:100%;outline:none;font-family:inherit;background:var(--bg);color:var(--text)}
+input:focus,select:focus{border-color:var(--blue)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{width:100%;padding:13px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;border:none;margin-top:8px}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:hover{background:var(--blue-mid)}
+.btn-primary:disabled{opacity:.6;cursor:not-allowed}
+.err{background:var(--red-light);border:1px solid var(--red);color:#501313;border-radius:8px;padding:10px 12px;font-size:13px;margin-top:10px;display:none}
+.ok{background:var(--green-light);border:1px solid var(--green);color:#085041;border-radius:8px;padding:10px 12px;font-size:13px;margin-top:10px;display:none;text-align:center}
+.spinner{width:20px;height:20px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.login-link{text-align:center;margin-top:1rem;font-size:13px;color:var(--text-muted)}
+.login-link a{color:var(--blue);font-weight:600;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">NTG</div>
+  <div class="title">Opprett bruker</div>
+  <div class="sub">NTG Bergen – Idrettsutøver</div>
+
+  <div class="form-group">
+    <label>Fullt navn</label>
+    <input type="text" id="reg-name" placeholder="Ola Nordmann" autocomplete="name">
+  </div>
+  <div class="form-group">
+    <label>E-post</label>
+    <input type="email" id="reg-email" placeholder="ola@elev.ntg.no" autocomplete="email">
+  </div>
+  <div class="form-group">
+    <label>Passord</label>
+    <input type="password" id="reg-pass" placeholder="Minst 6 tegn" autocomplete="new-password">
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label>Klasse</label>
+      <select id="reg-class">
+        <option>VG1</option>
+        <option>VG2</option>
+        <option>VG3</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Idrett</label>
+      <select id="reg-sport" onchange="updatePositions()">
+        <option>Håndball</option>
+        <option>Fotball</option>
+        <option>Basketball</option>
+        <option>Golf</option>
+        <option>Sykkel</option>
+        <option>Svømming</option>
+        <option>Fekting</option>
+        <option>Tennis</option>
+        <option>Padel</option>
+        <option>Mix</option>
+      </select>
+    </div>
+  </div>
+  <div class="form-group">
+    <label>Posisjon</label>
+    <select id="reg-pos"></select>
+  </div>
+
+  <div class="err" id="reg-error"></div>
+  <div class="ok" id="reg-ok">
+    ✓ Bruker opprettet! Du kan nå logge inn.<br>
+    <a href="https://ntgbergen.github.io" style="color:var(--blue);font-weight:700">Gå til appen →</a>
+  </div>
+
+  <button class="btn btn-primary" id="reg-btn" onclick="register()">Opprett bruker</button>
+  <div class="login-link">Har du allerede en bruker? <a href="https://ntgbergen.github.io">Logg inn</a></div>
+</div>
+
+<script>
+var SB_URL = 'https://plkutjfeahzkfsakwbkb.supabase.co';
+var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsa3V0amZlYWh6a2ZzYWt3YmtiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4OTcxNTcsImV4cCI6MjA5NTQ3MzE1N30.iieNM0ADFwLGBkckS7zZOecu-S5ekuxWKVARAupop6Q';
+var SB_ADMIN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsa3V0amZlYWh6a2ZzYWt3YmtiIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTg5NzE1NywiZXhwIjoyMDk1NDczMTU3fQ.k0ua_SumcQ3Igp8jKrUaehXINv597zeiccCZsPzyLC0';
+
+var SPORT_POSITIONS = {
+  'Håndball': ['Høyrekant','Venstrekant','Høyre back','Venstre back','Midtback','Linjespiller','Målvakt'],
+  'Fotball': ['Keeper','Høyreback','Venstreback','Midtstopper','Defensiv midtbane','Sentral midtbane','Offensiv midtbane','Høyreving','Venstreving','Spiss'],
+  'Basketball': ['Pointguard','Shooting guard','Small forward','Power forward','Center'],
+  'Golf': ['Ingen posisjon'],
+  'Sykkel': ['Spurter','Klatrer','Allrounder','Tempo'],
+  'Svømming': ['Crawl','Bryst','Butterfly','Rygg','Medley','Alle distanser'],
+  'Fekting': ['Florett','Kårde','Sabel'],
+  'Tennis': ['Singel','Dobbel','Begge'],
+  'Padel': ['Høyre side','Venstre side','Begge'],
+  'Mix': ['Ingen posisjon']
+};
+
+// Pre-fill sport from URL param
+var urlParams = new URLSearchParams(window.location.search);
+var sportParam = urlParams.get('sport');
+if (sportParam) {
+  var sel = document.getElementById('reg-sport');
+  for (var i = 0; i < sel.options.length; i++) {
+    if (sel.options[i].value === sportParam) { sel.selectedIndex = i; break; }
+  }
+}
+updatePositions();
+
+function updatePositions() {
+  var sport = document.getElementById('reg-sport').value;
+  var positions = SPORT_POSITIONS[sport] || ['Ingen posisjon'];
+  var sel = document.getElementById('reg-pos');
+  sel.innerHTML = positions.map(function(p){ return '<option>' + p + '</option>'; }).join('');
+}
+
+async function register() {
+  var name = document.getElementById('reg-name').value.trim();
+  var email = document.getElementById('reg-email').value.trim().toLowerCase();
+  var pass = document.getElementById('reg-pass').value;
+  var cls = document.getElementById('reg-class').value;
+  var sport = document.getElementById('reg-sport').value;
+  var pos = document.getElementById('reg-pos').value;
+  var errEl = document.getElementById('reg-error');
+  var okEl = document.getElementById('reg-ok');
+  var btn = document.getElementById('reg-btn');
+  errEl.style.display = 'none'; okEl.style.display = 'none';
+
+  if (!name) { errEl.textContent = 'Fullt navn er påkrevd.'; errEl.style.display = 'block'; return; }
+  if (!email) { errEl.textContent = 'E-post er påkrevd.'; errEl.style.display = 'block'; return; }
+  if (!email.endsWith('@elev.ntg.no') && !email.endsWith('@ntg.no')) {
+    errEl.textContent = 'Kun @elev.ntg.no eller @ntg.no e-postadresser er tillatt.';
+    errEl.style.display = 'block'; return;
+  }
+  if (pass.length < 6) { errEl.textContent = 'Passordet må være minst 6 tegn.'; errEl.style.display = 'block'; return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Oppretter bruker...';
+
+  try {
+    // Create auth user
+    var authRes = await fetch(SB_URL + '/auth/v1/admin/users', {
+      method: 'POST',
+      headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
+      body: JSON.stringify({email: email, password: pass, email_confirm: true})
+    });
+    var authData = await authRes.json();
+    if (!authRes.ok || !authData.id) throw new Error(authData.message || 'Kunne ikke opprette bruker');
+
+    // Create profile
+    await fetch(SB_URL + '/rest/v1/profiles', {
+      method: 'POST',
+      headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
+      body: JSON.stringify({id: authData.id, full_name: name, class: cls, sport: sport, position: pos, is_trainer: false, is_superuser: false})
+    });
+
+    btn.style.display = 'none';
+    okEl.style.display = 'block';
+  } catch(e) {
+    errEl.textContent = 'Feil: ' + e.message;
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.innerHTML = 'Opprett bruker';
+  }
+}
+
+document.getElementById('reg-pass').addEventListener('keydown', function(e){
+  if (e.key === 'Enter') register();
+});
+</script>
+</body>
+</html>
