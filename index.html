@@ -258,7 +258,32 @@ input[type=range]{width:100%;accent-color:var(--blue)}
     </div>
 
     <div class="card">
-      <div class="sec-title">Legg inn kamp</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div class="sec-title" style="margin-bottom:0">Skader</div>
+        <button class="btn-sm-blue" onclick="showInjuryForm()">+ Meld skade</button>
+      </div>
+      <div id="injury-list"><div style="font-size:13px;color:var(--text-muted)">Ingen aktive skader</div></div>
+      <div id="injury-form" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+        <input type="hidden" id="inj-id" value="">
+        <div class="form-group" style="margin-bottom:10px"><label>Skadebeskrivelse</label><input type="text" id="inj-desc" placeholder="f.eks. Ankelskade høyre fot"></div>
+        <div class="form-row">
+          <div class="form-group"><label>Skadedato</label><input type="date" id="inj-date"></div>
+          <div class="form-group"><label>Forventet tilbake</label><input type="date" id="inj-return"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:10px;background:var(--bg2);border-radius:8px">
+          <input type="checkbox" id="inj-physio" style="width:18px;height:18px;cursor:pointer">
+          <label for="inj-physio" style="font-size:13px;font-weight:600;cursor:pointer;margin:0">Sjekket av fysioterapeut</label>
+        </div>
+        <div class="form-group" style="margin-bottom:10px"><label>Kommentar</label><textarea id="inj-comment" rows="2" placeholder="Valgfri kommentar..." style="width:100%;font-size:14px;border:1.5px solid var(--border);border-radius:7px;padding:9px 11px;font-family:inherit;resize:vertical;outline:none"></textarea></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="saveInjury()">Lagre</button>
+          <button class="btn btn-secondary" onclick="hideInjuryForm()">Avbryt</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec-title">Legg til kamp</div>
       <div class="form-row">
         <div class="form-group"><label>Motstander</label><input type="text" id="my-game-opp" placeholder="f.eks. Nest-Sotra IL"></div>
         <div class="form-group"><label>Hjemme/borte</label>
@@ -540,6 +565,11 @@ input[type=range]{width:100%;accent-color:var(--blue)}
   <div class="card">
     <div class="sec-title">Innboks <span id="tr-inbox-badge" style="display:none;background:var(--red);color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:700;margin-left:6px">!</span></div>
     <div id="tr-chat-inbox"><div class="loading"><div class="spinner"></div>Laster...</div></div>
+  </div>
+
+  <div class="card">
+    <div class="sec-title">Aktive skader <span id="tr-injury-count" style="font-size:12px;color:var(--red);font-weight:600"></span></div>
+    <div id="tr-injury-list"><div style="font-size:13px;color:var(--text-muted)">Ingen aktive skader</div></div>
   </div>
 
   <div class="card">
@@ -994,7 +1024,7 @@ function switchTab(tab) {
   document.querySelectorAll('.nav-tab').forEach(function(t, i){ t.classList.toggle('active', tabs[i] === tab); });
   document.querySelectorAll('.tab-content').forEach(function(c){ c.classList.remove('active'); });
   document.getElementById('tab-' + tab).classList.add('active');
-  if (tab === 'kalender') loadCalendar();
+  if (tab === 'kalender') { loadCalendar(); loadInjuries(); }
   if (tab === 'dagbok') renderACWR();
   if (tab === 'uke') renderWeeklySummary();
   if (tab === 'grafer') renderGraphs();
@@ -1694,6 +1724,7 @@ async function loadTrainerView() {
     return bS.date.localeCompare(aS.date);
   });
   window._trainerProfilesData = profiles;
+  loadTrainerInjuries();
   var sel = document.getElementById('tr-conv-player');
   sel.innerHTML = profiles.map(function(p) { return '<option value="' + p.id + '">' + p.full_name + '</option>'; }).join('');
   var overload = 0; var missing = 0; var logged = 0;
@@ -2826,6 +2857,147 @@ function exportTrainerCSV() {
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a'); a.href = url; a.download = 'NTG-' + sport + '-utovere.csv'; a.click();
   URL.revokeObjectURL(url);
+}
+
+// ---- INJURIES ----
+var allInjuries = [];
+
+async function loadInjuries() {
+  if (!currentProfile) return;
+  allInjuries = await api('GET', 'injuries?user_id=eq.' + currentProfile.id + '&order=created_at.desc&select=*') || [];
+  renderInjuryList();
+}
+
+function renderInjuryList() {
+  var el = document.getElementById('injury-list'); if (!el) return;
+  var active = allInjuries.filter(function(i){ return i.is_active; });
+  if (!active.length) {
+    el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen aktive skader</div>';
+    return;
+  }
+  el.innerHTML = active.map(function(inj) {
+    return '<div style="border:1px solid var(--red);border-radius:9px;padding:12px;margin-bottom:8px;background:var(--red-light)">'
+      + '<div style="display:flex;justify-content:space-between;align-items:flex-start">'
+      + '<div>'
+      + '<div style="font-size:14px;font-weight:700;color:var(--red-dark)">' + inj.description + '</div>'
+      + '<div style="font-size:12px;color:var(--text-muted);margin-top:3px">Skadet: ' + inj.injury_date + (inj.expected_return ? ' &bull; Tilbake: ' + inj.expected_return : '') + '</div>'
+      + '<div style="font-size:12px;margin-top:3px">'
+      + (inj.physio_checked ? '<span style="color:var(--green);font-weight:600">\u2713 Sjekket av fysio</span>' : '<span style="color:var(--text-muted)">Ikke sjekket av fysio</span>')
+      + '</div>'
+      + (inj.comments ? '<div style="font-size:12px;color:var(--text-muted);margin-top:3px;font-style:italic">' + inj.comments + '</div>' : '')
+      + '</div>'
+      + '<div style="display:flex;flex-direction:column;gap:4px">'
+      + '<button class="btn-sm" onclick="editInjury(\'' + inj.id + '\')">Rediger</button>'
+      + '<button class="btn-sm" style="color:var(--red)" onclick="deactivateInjury(\'' + inj.id + '\')">Frisk</button>'
+      + '</div>'
+      + '</div></div>';
+  }).join('');
+}
+
+function showInjuryForm(injId) {
+  document.getElementById('inj-id').value = injId || '';
+  if (!injId) {
+    document.getElementById('inj-desc').value = '';
+    document.getElementById('inj-date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('inj-return').value = '';
+    document.getElementById('inj-physio').checked = false;
+    document.getElementById('inj-comment').value = '';
+  }
+  document.getElementById('injury-form').style.display = 'block';
+  document.getElementById('injury-form').scrollIntoView({behavior:'smooth'});
+}
+
+function hideInjuryForm() {
+  document.getElementById('injury-form').style.display = 'none';
+  document.getElementById('inj-id').value = '';
+}
+
+function editInjury(injId) {
+  var inj = allInjuries.find(function(i){ return i.id === injId; });
+  if (!inj) return;
+  document.getElementById('inj-desc').value = inj.description;
+  document.getElementById('inj-date').value = inj.injury_date;
+  document.getElementById('inj-return').value = inj.expected_return || '';
+  document.getElementById('inj-physio').checked = inj.physio_checked;
+  document.getElementById('inj-comment').value = inj.comments || '';
+  showInjuryForm(injId);
+}
+
+async function saveInjury() {
+  var desc = document.getElementById('inj-desc').value.trim();
+  var date = document.getElementById('inj-date').value;
+  var ret = document.getElementById('inj-return').value;
+  var physio = document.getElementById('inj-physio').checked;
+  var comment = document.getElementById('inj-comment').value;
+  var injId = document.getElementById('inj-id').value;
+  if (!desc || !date) { showGlobalToast('Fyll inn skadebeskrivelse og dato', 'error'); return; }
+  var data = {description: desc, injury_date: date, expected_return: ret || null, physio_checked: physio, comments: comment, updated_at: new Date().toISOString()};
+  if (injId) {
+    await fetch(SB_URL + '/rest/v1/injuries?id=eq.' + injId, {
+      method: 'PATCH',
+      headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
+      body: JSON.stringify(data)
+    });
+  } else {
+    data.user_id = currentProfile.id;
+    data.is_active = true;
+    await fetch(SB_URL + '/rest/v1/injuries', {
+      method: 'POST',
+      headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
+      body: JSON.stringify(data)
+    });
+  }
+  hideInjuryForm();
+  showGlobalToast('\u2713 Skade lagret!');
+  await loadInjuries();
+}
+
+async function deactivateInjury(injId) {
+  if (!confirm('Marker skaden som avsluttet? Den vil ikke lenger vises som aktiv, men historikken beholdes.')) return;
+  await fetch(SB_URL + '/rest/v1/injuries?id=eq.' + injId, {
+    method: 'PATCH',
+    headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
+    body: JSON.stringify({is_active: false, updated_at: new Date().toISOString()})
+  });
+  showGlobalToast('\u2713 Skade markert som avsluttet');
+  await loadInjuries();
+}
+
+// ---- TRAINER INJURY OVERVIEW ----
+async function loadTrainerInjuries() {
+  var sport = trainerProfile ? (trainerProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball';
+  var profiles = window._trainerProfilesData || [];
+  if (!profiles.length) return;
+  var el = document.getElementById('tr-injury-list'); if (!el) return;
+  var allActiveInjuries = [];
+  for (var i = 0; i < profiles.length; i++) {
+    var p = profiles[i];
+    var injuries = await api('GET', 'injuries?user_id=eq.' + p.id + '&is_active=eq.true&select=*') || [];
+    injuries.forEach(function(inj) { inj._player = p; });
+    allActiveInjuries = allActiveInjuries.concat(injuries);
+  }
+  var badge = document.getElementById('tr-injury-count');
+  if (badge) badge.textContent = allActiveInjuries.length > 0 ? '(' + allActiveInjuries.length + ' aktive)' : '';
+  if (!allActiveInjuries.length) {
+    el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen aktive skader i gruppen</div>';
+    return;
+  }
+  el.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:13px">'
+    + '<thead><tr>'
+    + '<th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text-muted);font-size:11px;text-transform:uppercase">Utøver</th>'
+    + '<th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text-muted);font-size:11px;text-transform:uppercase">Skade</th>'
+    + '<th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text-muted);font-size:11px;text-transform:uppercase">Fysio</th>'
+    + '<th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text-muted);font-size:11px;text-transform:uppercase">Tilbake</th>'
+    + '</tr></thead><tbody>'
+    + allActiveInjuries.map(function(inj) {
+      return '<tr>'
+        + '<td style="padding:8px;border-bottom:1px solid var(--border);font-weight:600">' + inj._player.full_name + '</td>'
+        + '<td style="padding:8px;border-bottom:1px solid var(--border)">' + inj.description + '<br><span style="font-size:11px;color:var(--text-muted)">' + inj.injury_date + '</span></td>'
+        + '<td style="padding:8px;border-bottom:1px solid var(--border)">' + (inj.physio_checked ? '<span style="color:var(--green);font-weight:700">\u2713 Ja</span>' : '<span style="color:var(--text-muted)">Nei</span>') + '</td>'
+        + '<td style="padding:8px;border-bottom:1px solid var(--border)">' + (inj.expected_return || '\u2013') + '</td>'
+        + '</tr>';
+    }).join('')
+    + '</tbody></table>';
 }
 
 function showGlobalToast(msg, type) {
