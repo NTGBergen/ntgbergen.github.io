@@ -339,24 +339,7 @@ input[type=range]{width:100%;accent-color:var(--blue)}
   <div class="tab-content" id="tab-uke"><div id="uke-content"></div></div>
 
   <div class="tab-content" id="tab-tester">
-    <div class="card">
-      <div class="sec-title">Styrke</div>
-      <div class="test-grid">
-        <div class="test-item"><div class="tn">Panda pull/Snatch 2RM (kg)</div><input type="number" id="t-bench" placeholder="-"><div class="goal-row"><span>M&aring;l:</span><input type="number" id="g-bench" placeholder="-"></div><div class="prog-wrap"><div class="prog-fill" id="p-bench"></div></div></div>
-        <div class="test-item"><div class="tn">Dips/Push ups 3RM (kg)</div><input type="number" id="t-squat" placeholder="-"><div class="goal-row"><span>M&aring;l:</span><input type="number" id="g-squat" placeholder="-"></div><div class="prog-wrap"><div class="prog-fill" id="p-squat"></div></div></div>
-        <div class="test-item"><div class="tn">Chins 3RM (kg)</div><input type="number" id="t-clean" placeholder="-"><div class="goal-row"><span>M&aring;l:</span><input type="number" id="g-clean" placeholder="-"></div><div class="prog-wrap"><div class="prog-fill" id="p-clean"></div></div></div>
-        <div class="test-item"><div class="tn">Push Jerk 3RM (kg)</div><input type="number" id="t-hangup" placeholder="-"><div class="goal-row"><span>M&aring;l:</span><input type="number" id="g-hangup" placeholder="-"></div><div class="prog-wrap"><div class="prog-fill" id="p-hangup"></div></div></div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="sec-title">Kondisjon, hurtighet og spenst</div>
-      <div class="test-grid">
-        <div class="test-item"><div class="tn">Beep test (niv&aring;.del)</div><input type="text" id="t-beep" placeholder="f.eks. 11.3"><div class="goal-row"><span>M&aring;l:</span><input type="text" id="g-beep" placeholder="-"></div></div>
-        <div class="test-item"><div class="tn">Sprint 20m (sek)</div><input type="number" step="0.01" id="t-s20" placeholder="-"><div class="goal-row"><span>M&aring;l:</span><input type="number" step="0.01" id="g-s20" placeholder="-"></div><div class="prog-wrap"><div class="prog-fill" id="p-s20"></div></div></div>
-        <div class="test-item"><div class="tn">Sprint 40m m/vending (sek)</div><input type="number" step="0.01" id="t-s40" placeholder="-"><div class="goal-row"><span>M&aring;l:</span><input type="number" step="0.01" id="g-s40" placeholder="-"></div><div class="prog-wrap"><div class="prog-fill" id="p-s40"></div></div></div>
-        <div class="test-item"><div class="tn">Kraftplattform (cm)</div><input type="number" id="t-jump" placeholder="-"><div class="goal-row"><span>M&aring;l:</span><input type="number" id="g-jump" placeholder="-"></div><div class="prog-wrap"><div class="prog-fill" id="p-jump"></div></div></div>
-      </div>
-    </div>
+    <div id="test-sections-container"></div>
     <div class="form-group" style="margin-bottom:.75rem"><label>Testdato</label><input type="date" id="test-date"></div>
     <div class="btn-row">
       <button class="btn btn-primary" onclick="saveTests()">Lagre testresultater</button>
@@ -699,9 +682,10 @@ var SPORTS_DATA = {
     {key:'taktikk', label:'Taktikk og forst\u00e5else', items:['Formasjonsforst\u00e5else','Samarbeid i linjer','Romforst\u00e5else','Pressing som lag','Overganger']}
   ]},
   'Basketball': { cats: [
-    {key:'angrep', label:'Tekniske ferdigheter \u2013 angrep', items:['Pasning og mottak','Dribling og ball-handling','Skudd fra felt','Lay-up og floater','Post-spill','Pick and roll']},
-    {key:'forsvar', label:'Tekniske ferdigheter \u2013 forsvar', items:['Forsvarsstilling og footwork','Mann-til-mann forsvar','Soneforsvarsforst\u00e5else','Steal og blokkering','Boxout og retur']},
-    {key:'taktikk', label:'Taktikk og forst\u00e5else', items:['Offensiv systemforst\u00e5else','Defensiv rotasjon','Overtallighetssituasjoner','Timing og rytme','Lese spillet']}
+    {key:'taktikk', label:'Forst\u00e5else og taktikk', items:['Spillsystemer, set-plays og aksjoner','Bevegelser, spacing og respacing','Lagforsvar og kommunikasjon','Evne til \u00e5 forutse']},
+    {key:'angrep', label:'Tekniske ferdigheter \u2013 angrep', items:['Fotarbeid uten ball \u2013 frigj\u00f8ringer','Fotarbeid med ball \u2013 pivots','Ballkontroll','Finter og separasjonsevne','Skudd midrange','Trepoengsskudd','Avslutninger i paint','Pasninger og kreativitet']},
+    {key:'forsvar', label:'Tekniske ferdigheter \u2013 forsvar', items:['Stance','Sideveisbevegelse og fotarbeid','Posisjonering','Overspill/deflections','Utblokkering/rebounding']},
+    {key:'fysikk', label:'Fysikk', items:['Spenst','Hurtighet','Styrke','Eksplosivitet','Kondisjon','Mobilitet']}
   ]},
   'Golf': { cats: [
     {key:'teknikk', label:'Tekniske ferdigheter', items:['Driverslag','Fairway-slag','Jernspill','Kortstopp og chipping','Putting','Bunkerspill','Slagprosedyre og rutine']},
@@ -754,7 +738,7 @@ var SPORT_POSITIONS = {
 var SPORT_SESSION_TYPES = {
   'H\u00e5ndball': ['H\u00e5ndball \u2013 trening','H\u00e5ndball \u2013 kamp','H\u00e5ndball \u2013 teknikk','Styrke','Utholdenhet','Plyometri','Annen trening'],
   'Fotball': ['Fotball \u2013 trening','Fotball \u2013 kamp','Fotball \u2013 teknikk','Styrke','Utholdenhet','Plyometri','Annen trening'],
-  'Basketball': ['Basketball \u2013 trening','Basketball \u2013 kamp','Basketball \u2013 teknikk','Styrke','Utholdenhet','Plyometri','Annen trening'],
+  'Basketball': ['Basket \u2013 trening','Basket \u2013 teknikk','Basket \u2013 kamp','Styrke','Utholdenhet','Plyometri','Annen trening'],
   'Golf': ['Golf \u2013 trening','Golf \u2013 runde','Golf \u2013 teknikk','Styrke','Utholdenhet','Annen trening'],
   'Sykkel': ['Sykkel \u2013 trening','Sykkel \u2013 ritt','Intervall','Styrke','Utholdenhet','Annen trening'],
   'Sv\u00f8mming': ['Sv\u00f8mming \u2013 trening','Sv\u00f8mming \u2013 stevne','Teknikk','Styrke','Utholdenhet','Annen trening'],
@@ -768,13 +752,73 @@ function getSportSessionTypes(sport) {
   return SPORT_SESSION_TYPES[sport] || SPORT_SESSION_TYPES['H\u00e5ndball'];
 }
 
+var SPORT_TESTS = {
+  'H\u00e5ndball': {
+    strength: {title:'Styrke', fields:[
+      {id:'bench',label:'Panda pull/Snatch 2RM (kg)',type:'number',step:'1'},
+      {id:'squat',label:'Dips/Push ups 3RM (kg)',type:'number',step:'1'},
+      {id:'clean',label:'Chins 3RM (kg)',type:'number',step:'1'},
+      {id:'hangup',label:'Push Jerk 3RM (kg)',type:'number',step:'1'}
+    ]},
+    conditioning: {title:'Kondisjon, hurtighet og spenst', fields:[
+      {id:'beep',label:'Beep test (niv\u00e5.del)',type:'text'},
+      {id:'s20',label:'Sprint 20m (sek)',type:'number',step:'0.01'},
+      {id:'s40',label:'Sprint 40m m/vending (sek)',type:'number',step:'0.01'},
+      {id:'jump',label:'Kraftplattform (cm)',type:'number',step:'1'}
+    ]}
+  },
+  'Basketball': {
+    strength: {title:'Styrke', fields:[
+      {id:'bench',label:'Benkpress (kg)',type:'number',step:'1'},
+      {id:'squat',label:'Pullups (reps)',type:'number',step:'1'},
+      {id:'clean',label:'Squat (kg)',type:'number',step:'1'},
+      {id:'hangup',label:'Markl\u00f8ft (kg)',type:'number',step:'1'},
+      {id:'extra1',label:'Trap bar (kg)',type:'number',step:'1'},
+      {id:'extra2',label:'Skulderpress (kg)',type:'number',step:'1'}
+    ]},
+    conditioning: {title:'Utholdenhet, spenst og hurtighet', fields:[
+      {id:'beep',label:'Beep test (niv\u00e5.del)',type:'text'},
+      {id:'s20',label:'Agility (sek)',type:'number',step:'0.01'},
+      {id:'s40',label:'Spenst (cm)',type:'number',step:'1'},
+      {id:'jump',label:'Sprint (sek)',type:'number',step:'0.01'}
+    ]}
+  }
+};
+
+function getSportTests(sport) {
+  return SPORT_TESTS[sport] || SPORT_TESTS['H\u00e5ndball'];
+}
+
 function getSportPositions(sport) {
   return SPORT_POSITIONS[sport] || SPORT_POSITIONS['H\u00e5ndball'];
 }
 
-function getSportCats(sport) {
-  return (SPORTS_DATA[sport] || SPORTS_DATA['H\u00e5ndball']).cats;
+function renderTestSections() {
+  var sport = currentProfile ? (currentProfile.sport || 'Håndball') : 'Håndball';
+  var testDef = getSportTests(sport);
+  var container = document.getElementById('test-sections-container');
+  if (!container) return;
+  var sections = [testDef.strength, testDef.conditioning];
+  container.innerHTML = sections.map(function(sec) {
+    return '<div class="card"><div class="sec-title">' + sec.title + '</div><div class="test-grid">'
+      + sec.fields.map(function(f) {
+        var isText = f.type === 'text';
+        var stepAttr = f.step && !isText ? ' step="' + f.step + '"' : '';
+        return '<div class="test-item">'
+          + '<div class="tn">' + f.label + '</div>'
+          + '<input type="' + f.type + '" id="t-' + f.id + '" placeholder="-"' + stepAttr + '>'
+          + '<div class="goal-row"><span>Mål:</span><input type="' + f.type + '" id="g-' + f.id + '" placeholder="-"' + stepAttr + '></div>'
+          + (!isText ? '<div class="prog-wrap"><div class="prog-fill" id="p-' + f.id + '"></div></div>' : '')
+          + '</div>';
+      }).join('')
+      + '</div></div>';
+  }).join('');
 }
+
+function getSportCats(sport) {
+  return (SPORTS_DATA[sport] || SPORTS_DATA['Håndball']).cats;
+}
+
 
 // Legacy arrays kept for radar/graphs compatibility
 var SA = SPORTS_DATA['H\u00e5ndball'].cats[0].items;
@@ -948,6 +992,7 @@ async function openPlayerView(profile) {
   showScreen('screen-player');
   setDefaultDates();
   await loadPlayerData();
+  renderTestSections();
   renderSkillSliders();
   renderFocusKravGrid();
   await loadFocusPeriods();
@@ -1207,17 +1252,21 @@ function renderWeeklySummary() {
 }
 
 async function saveTests() {
+  var getVal = function(id) { var el = document.getElementById(id); return el ? (parseFloat(el.value) || null) : null; };
+  var getStr = function(id) { var el = document.getElementById(id); return el ? (el.value || null) : null; };
   var entry = {
     user_id: currentProfile.id,
     date: document.getElementById('test-date').value,
-    bench: parseFloat(document.getElementById('t-bench').value) || null,
-    squat: parseFloat(document.getElementById('t-squat').value) || null,
-    clean: parseFloat(document.getElementById('t-clean').value) || null,
-    hangup: parseFloat(document.getElementById('t-hangup').value) || null,
-    beep: document.getElementById('t-beep').value || null,
-    s20: parseFloat(document.getElementById('t-s20').value) || null,
-    s40: parseFloat(document.getElementById('t-s40').value) || null,
-    jump: parseFloat(document.getElementById('t-jump').value) || null
+    bench: getVal('t-bench'),
+    squat: getVal('t-squat'),
+    clean: getVal('t-clean'),
+    hangup: getVal('t-hangup'),
+    beep: getStr('t-beep'),
+    s20: getVal('t-s20'),
+    s40: getVal('t-s40'),
+    jump: getVal('t-jump'),
+    extra1: getStr('t-extra1'),
+    extra2: getStr('t-extra2')
   };
   await api('POST', 'tests', entry);
   allTests.unshift(entry);
@@ -1225,16 +1274,20 @@ async function saveTests() {
 }
 
 async function saveGoals() {
+  var getVal = function(id) { var el = document.getElementById(id); return el ? (parseFloat(el.value) || null) : null; };
+  var getStr = function(id) { var el = document.getElementById(id); return el ? (el.value || null) : null; };
   var goals = {
     user_id: currentProfile.id,
-    bench: parseFloat(document.getElementById('g-bench').value) || null,
-    squat: parseFloat(document.getElementById('g-squat').value) || null,
-    clean: parseFloat(document.getElementById('g-clean').value) || null,
-    hangup: parseFloat(document.getElementById('g-hangup').value) || null,
-    beep: document.getElementById('g-beep').value || null,
-    s20: parseFloat(document.getElementById('g-s20').value) || null,
-    s40: parseFloat(document.getElementById('g-s40').value) || null,
-    jump: parseFloat(document.getElementById('g-jump').value) || null
+    bench: getVal('g-bench'),
+    squat: getVal('g-squat'),
+    clean: getVal('g-clean'),
+    hangup: getVal('g-hangup'),
+    beep: getStr('g-beep'),
+    s20: getVal('g-s20'),
+    s40: getVal('g-s40'),
+    jump: getVal('g-jump'),
+    extra1: getStr('g-extra1'),
+    extra2: getStr('g-extra2')
   };
   var token = currentUser && currentUser.access_token ? currentUser.access_token : SB_KEY;
   await fetch(SB_URL + '/rest/v1/test_goals?on_conflict=user_id', {
@@ -1254,7 +1307,10 @@ function renderTestHistory() {
   var el = document.getElementById('test-history');
   if (!el || !allTests.length) { if (el) el.innerHTML = ''; return; }
   var latest = allTests[0];
-  var fields = [['bench','Panda pull/Snatch 2RM','kg'],['squat','Dips/Push ups 3RM','kg'],['clean','Chins 3RM','kg'],['hangup','Push Jerk 3RM','kg'],['beep','Beep test',''],['s20','Sprint 20m','s'],['s40','Sprint 40m m/vending','s'],['jump','Kraftplattform','cm']];
+  var sport = currentProfile ? (currentProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball';
+  var testDef = getSportTests(sport);
+  var allFields = testDef.strength.fields.concat(testDef.conditioning.fields);
+  var fields = allFields.map(function(f){ return [f.id, f.label, f.step === '0.01' ? 's' : (f.type === 'text' ? '' : 'kg')]; });
   var html = '<div class="sec-title" style="margin-top:1rem">Siste testresultater (' + latest.date + ')</div><div class="metric-grid">';
   fields.forEach(function(arr) {
     if (!latest[arr[0]]) return;
