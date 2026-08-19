@@ -1794,6 +1794,11 @@ async function loadTrainerView() {
   // Set sport default for new student form
   var sportSel = document.getElementById('new-student-sport');
   if (sportSel) { sportSel.value = trainerSport; updateStudentPositions(); }
+  // Reset student form
+  cancelStudentEdit();
+  document.getElementById('new-student-email').value = '';
+  document.getElementById('new-student-pass').value = 'NTG2026';
+  document.getElementById('password-field').style.display = 'block';
   var profiles = await api('GET', 'profiles?is_trainer=eq.false&is_superuser=eq.false&sport=eq.' + encodeURIComponent(trainerSport) + '&select=*') || [];
   // Sort by most recent session date
   var allLatestSess = await api('GET', 'sessions?order=date.desc&select=user_id,date') || [];
@@ -3119,9 +3124,9 @@ async function deactivateInjury(injId) {
 // ---- TRAINER INJURY OVERVIEW ----
 async function loadTrainerInjuries() {
   var sport = trainerProfile ? (trainerProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball';
-  var profiles = window._trainerProfilesData || [];
-  if (!profiles.length) return;
   var el = document.getElementById('tr-injury-list'); if (!el) return;
+  // Fetch profiles for this sport only
+  var profiles = await api('GET', 'profiles?is_trainer=eq.false&is_superuser=eq.false&sport=eq.' + encodeURIComponent(sport) + '&select=id,full_name') || [];
   var allActiveInjuries = [];
   for (var i = 0; i < profiles.length; i++) {
     var p = profiles[i];
