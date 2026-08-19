@@ -537,8 +537,24 @@ input[type=range]{width:100%;accent-color:var(--blue)}
   </div>
 
   <div class="card">
-    <div class="sec-title">Planlagte &oslash;kter</div>
-    <div id="tr-events-list"><div class="loading"><div class="spinner"></div>Laster...</div></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="sec-title" style="margin-bottom:0">Planlagte &oslash;kter</div>
+      <button class="btn-sm-blue" onclick="toggleEventsList()" id="tr-events-toggle">Skjul</button>
+    </div>
+    <div id="tr-events-content">
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:center">
+        <select id="ev-filter-group" onchange="renderFilteredEvents()" style="font-size:13px;border:1.5px solid var(--border);border-radius:7px;padding:6px 10px;background:var(--bg)">
+          <option value="">Alle grupper</option>
+        </select>
+        <select id="ev-filter-type" onchange="renderFilteredEvents()" style="font-size:13px;border:1.5px solid var(--border);border-radius:7px;padding:6px 10px;background:var(--bg)">
+          <option value="">Alle typer</option>
+        </select>
+        <label style="font-size:12px;display:flex;align-items:center;gap:5px;cursor:pointer">
+          <input type="checkbox" id="ev-show-old" onchange="renderFilteredEvents()"> Vis eldre enn 7 dager
+        </label>
+      </div>
+      <div id="tr-events-list"><div class="loading"><div class="spinner"></div>Laster...</div></div>
+    </div>
   </div>
 
   <div class="card">
@@ -573,15 +589,24 @@ input[type=range]{width:100%;accent-color:var(--blue)}
   </div>
 
   <div class="card">
-    <div class="sec-title">Elevstatus</div>
-    <div style="margin-bottom:10px">
-      <button class="btn-sm-blue" onclick="exportTrainerCSV()">Last ned alle utøvere (CSV)</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="sec-title" style="margin-bottom:0">Elevstatus</div>
+      <button class="btn-sm-blue" onclick="toggleStudentTable()" id="tr-table-toggle">Skjul</button>
     </div>
-    <div id="tr-loading" class="loading"><div class="spinner"></div>Laster elever...</div>
-    <table class="trainer-table" id="tr-table" style="display:none">
-      <thead><tr><th>Elev</th><th>Klasse</th><th>ACWR</th><th>Siste &oslash;kt</th><th>Siste test</th><th></th></tr></thead>
-      <tbody id="trainer-tbody"></tbody>
-    </table>
+    <div id="tr-table-content">
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:center">
+        <select id="tr-filter-group" onchange="filterStudentTable()" style="font-size:13px;border:1.5px solid var(--border);border-radius:7px;padding:6px 10px;background:var(--bg)">
+          <option value="">Alle grupper</option>
+        </select>
+        <input type="text" id="tr-filter-name" oninput="filterStudentTable()" placeholder="Søk navn..." style="font-size:13px;border:1.5px solid var(--border);border-radius:7px;padding:6px 10px;width:160px">
+        <button class="btn-sm-blue" onclick="exportTrainerCSV()">Last ned CSV</button>
+      </div>
+      <div id="tr-loading" class="loading"><div class="spinner"></div>Laster elever...</div>
+      <table class="trainer-table" id="tr-table" style="display:none">
+        <thead><tr><th>Elev</th><th>Klasse</th><th>ACWR</th><th>Siste &oslash;kt</th><th>Siste test</th><th></th></tr></thead>
+        <tbody id="trainer-tbody"></tbody>
+      </table>
+    </div>
   </div>
   <div class="card">
     <div class="sec-title" id="student-form-title">Opprett elev</div>
@@ -2018,6 +2043,7 @@ async function loadGroups() {
   renderGroupsList();
   renderEventGroupsSelect();
   updateStudentGroupDropdown();
+  updateTrainerGroupFilter();
 }
 
 function renderGroupsList() {
@@ -2089,6 +2115,93 @@ async function deleteStudent(userId, name) {
   }
 }
 
+function toggleStudentTable() {
+  var content = document.getElementById('tr-table-content');
+  var btn = document.getElementById('tr-table-toggle');
+  var hidden = content.style.display === 'none';
+  content.style.display = hidden ? 'block' : 'none';
+  btn.textContent = hidden ? 'Skjul' : 'Vis';
+}
+
+function toggleEventsList() {
+  var content = document.getElementById('tr-events-content');
+  var btn = document.getElementById('tr-events-toggle');
+  var hidden = content.style.display === 'none';
+  content.style.display = hidden ? 'block' : 'none';
+  btn.textContent = hidden ? 'Skjul' : 'Vis';
+}
+
+function filterStudentTable() {
+  var group = document.getElementById('tr-filter-group').value;
+  var search = document.getElementById('tr-filter-name').value.toLowerCase();
+  var rows = document.querySelectorAll('#trainer-tbody tr');
+  var visible = 0;
+  rows.forEach(function(row) {
+    var name = row.cells[0] ? row.cells[0].textContent.toLowerCase() : '';
+    var cls = row.cells[1] ? row.cells[1].textContent : '';
+    var matchGroup = !group || cls.indexOf(group) > -1;
+    var matchSearch = !search || name.indexOf(search) > -1;
+    row.style.display = matchGroup && matchSearch ? '' : 'none';
+    if (matchGroup && matchSearch) visible++;
+  });
+}
+
+function populateEventFilters() {
+  var groupSel = document.getElementById('ev-filter-group');
+  var typeSel = document.getElementById('ev-filter-type');
+  if (!groupSel || !typeSel) return;
+  var groups = {};
+  var types = {};
+  allTrainerEvents.forEach(function(ev) {
+    if (ev.group_names) ev.group_names.forEach(function(g){ if(g) groups[g] = true; });
+    if (ev.type) types[ev.type] = true;
+  });
+  groupSel.innerHTML = '<option value="">Alle grupper</option>' + Object.keys(groups).sort().map(function(g){ return '<option>' + g + '</option>'; }).join('');
+  typeSel.innerHTML = '<option value="">Alle typer</option>' + Object.keys(types).sort().map(function(t){ return '<option>' + t + '</option>'; }).join('');
+}
+
+function renderFilteredEvents() {
+  var group = document.getElementById('ev-filter-group').value;
+  var type = document.getElementById('ev-filter-type').value;
+  var showOld = document.getElementById('ev-show-old').checked;
+  var el = document.getElementById('tr-events-list'); if (!el) return;
+  var sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  var cutoff = localDateStr(sevenDaysAgo);
+  var filtered = allTrainerEvents.filter(function(ev) {
+    if (!showOld && ev.date < cutoff) return false;
+    if (type && ev.type !== type) return false;
+    if (group) {
+      var gn = Array.isArray(ev.group_names) ? ev.group_names : [];
+      if (gn.length > 0 && gn.indexOf(group) === -1) return false;
+    }
+    return true;
+  });
+  var today = new Date().toISOString().split('T')[0];
+  if (!filtered.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen \u00f8kter</div>'; return; }
+  el.innerHTML = filtered.map(function(ev) {
+    var isPast = ev.date < today;
+    return '<div style="padding:10px;border:1px solid var(--border);border-radius:9px;margin-bottom:8px;opacity:' + (isPast ? '.6' : '1') + '">'
+      + '<div style="display:flex;justify-content:space-between;align-items:flex-start">'
+      + '<div><div style="font-size:14px;font-weight:700;color:var(--blue)">' + ev.title + '</div>'
+      + '<div style="font-size:12px;color:var(--text-muted);margin-top:2px">' + ev.date + ' kl.' + ev.time + (ev.location ? ' &bull; ' + ev.location : '') + '</div>'
+      + '<div style="font-size:11px;margin-top:3px"><span class="stb">' + ev.type + '</span>'
+      + (ev.group_names && ev.group_names.length ? ' <span style="color:var(--text-muted)">' + ev.group_names.join(', ') + '</span>' : ' <span style="color:var(--text-muted)">Alle grupper</span>') + '</div>'
+      + '</div>'
+      + '<button class="btn-sm-blue" data-eid="' + ev.id + '" data-etitle="' + ev.title.replace(/"/g,'&quot;') + '" data-egroups="' + (ev.group_names || []).join('|') + '" onclick="handleShowRegs(this)">P\u00e5meldte</button>'
+      + '</div>'
+      + '<div style="display:flex;gap:6px;margin-top:8px">'
+      + '<button class="btn-sm" data-ev-id="' + ev.id + '" onclick="handleEditEvent(this)">Rediger</button>'
+      + '<button class="btn-sm" style="color:var(--red)" data-del-id="' + ev.id + '" onclick="deleteEvent(this.getAttribute(\'data-del-id\'))">Slett</button>'
+      + '</div></div>';
+  }).join('');
+}
+
+function updateTrainerGroupFilter() {
+  var sel = document.getElementById('tr-filter-group');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Alle grupper</option>' + allGroups.map(function(g){ return '<option>' + g.name + '</option>'; }).join('');
+}
+
 function updateStudentGroupDropdown() {
   var sel = document.getElementById('new-student-group'); if (!sel) return;
   sel.innerHTML = '<option value="">Ingen gruppe</option>' + allGroups.map(function(g) { return '<option value="' + g.name + '">' + g.name + '</option>'; }).join('');
@@ -2150,23 +2263,7 @@ async function loadEvents() {
     });
   var events = allTrainerEvents;
   var el = document.getElementById('tr-events-list'); if (!el) return;
-  if (!events.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen \u00f8kter opprettet enda</div>'; return; }
-  el.innerHTML = events.map(function(ev) {
-    var isPast = ev.date < today;
-    return '<div style="padding:10px;border:1px solid var(--border);border-radius:9px;margin-bottom:8px;opacity:' + (isPast ? '.6' : '1') + '">'
-      + '<div style="display:flex;justify-content:space-between;align-items:flex-start">'
-      + '<div><div style="font-size:14px;font-weight:700;color:var(--blue)">' + ev.title + '</div>'
-      + '<div style="font-size:12px;color:var(--text-muted);margin-top:2px">' + ev.date + ' kl.' + ev.time + (ev.location ? ' &bull; ' + ev.location : '') + '</div>'
-      + '<div style="font-size:11px;margin-top:3px"><span class="stb">' + ev.type + '</span>'
-      + (ev.group_names && ev.group_names.length ? ' <span style="color:var(--text-muted)">' + ev.group_names.join(', ') + '</span>' : ' <span style="color:var(--text-muted)">Alle grupper</span>') + '</div>'
-      + '</div>'
-      + '<button class="btn-sm-blue" data-eid="' + ev.id + '" data-etitle="' + ev.title.replace(/"/g,'&quot;') + '" data-egroups="' + (ev.group_names || []).join('|') + '" onclick="handleShowRegs(this)">P&aring;meldte</button>'
-      + '</div>'
-      + '<div style="display:flex;gap:6px;margin-top:8px">'
-      + '<button class="btn-sm" data-ev-id="' + ev.id + '" onclick="handleEditEvent(this)">Rediger</button>'
-      + '<button class="btn-sm" style="color:var(--red)" data-del-id="' + ev.id + '" onclick="deleteEvent(this.getAttribute(\'data-del-id\'))">Slett</button>'
-      + '</div></div>';
-  }).join('');
+  populateEventFilters();
 }
 
 function handleShowRegs(btn) {
