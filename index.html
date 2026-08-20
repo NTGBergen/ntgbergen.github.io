@@ -99,7 +99,8 @@ textarea{resize:vertical}
 .slider-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
 .slider-row span{font-size:13px;color:var(--text-muted)}
 .slider-row strong{font-size:14px;font-weight:700;min-width:20px;text-align:right;color:var(--blue)}
-input[type=range]{width:100%;accent-color:var(--blue)}
+input[type=range]{width:100%;accent-color:var(--blue);-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--blue);cursor:pointer;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.2)}
 .week-bars{display:flex;align-items:flex-end;gap:5px;height:72px;margin-bottom:3px}
 .week-bar{flex:1;background:var(--blue-light);border-radius:3px 3px 0 0;min-height:3px;border:1px solid rgba(0,47,108,.15);border-bottom:none}
 .week-bar.current{background:var(--blue)}
@@ -328,11 +329,16 @@ input[type=range]{width:100%;accent-color:var(--blue)}
         <div class="metric-card"><div class="ml">Ukesbelastning</div><div class="mv" id="wl-val">0</div><div class="mu">AU</div></div>
       </div>
       <button class="btn btn-primary" onclick="logSession()">Logg &oslash;kt</button>
+      <div class="alert alert-green" id="session-edit-ok" style="margin-top:8px"><div><div class="alert-title">&Oslash;kt oppdatert!</div></div></div>
     </div>
     <div class="card">
       <div class="sec-title">Belastning siste 6 uker</div>
       <div class="week-bars" id="week-bars"></div>
       <div class="week-labels" id="week-labels"></div>
+    </div>
+    <div class="card">
+      <div class="sec-title">Treningslogg</div>
+      <div id="session-log-list"><div style="font-size:13px;color:var(--text-muted)">Ingen &oslash;kter logget enda</div></div>
     </div>
   </div>
 
@@ -815,6 +821,18 @@ function renderTestSections() {
   }).join('');
 }
 
+function setSliderFill(input) {
+  var min = parseInt(input.min) || 1;
+  var max = parseInt(input.max) || 10;
+  var val = parseInt(input.value) || min;
+  var pct = ((val - min) / (max - min)) * 100;
+  input.style.background = 'linear-gradient(to right, var(--blue) ' + pct + '%, #ddd ' + pct + '%)';
+}
+
+function updateAllSliderFills() {
+  document.querySelectorAll('#tab-ferdigheter input[type=range]').forEach(setSliderFill);
+}
+
 function getSportCats(sport) {
   return (SPORTS_DATA[sport] || SPORTS_DATA['Håndball']).cats;
 }
@@ -1095,7 +1113,7 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-content').forEach(function(c){ c.classList.remove('active'); });
   document.getElementById('tab-' + tab).classList.add('active');
   if (tab === 'kalender') { loadCalendar(); loadInjuries(); }
-  if (tab === 'dagbok') renderACWR();
+  if (tab === 'dagbok') { renderACWR(); renderSessionLog(); }
   if (tab === 'uke') renderWeeklySummary();
   if (tab === 'grafer') renderGraphs();
   if (tab === 'tester') { renderTestHistory(); updateProgressBars(); }
@@ -1194,6 +1212,7 @@ function renderWeekBars() {
 }
 
 async function logSession() {
+  var editId = document.getElementById('session-edit-id') ? document.getElementById('session-edit-id').value : '';
   var dur = parseInt(document.getElementById('session-dur').value);
   var rpe = parseInt(document.getElementById('session-rpe').value);
   var entry = {
@@ -1203,10 +1222,74 @@ async function logSession() {
     duration: dur, rpe: rpe, load: dur * rpe,
     comment: document.getElementById('session-comment').value || null
   };
-  await api('POST', 'sessions', entry);
-  allSessions.push(entry);
+  if (editId) {
+    await api('PATCH', 'sessions?id=eq.' + editId, entry);
+    var idx = allSessions.findIndex(function(s){ return s.id === editId; });
+    if (idx > -1) allSessions[idx] = Object.assign({id: editId}, entry);
+    document.getElementById('session-edit-id').value = '';
+    document.getElementById('session-edit-ok').classList.add('show');
+    setTimeout(function(){ document.getElementById('session-edit-ok').classList.remove('show'); }, 2000);
+    document.querySelector('#tab-dagbok .btn.btn-primary').textContent = 'Logg \u00f8kt';
+  } else {
+    var res = await fetch(SB_URL + '/rest/v1/sessions', {
+      method: 'POST',
+      headers: {'apikey': SB_KEY, 'Authorization': 'Bearer ' + (currentUser.access_token || SB_KEY), 'Content-Type': 'application/json', 'Prefer': 'return=representation'},
+      body: JSON.stringify(entry)
+    });
+    var newSession = await res.json();
+    if (Array.isArray(newSession)) entry = Object.assign({id: newSession[0].id}, entry);
+    allSessions.push(entry);
+  }
   document.getElementById('session-comment').value = '';
-  showToast(); renderACWR();
+  showToast(); renderACWR(); renderSessionLog();
+}
+
+function renderSessionLog() {
+  var el = document.getElementById('session-log-list'); if (!el) return;
+  if (!allSessions.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen \u00f8kter logget enda</div>'; return; }
+  var sorted = allSessions.slice().sort(function(a,b){ return b.date.localeCompare(a.date); });
+  el.innerHTML = sorted.slice(0, 20).map(function(s) {
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">'
+      + '<div style="flex:1">'
+      + '<div style="font-size:13px;font-weight:600">' + s.type + '</div>'
+      + '<div style="font-size:12px;color:var(--text-muted)">' + s.date + ' &bull; ' + s.duration + ' min &bull; RPE ' + s.rpe + ' &bull; ' + s.load + ' AU</div>'
+      + (s.comment ? '<div style="font-size:12px;color:var(--text-muted);font-style:italic">' + s.comment + '</div>' : '')
+      + '</div>'
+      + '<div style="display:flex;gap:4px">'
+      + (s.id ? '<button class="btn-sm" onclick="editSession(\'' + s.id + '\')">Rediger</button>' : '')
+      + (s.id ? '<button class="btn-sm" style="color:var(--red)" onclick="deleteSession(\'' + s.id + '\')">Slett</button>' : '')
+      + '</div></div>';
+  }).join('');
+}
+
+function editSession(sessionId) {
+  var s = allSessions.find(function(x){ return x.id === sessionId; });
+  if (!s) return;
+  // Add hidden edit-id field if not exists
+  if (!document.getElementById('session-edit-id')) {
+    var input = document.createElement('input');
+    input.type = 'hidden'; input.id = 'session-edit-id';
+    document.getElementById('session-type').parentElement.appendChild(input);
+  }
+  document.getElementById('session-edit-id').value = sessionId;
+  document.getElementById('session-type').value = s.type;
+  document.getElementById('session-date').value = s.date;
+  document.getElementById('session-dur').value = s.duration;
+  document.getElementById('dur-out').textContent = s.duration;
+  document.getElementById('session-rpe').value = s.rpe;
+  document.getElementById('rpe-out').textContent = s.rpe;
+  document.getElementById('session-comment').value = s.comment || '';
+  document.querySelector('#tab-dagbok .btn.btn-primary').textContent = 'Oppdater \u00f8kt';
+  document.querySelector('#tab-dagbok .btn.btn-primary').scrollIntoView({behavior:'smooth'});
+  updateLoad();
+}
+
+async function deleteSession(sessionId) {
+  if (!confirm('Slette denne \u00f8kten?')) return;
+  await api('DELETE', 'sessions?id=eq.' + sessionId);
+  allSessions = allSessions.filter(function(s){ return s.id !== sessionId; });
+  showGlobalToast('\u2713 \u00d8kt slettet');
+  renderACWR(); renderSessionLog();
 }
 
 function renderWeeklySummary() {
@@ -1425,7 +1508,7 @@ function renderSkillSliders() {
       var k = cat.key + '_' + skk(item);
       var val = saved[k] || 5;
       html += '<div class="slider-group"><div class="slider-row"><span style="font-size:13px">' + item + '</span><strong id="sv_' + k + '">' + val + '</strong></div>'
-        + '<input type="range" min="1" max="10" step="1" value="' + val + '" oninput="document.getElementById(\'sv_' + k + '\').textContent=this.value" data-key="' + k + '" data-cat="' + cat.key + '"></div>';
+        + '<input type="range" min="1" max="10" step="1" value="' + val + '" oninput="setSliderFill(this);document.getElementById(\'sv_' + k + '\').textContent=this.value" data-key="' + k + '" data-cat="' + cat.key + '"></div>';
     });
     html += '</div>';
   });
@@ -1435,7 +1518,7 @@ function renderSkillSliders() {
   SP.forEach(function(item) {
     var k = 'psyk_' + skk(item); var val = saved[k] || 5;
     html += '<div class="slider-group"><div class="slider-row"><span style="font-size:13px">' + item + '</span><strong id="sv_' + k + '">' + val + '</strong></div>'
-      + '<input type="range" min="1" max="10" step="1" value="' + val + '" oninput="document.getElementById(\'sv_' + k + '\').textContent=this.value;updateCatAvg(\'psyk\')" data-key="' + k + '" data-cat="psyk"></div>';
+      + '<input type="range" min="1" max="10" step="1" value="' + val + '" oninput="setSliderFill(this);document.getElementById(\'sv_' + k + '\').textContent=this.value;updateCatAvg(\'psyk\')" data-key="' + k + '" data-cat="psyk"></div>';
   });
   html += '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">'
     + '<span style="font-size:13px;color:var(--text-muted);font-weight:600">Snittsk\u00e5r</span>'
@@ -1445,7 +1528,7 @@ function renderSkillSliders() {
   SL.forEach(function(item) {
     var k = 'livsstil_' + skk(item); var val = saved[k] || 5;
     html += '<div class="slider-group"><div class="slider-row"><span style="font-size:13px">' + item + '</span><strong id="sv_' + k + '">' + val + '</strong></div>'
-      + '<input type="range" min="1" max="10" step="1" value="' + val + '" oninput="document.getElementById(\'sv_' + k + '\').textContent=this.value;updateCatAvg(\'livsstil\')" data-key="' + k + '" data-cat="livsstil"></div>';
+      + '<input type="range" min="1" max="10" step="1" value="' + val + '" oninput="setSliderFill(this);document.getElementById(\'sv_' + k + '\').textContent=this.value;updateCatAvg(\'livsstil\')" data-key="' + k + '" data-cat="livsstil"></div>';
   });
   html += '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">'
     + '<span style="font-size:13px;color:var(--text-muted);font-weight:600">Snittsk\u00e5r</span>'
@@ -1454,6 +1537,7 @@ function renderSkillSliders() {
   container.innerHTML = html;
   updateCatAvg('psyk');
   updateCatAvg('livsstil');
+  setTimeout(updateAllSliderFills, 50);
 }
 
 function updateCatAvg(catKey) {
