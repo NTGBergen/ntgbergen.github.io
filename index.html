@@ -951,7 +951,11 @@ async function doLogin() {
   try {
     var data = await authApi('token?grant_type=password', {email: email, password: pass});
     currentUser = data;
-    try { localStorage.setItem('ntg_session', JSON.stringify({access_token: data.access_token, user_id: data.user.id})); } catch(e) {}
+    try { localStorage.setItem('ntg_session', JSON.stringify({
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
+      user_id: data.user.id
+    })); } catch(e) {}
     await loadProfile(data.user.id);
   } catch(e) {
     errEl.textContent = 'Feil e-post eller passord. Pr\u00f8v igjen.';
@@ -964,17 +968,75 @@ async function tryAutoLogin() {
     var saved = localStorage.getItem('ntg_session');
     if (!saved) return;
     var session = JSON.parse(saved);
-    if (!session.access_token || !session.user_id) return;
-    // Verify token is still valid
-    var res = await fetch(SB_URL + '/auth/v1/user', {
-      headers: {'apikey': SB_KEY, 'Authorization': 'Bearer ' + session.access_token}
-    });
-    if (!res.ok) { localStorage.removeItem('ntg_session'); return; }
-    currentUser = {access_token: session.access_token, user: {id: session.user_id}};
-    await loadProfile(session.user_id);
+    if (!session.user_id) return;
+
+    // Try existing access token first
+    if (session.access_token) {
+      var res = await fetch(SB_URL + '/auth/v1/user', {
+        headers: {'apikey': SB_KEY, 'Authorization': 'Bearer ' + session.access_token}
+      });
+      if (res.ok) {
+        currentUser = {access_token: session.access_token, refresh_token: session.refresh_token, user: {id: session.user_id}};
+        await loadProfile(session.user_id);
+        // Set up token auto-refresh every 55 minutes
+        startTokenRefresh();
+        return;
+      }
+    }
+
+    // Access token expired – try refresh token
+    if (session.refresh_token) {
+      var refreshRes = await fetch(SB_URL + '/auth/v1/token?grant_type=refresh_token', {
+        method: 'POST',
+        headers: {'apikey': SB_KEY, 'Content-Type': 'application/json'},
+        body: JSON.stringify({refresh_token: session.refresh_token})
+      });
+      if (refreshRes.ok) {
+        var refreshData = await refreshRes.json();
+        currentUser = {access_token: refreshData.access_token, refresh_token: refreshData.refresh_token, user: {id: session.user_id}};
+        localStorage.setItem('ntg_session', JSON.stringify({
+          access_token: refreshData.access_token,
+          refresh_token: refreshData.refresh_token,
+          user_id: session.user_id
+        }));
+        await loadProfile(session.user_id);
+        startTokenRefresh();
+        return;
+      }
+    }
+
+    // Both failed – clear session
+    localStorage.removeItem('ntg_session');
   } catch(e) {
     localStorage.removeItem('ntg_session');
   }
+}
+
+function startTokenRefresh() {
+  // Refresh token every 55 minutes to stay logged in
+  setInterval(async function() {
+    try {
+      var saved = localStorage.getItem('ntg_session');
+      if (!saved) return;
+      var session = JSON.parse(saved);
+      if (!session.refresh_token) return;
+      var res = await fetch(SB_URL + '/auth/v1/token?grant_type=refresh_token', {
+        method: 'POST',
+        headers: {'apikey': SB_KEY, 'Content-Type': 'application/json'},
+        body: JSON.stringify({refresh_token: session.refresh_token})
+      });
+      if (res.ok) {
+        var data = await res.json();
+        currentUser.access_token = data.access_token;
+        currentUser.refresh_token = data.refresh_token;
+        localStorage.setItem('ntg_session', JSON.stringify({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+          user_id: session.user_id
+        }));
+      }
+    } catch(e) {}
+  }, 55 * 60 * 1000);
 }
 
 async function loadProfile(uid) {
@@ -1019,6 +1081,7 @@ async function openPlayerView(profile) {
   // Ask for notification permission
   setTimeout(requestNotificationPermission, 3000);
   initRealtime();
+  setTimeout(function() { if (window.OneSignal && currentProfile) { try { window.OneSignal.login(currentProfile.id); } catch(e) {} } }, 4000);
 }
 
 async function loadPlayerData() {
@@ -3437,7 +3500,11 @@ async function handleAuthRedirect() {
       var user = await res.json();
       if (user.id) {
         currentUser = {access_token: accessToken, user: user};
-        localStorage.setItem('ntg_session', JSON.stringify({access_token: accessToken, user_id: user.id}));
+        localStorage.setItem('ntg_session', JSON.stringify({
+          access_token: accessToken,
+          refresh_token: params.get('refresh_token') || '',
+          user_id: user.id
+        }));
         window.history.replaceState(null, '', window.location.pathname);
         await loadProfile(user.id);
         return;
