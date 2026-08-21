@@ -1053,6 +1053,7 @@ async function loadProfile(uid) {
     showScreen('screen-trainer');
     loadTrainerView();
     initRealtime();
+    setTimeout(function() { if (window.OneSignal && trainerProfile) { try { window.OneSignal.login(trainerProfile.id); } catch(e) {} } }, 2000);
   } else {
     isTrainerViewing = false;
     trainerProfile = null;
@@ -2690,6 +2691,9 @@ async function sendPlayerMessage() {
     okEl.classList.add('show');
     setTimeout(function(){ okEl.classList.remove('show'); }, 2500);
     loadPlayerInbox();
+    // Varsle trenere
+    var playerName = currentProfile ? currentProfile.full_name : 'Utøver';
+    sendPush('Ny melding fra ' + playerName, body.substring(0, 100), selectedChatTrainers);
   } catch(e) {
     errEl.textContent = 'Feil: ' + e.message; errEl.style.display = 'block'; errEl.classList.add('show');
   } finally {
@@ -2783,12 +2787,18 @@ async function sendPlayerReply(msgId) {
   var input = document.getElementById('preply_' + msgId);
   var body = input ? input.value.trim() : '';
   if (!body) return;
-  await fetch(SB_URL + '/rest/v1/message_replies', {
+  var res = await fetch(SB_URL + '/rest/v1/message_replies', {
     method: 'POST',
-    headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
+    headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json', 'Prefer': 'return=representation'},
     body: JSON.stringify({message_id: msgId, sender_id: currentProfile.id, body: body})
   });
   if (input) input.value = '';
+  // Finn original sender (treneren) og varsle dem
+  var msgs = await api('GET', 'messages?id=eq.' + msgId + '&select=sender_id');
+  if (msgs && msgs[0]) {
+    var playerName = currentProfile ? currentProfile.full_name : 'Utøver';
+    sendPush('Svar fra ' + playerName, body.substring(0, 100), [msgs[0].sender_id]);
+  }
   loadPlayerInbox();
 }
 
