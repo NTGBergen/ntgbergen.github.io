@@ -564,7 +564,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
     </div>
     <div class="alert alert-green" id="tr-chat-ok"><div><div class="alert-title">Melding sendt!</div></div></div>
     <div class="login-error" id="tr-chat-err"></div>
-    <button class="btn btn-primary" onclick="sendTrainerMessage()">Send melding</button>
+    <button class="btn btn-primary" id="tr-chat-send-btn" onclick="sendTrainerMessage()">Send melding</button>
   </div>
 
   <div class="card">
@@ -683,9 +683,10 @@ var SPORTS_DATA = {
     {key:'taktikk', label:'Forst\u00e5else og taktikk', items:['Forsvarsformasjoner','Spillsystemer','Samarbeid linjespiller','Omstillingsevne','Samarbeid m\u00e5lvakt']}
   ]},
   'Fotball': { cats: [
-    {key:'medball', label:'Tekniske ferdigheter \u2013 med ball', items:['Pasning kort og lang','Mottak og ballkontroll','Dribling og finte','Skudd og avslutning','Heading','Innlegg og crossing']},
-    {key:'utenball', label:'Tekniske ferdigheter \u2013 uten ball', items:['L\u00f8psspill og l\u00f8psveier','Pressing og jaging','Forsvarsposisjon','Markering og duell','Omstilling angrep/forsvar']},
-    {key:'taktikk', label:'Taktikk og forst\u00e5else', items:['Formasjonsforst\u00e5else','Samarbeid i linjer','Romforst\u00e5else','Pressing som lag','Overganger']}
+    {key:'teknikk', label:'Tekniske ferdigheter', items:['1. touch \u2013 medtak og mottak','Kroppsstilling og posisjonering','Pasninger kort \u2013 begge ben','Pasninger lang \u2013 ulike teknikker','Skudd og avslutninger','1v1 offensivt','1v1 defensivt','Evne til \u00e5 vinne dueller']},
+    {key:'taktikk_ang', label:'Taktiske ferdigheter \u2013 angrep', items:['Posisjonere seg mellom linjene','Orientering og klar for neste trekk','Gjennombruddsdyktighet','Fart i bein, hode og ball']},
+    {key:'taktikk_def', label:'Taktiske ferdigheter \u2013 forsvar', items:['Lese rom og v\u00e6re sikringsspiller','H\u00e5ndtere balltap i balanse','H\u00e5ndtere balltap i ubalanse','Kommunikasjon og lederevne']},
+    {key:'fysikk', label:'Fysiske ferdigheter', items:['Maksimal styrke','Hurtighet og spenst','Utholdenhet','Agility og retningsendringer','Koordinasjon og balanse']}
   ]},
   'Basketball': { cats: [
     {key:'taktikk', label:'Forst\u00e5else og taktikk', items:['Spillsystemer, set-plays og aksjoner','Bevegelser, spacing og respacing','Lagforsvar og kommunikasjon','Evne til \u00e5 forutse']},
@@ -2601,12 +2602,12 @@ async function sendPlayerMessage() {
   var body = document.getElementById('chat-msg-body').value.trim();
   var errEl = document.getElementById('chat-send-err');
   var okEl = document.getElementById('chat-send-ok');
+  var btn = document.querySelector('#tab-chat .btn.btn-primary');
   errEl.classList.remove('show'); errEl.style.display = 'none'; okEl.classList.remove('show');
   if (!body) { errEl.textContent = 'Skriv en melding f\u00f8rst.'; errEl.style.display = 'block'; errEl.classList.add('show'); return; }
   if (!selectedChatTrainers.length) { errEl.textContent = 'Velg minst \u00e9n trener.'; errEl.style.display = 'block'; errEl.classList.add('show'); return; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Sender...'; }
   try {
-    var token = currentUser && currentUser.access_token ? currentUser.access_token : SB_KEY;
-    // Insert message and get ID back
     var msgRes = await fetch(SB_URL + '/rest/v1/messages', {
       method: 'POST',
       headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json', 'Prefer': 'return=representation'},
@@ -2615,7 +2616,6 @@ async function sendPlayerMessage() {
     var msgData = await msgRes.json();
     var msgId = Array.isArray(msgData) ? msgData[0].id : msgData.id;
     if (!msgId) throw new Error('Kunne ikke opprette melding');
-    // Insert recipients
     for (var i = 0; i < selectedChatTrainers.length; i++) {
       await fetch(SB_URL + '/rest/v1/message_recipients', {
         method: 'POST',
@@ -2629,6 +2629,8 @@ async function sendPlayerMessage() {
     loadPlayerInbox();
   } catch(e) {
     errEl.textContent = 'Feil: ' + e.message; errEl.style.display = 'block'; errEl.classList.add('show');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Send melding'; }
   }
 }
 
@@ -2678,7 +2680,7 @@ async function loadPlayerInbox() {
         trainerName = sp[0] ? sp[0].full_name : 'Trener';
       }
       var hasNewContent = isUnread || unreadReplies.length > 0;
-      var fromLine = isSent ? 'Fra deg \u2013 ' + m.created_at.split('T')[0] : 'Fra: ' + trainerName + ' \u2013 ' + m.created_at.split('T')[0];
+      var fromLine = isSent ? 'Fra deg \u2013 ' + formatNorwegianTime(m.created_at) : 'Fra: ' + trainerName + ' \u2013 ' + formatNorwegianTime(m.created_at);
       var toLine = isSent ? 'Til: trenere' : (m.recipients_label ? 'Til: ' + m.recipients_label : 'Til: deg');
       html += '<div style="border:1.5px solid ' + (hasNewContent ? 'var(--blue)' : 'var(--border)') + ';border-radius:9px;padding:12px;margin-bottom:10px;background:' + (hasNewContent ? 'var(--blue-light)' : 'var(--bg)') + '">';
       html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:2px">'
@@ -2693,7 +2695,7 @@ async function loadPlayerInbox() {
           var isNewReply = !r.read_at && isSent;
           html += '<div style="font-size:13px;padding:7px;background:' + (isMe ? 'rgba(0,47,108,.08)' : 'rgba(29,158,117,.08)') + ';border-radius:7px;margin-top:4px;border-left:3px solid ' + (isNewReply ? 'var(--blue)' : 'transparent') + '">'
             + '<strong>' + (isMe ? 'Du' : (trainerName || 'Trener')) + ':</strong> ' + r.body
-            + '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + r.created_at.split('T')[0] + '</div></div>';
+            + '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + formatNorwegianTime(r.created_at) + '</div></div>';
         });
       }
       if (isSent && !replies.length) {
@@ -2836,6 +2838,8 @@ async function sendTrainerMessage() {
   } else {
     recipientsLabel = trChatAllProfiles.filter(function(p){ return trChatSelectedPlayers.indexOf(p.id) > -1; }).map(function(p){ return p.full_name; }).join(', ');
   }
+  var sendBtn = document.querySelector('#tr-chat-send-btn') || document.querySelector('[onclick="sendTrainerMessage()"]');
+  if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = 'Sender...'; }
   try {
     var senderId = trainerProfile ? trainerProfile.id : currentProfile.id;
     var msgRes = await fetch(SB_URL + '/rest/v1/messages', {
@@ -2861,6 +2865,8 @@ async function sendTrainerMessage() {
     sendPush('Ny melding fra ' + senderName, body.substring(0, 100), recipientIds);
   } catch(e) {
     errEl.textContent = 'Feil: ' + e.message; errEl.style.display = 'block'; errEl.classList.add('show');
+  } finally {
+    if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = 'Send melding'; }
   }
 }
 
@@ -2919,7 +2925,7 @@ function renderTMsg(m, recipientInfo, replies, isSent, tid) {
   var html = '<div style="border:1px solid var(--border);border-radius:9px;padding:12px;margin-bottom:10px">'
     + '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">'
     + '<div><div style="font-size:12px;font-weight:700;color:var(--blue)">' + recipientInfo + '</div>'
-    + '<div style="font-size:11px;color:var(--text-muted)">' + m.created_at.split('T')[0] + '</div></div>'
+    + '<div style="font-size:11px;color:var(--text-muted)">' + formatNorwegianTime(m.created_at) + '</div></div>'
     + '<button onclick="deleteMessage(\'' + m.id + '\')" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:12px;padding:2px 6px">Slett</button>'
     + '</div>'
     + '<div style="font-size:14px;padding:8px;background:var(--bg2);border-radius:7px;margin-bottom:6px">' + m.body + '</div>';
@@ -2927,7 +2933,7 @@ function renderTMsg(m, recipientInfo, replies, isSent, tid) {
     var isMe = r.sender_id === tid;
     html += '<div style="font-size:13px;padding:7px;background:' + (isMe ? 'var(--green-light)' : 'var(--blue-light)') + ';border-radius:7px;margin-bottom:4px">'
       + '<strong>' + (isMe ? 'Du' : (isSent ? 'Utøver' : recipientInfo.replace('Fra: ',''))) + ':</strong> ' + r.body
-      + '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + r.created_at.split('T')[0] + '</div></div>';
+      + '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + formatNorwegianTime(r.created_at) + '</div></div>';
   });
   if (!isSent) {
     html += '<div style="display:flex;gap:6px;margin-top:6px">'
@@ -2992,6 +2998,16 @@ function setCalView(view) {
 // Local date string helper – avoids UTC timezone offset bug
 function localDateStr(d) {
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function formatNorwegianTime(isoStr) {
+  if (!isoStr) return '';
+  try {
+    var d = new Date(isoStr);
+    return d.toLocaleString('nb-NO', {timeZone:'Europe/Oslo', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'});
+  } catch(e) {
+    return isoStr.split('T')[0];
+  }
 }
 
 function renderCalGrid(events) {
