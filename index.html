@@ -2979,12 +2979,18 @@ async function saveEvent() {
   cancelEventEdit();
   showGlobalToast(editId ? '\u2713 \u00d8kt oppdatert!' : '\u2713 \u00d8kt(er) opprettet!');
   loadEvents();
+  // Send push only to relevant athletes
   var sport = trainerProfile ? (trainerProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball';
-  if (!editId) {
-    sendPush('Ny trenings\u00f8kt lagt inn', entry.title + ' \u2013 ' + entry.date + ' kl.' + entry.time, []);
-  } else {
-    sendPush('Trenings\u00f8kt endret', entry.title + ' \u2013 ' + entry.date + ' kl.' + entry.time, []);
-  }
+  var pushTitle = editId ? 'Trenings\u00f8kt endret' : 'Ny trenings\u00f8kt lagt inn';
+  var pushMsg = entry.title + ' \u2013 ' + entry.date + ' kl.' + entry.time;
+  var relevantProfiles = await api('GET', 'profiles?is_trainer=eq.false&is_superuser=eq.false&sport=eq.' + encodeURIComponent(sport) + '&select=id,group_name') || [];
+  // Filter by group if event targets specific groups
+  var targetGroups = Array.isArray(entry.group_names) ? entry.group_names.filter(function(g){ return g && g.indexOf('player:') !== 0; }) : [];
+  var targetIds = relevantProfiles.filter(function(p) {
+    if (!targetGroups.length) return true;
+    return targetGroups.indexOf(p.group_name) > -1;
+  }).map(function(p){ return p.id; });
+  if (targetIds.length) sendPush(pushTitle, pushMsg, targetIds);
 }
 
 function editEvent(ev) {
