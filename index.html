@@ -1731,7 +1731,10 @@ function renderSkillsHistory() {
       var cv = (cat.items.map(function(x){return parseInt(s.data[cat.key+'_'+skk(x)])||5;}).reduce(function(a,x){return a+x;},0)/cat.items.length).toFixed(1);
       return '<span style="font-size:12px;background:var(--bg2);border:1px solid var(--border);border-radius:5px;padding:2px 7px">' + cat.label + ': <strong style="color:var(--blue)">' + cv + '</strong></span>';
     }).join('');
-    return '<div class="shi"><div class="shi-date">' + s.date + (isLatest ? ' \u2013 Siste' : '') + ' \u2013 Snitt: ' + avg + '</div><div style="display:flex;flex-wrap:wrap;gap:6px">' + catHtml + '</div></div>';
+    return '<div class="shi"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
+      + '<div class="shi-date" style="margin-bottom:0">' + s.date + (isLatest ? ' \u2013 Siste' : '') + ' \u2013 Snitt: ' + avg + '</div>'
+      + (s.id ? '<button onclick="deleteSkillEntry(\'' + s.id + '\')" style="background:none;border:none;color:var(--red);font-size:11px;cursor:pointer;padding:2px 6px">Slett</button>' : '')
+      + '</div><div style="display:flex;flex-wrap:wrap;gap:6px">' + catHtml + '</div></div>';
   }).join('');
   renderSkillsProgress();
 }
@@ -2477,7 +2480,7 @@ function populateEventFilters() {
   typeSel.innerHTML = '<option value="">Alle typer</option>' + Object.keys(types).sort().map(function(t){ return '<option>' + t + '</option>'; }).join('');
 }
 
-function renderFilteredEvents() {
+async function renderFilteredEvents() {
   var group = document.getElementById('ev-filter-group').value;
   var type = document.getElementById('ev-filter-type').value;
   var showOld = document.getElementById('ev-show-old').checked;
@@ -2495,16 +2498,50 @@ function renderFilteredEvents() {
   });
   var today = new Date().toISOString().split('T')[0];
   if (!filtered.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen \u00f8kter</div>'; return; }
+  // Fetch attendance counts for all events
+  var countMap = {};
+  var sport = trainerProfile ? (trainerProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball';
+  var attendanceOpts = getSportAttendanceOptions(sport);
+  for (var i = 0; i < filtered.length; i++) {
+    var regs = await api('GET', 'event_registrations?event_id=eq.' + filtered[i].id + '&select=status') || [];
+    if (attendanceOpts) {
+      var counts = {};
+      attendanceOpts.forEach(function(o){ counts[o.value] = 0; });
+      regs.forEach(function(r){ if (counts[r.status] !== undefined) counts[r.status]++; });
+      countMap[filtered[i].id] = {opts: counts, total: regs.length};
+    } else {
+      var paameldt = regs.filter(function(r){ return r.status === 'paameldt'; }).length;
+      var avmeldt = regs.filter(function(r){ return r.status === 'avmeldt'; }).length;
+      countMap[filtered[i].id] = {paameldt: paameldt, avmeldt: avmeldt, total: regs.length};
+    }
+  }
   el.innerHTML = filtered.map(function(ev) {
     var isPast = ev.date < today;
+    var counts = countMap[ev.id];
+    var countHtml = '';
+    if (counts) {
+      if (attendanceOpts) {
+        countHtml = '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">'
+          + attendanceOpts.map(function(o){
+            var n = counts.opts[o.value] || 0;
+            return '<span style="font-size:11px;background:' + o.bg + ';color:' + o.color + ';border:1px solid ' + o.border + ';border-radius:6px;padding:2px 7px;font-weight:700">' + n + ' ' + o.label.split(' ')[0] + '</span>';
+          }).join('') + '</div>';
+      } else {
+        countHtml = '<div style="display:flex;gap:8px;margin-top:5px">'
+          + '<span style="font-size:11px;background:var(--green-light);color:var(--green-dark);border-radius:6px;padding:2px 8px;font-weight:700">\u2713 ' + counts.paameldt + ' p\u00e5meldt</span>'
+          + (counts.avmeldt ? '<span style="font-size:11px;background:var(--red-light);color:var(--red-dark);border-radius:6px;padding:2px 8px;font-weight:700">\u274C ' + counts.avmeldt + ' avmeldt</span>' : '')
+          + '</div>';
+      }
+    }
     return '<div style="padding:10px;border:1px solid var(--border);border-radius:9px;margin-bottom:8px;opacity:' + (isPast ? '.6' : '1') + '">'
       + '<div style="display:flex;justify-content:space-between;align-items:flex-start">'
       + '<div><div style="font-size:14px;font-weight:700;color:var(--blue)">' + ev.title + '</div>'
-      + '<div style="font-size:12px;color:var(--text-muted);margin-top:2px">' + ev.date + ' kl.' + ev.time + (ev.location ? ' &bull; ' + ev.location : '') + '</div>'
+      + '<div style="font-size:12px;color:var(--text-muted);margin-top:2px">' + ev.date + ' kl.' + ev.time + (ev.location ? ' \u2022 ' + ev.location : '') + '</div>'
       + '<div style="font-size:11px;margin-top:3px"><span class="stb">' + ev.type + '</span>'
       + (ev.group_names && ev.group_names.length ? ' <span style="color:var(--text-muted)">' + ev.group_names.join(', ') + '</span>' : ' <span style="color:var(--text-muted)">Alle grupper</span>') + '</div>'
+      + countHtml
       + '</div>'
-      + '<button class="btn-sm-blue" data-eid="' + ev.id + '" data-etitle="' + ev.title.replace(/"/g,'&quot;') + '" data-egroups="' + (ev.group_names || []).join('|') + '" onclick="handleShowRegs(this)">P\u00e5meldte</button>'
+      + '<button class="btn-sm-blue" data-eid="' + ev.id + '" data-etitle="' + ev.title.replace(/"/g,'&quot;') + '" onclick="handleShowRegs(this)">Rediger svar</button>'
       + '</div>'
       + '<div style="display:flex;gap:6px;margin-top:8px">'
       + '<button class="btn-sm" data-ev-id="' + ev.id + '" onclick="handleEditEvent(this)">Rediger</button>'
@@ -3684,7 +3721,9 @@ async function loadPlayerGamesForTrainer() {
   var todayStr = localDateStr(today);
   var in7Str = localDateStr(in7);
   // Get all events with player: marker in the next 7 days
-  var events = await api('GET', 'training_events?date=gte.' + todayStr + '&date=lte.' + in7Str + '&order=date.asc,time.asc&select=*') || [];
+  var sport = trainerProfile ? (trainerProfile.sport || 'Håndball') : 'Håndball';
+  // Get events with player: marker in next 7 days, filtered by sport
+  var events = await api('GET', 'training_events?sport=eq.' + encodeURIComponent(sport) + '&date=gte.' + todayStr + '&date=lte.' + in7Str + '&order=date.asc,time.asc&select=*') || [];
   var playerGames = events.filter(function(ev) {
     var gn = Array.isArray(ev.group_names) ? ev.group_names : [];
     return gn.some(function(g){ return g.indexOf('player:') === 0; });
@@ -3739,14 +3778,37 @@ async function loadTrainerInjuries() {
     + '<th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text-muted);font-size:11px;text-transform:uppercase">Tilbake</th>'
     + '</tr></thead><tbody>'
     + allActiveInjuries.map(function(inj) {
-      return '<tr>'
-        + '<td style="padding:8px;border-bottom:1px solid var(--border);font-weight:600">' + inj._player.full_name + '</td>'
+      var hasComment = inj.comments && inj.comments.trim();
+      return '<tr onclick="' + (hasComment ? 'showInjuryComment(\'' + inj.id + '\',\'' + inj._player.full_name + '\',`' + inj.comments.replace(/`/g,'') + '`)' : '') + '" style="cursor:' + (hasComment ? 'pointer' : 'default') + '">'
+        + '<td style="padding:8px;border-bottom:1px solid var(--border);font-weight:600">' + inj._player.full_name + (hasComment ? ' <span style="font-size:10px;background:var(--blue-light);color:var(--blue);border-radius:4px;padding:1px 5px">kommentar</span>' : '') + '</td>'
         + '<td style="padding:8px;border-bottom:1px solid var(--border)">' + inj.description + '<br><span style="font-size:11px;color:var(--text-muted)">' + inj.injury_date + '</span></td>'
         + '<td style="padding:8px;border-bottom:1px solid var(--border)">' + (inj.physio_checked ? '<span style="color:var(--green);font-weight:700">\u2713 Ja</span>' : '<span style="color:var(--text-muted)">Nei</span>') + '</td>'
         + '<td style="padding:8px;border-bottom:1px solid var(--border)">' + (inj.expected_return || '\u2013') + '</td>'
         + '</tr>';
     }).join('')
     + '</tbody></table>';
+}
+
+function showInjuryComment(id, name, comment) {
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:center;justify-content:center';
+  overlay.onclick = function(e){ if(e.target===overlay) overlay.remove(); };
+  overlay.innerHTML = '<div style="background:var(--bg);border-radius:14px;padding:1.5rem;width:90%;max-width:400px">'
+    + '<div style="font-size:15px;font-weight:700;color:var(--blue);margin-bottom:4px">' + name + '</div>'
+    + '<div style="font-size:13px;color:var(--text-muted);margin-bottom:12px">Kommentar fra utøver</div>'
+    + '<div style="font-size:14px;background:var(--bg2);border-radius:9px;padding:12px;border:1px solid var(--border);line-height:1.6">' + comment + '</div>'
+    + '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="margin-top:14px;width:100%;padding:10px;background:var(--blue);color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer">Lukk</button>'
+    + '</div>';
+  document.body.appendChild(overlay);
+}
+
+// ---- SKILLS EDIT/DELETE ----
+async function deleteSkillEntry(skillId) {
+  if (!confirm('Slette denne selvvurderingen?')) return;
+  await fetch(SB_URL + '/rest/v1/skills?id=eq.' + skillId, {method:'DELETE', headers:{'apikey':SB_ADMIN,'Authorization':'Bearer '+SB_ADMIN}});
+  allSkills = allSkills.filter(function(s){ return s.id !== skillId; });
+  showGlobalToast('\u2713 Selvvurdering slettet');
+  renderSkillsHistory();
 }
 
 function showGlobalToast(msg, type) {
