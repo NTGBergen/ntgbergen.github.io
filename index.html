@@ -283,6 +283,21 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       </div>
     </div>
 
+    <div class="card" id="tournament-card" style="display:none">
+      <div class="sec-title">Turneringer</div>
+      <div id="tournament-list"><div style="font-size:13px;color:var(--text-muted)">Laster...</div></div>
+    </div>
+    <div class="card" id="add-tournament-card" style="display:none">
+      <div class="sec-title">Legg til turnering</div>
+      <div class="form-group" style="margin-bottom:10px"><label>Turneringsnavn</label><input type="text" id="pt-title" placeholder="f.eks. NM Junior"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Fra dato</label><input type="date" id="pt-from"></div>
+        <div class="form-group"><label>Til dato</label><input type="date" id="pt-to"></div>
+      </div>
+      <div class="form-group" style="margin-bottom:10px"><label>Sted</label><input type="text" id="pt-loc" placeholder="f.eks. Oslo"></div>
+      <button class="btn btn-primary" onclick="savePlayerTournament()">Legg til turnering</button>
+    </div>
+
     <div class="card">
       <div class="sec-title">Legg til kamp</div>
       <div class="form-row">
@@ -531,7 +546,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       <button class="btn-sm-blue" onclick="toggleEventsList()" id="tr-events-toggle">Skjul</button>
     </div>
     <div id="tr-events-content">
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:center">
+      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
         <select id="ev-filter-group" onchange="renderFilteredEvents()" style="font-size:13px;border:1.5px solid var(--border);border-radius:7px;padding:6px 10px;background:var(--bg)">
           <option value="">Alle grupper</option>
         </select>
@@ -541,6 +556,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
         <label style="font-size:12px;display:flex;align-items:center;gap:5px;cursor:pointer">
           <input type="checkbox" id="ev-show-old" onchange="renderFilteredEvents()"> Vis eldre enn 7 dager
         </label>
+        <button class="btn-sm-blue" onclick="showAttendanceExport()">Eksporter tilstedev.</button>
       </div>
       <div id="tr-events-list"><div class="loading"><div class="spinner"></div>Laster...</div></div>
     </div>
@@ -570,6 +586,21 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   <div class="card">
     <div class="sec-title">Innboks <span id="tr-inbox-badge" style="display:none;background:var(--red);color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:700;margin-left:6px">!</span></div>
     <div id="tr-chat-inbox"><div class="loading"><div class="spinner"></div>Laster...</div></div>
+  </div>
+
+  <div class="card" id="tr-tournament-card" style="display:none">
+    <div class="sec-title">Turneringer</div>
+    <div id="tr-tournament-list"><div style="font-size:13px;color:var(--text-muted)">Ingen turneringer</div></div>
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+      <div style="font-size:13px;font-weight:700;margin-bottom:10px">Legg til turnering</div>
+      <div class="form-group" style="margin-bottom:8px"><label>Navn</label><input type="text" id="tr-tour-title" placeholder="f.eks. NM Junior"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Fra dato</label><input type="date" id="tr-tour-from"></div>
+        <div class="form-group"><label>Til dato</label><input type="date" id="tr-tour-to"></div>
+      </div>
+      <div class="form-group" style="margin-bottom:10px"><label>Sted</label><input type="text" id="tr-tour-loc" placeholder="f.eks. Oslo"></div>
+      <button class="btn btn-primary" onclick="saveTrainerTournament()">Legg til</button>
+    </div>
   </div>
 
   <div class="card">
@@ -755,7 +786,7 @@ var SPORT_SESSION_TYPES = {
   'Sykkel': ['Sykkel \u2013 trening','Sykkel \u2013 ritt','Intervall','Styrke','Utholdenhet','Annen trening'],
   'Sv\u00f8mming': ['Sv\u00f8mming \u2013 trening','Sv\u00f8mming \u2013 stevne','Teknikk','Styrke','Utholdenhet','Annen trening'],
   'Fekting': ['Fekting \u2013 trening','Fekting \u2013 konkurranse','Teknikk','Styrke','Utholdenhet','Annen trening'],
-  'Tennis': ['Tennis \u2013 trening','Tennis \u2013 kamp','Teknikk','Styrke','Utholdenhet','Annen trening'],
+  'Tennis': ['Tennis \u2013 trening','Tennis \u2013 kamp','Styrke','Kondisjon','Stretch','Compensation','Annen trening'],
   'Padel': ['Padel \u2013 trening','Padel \u2013 kamp','Teknikk','Styrke','Utholdenhet','Annen trening'],
   'Mix': ['Trening','Kamp','Teknikk','Styrke','Utholdenhet','Plyometri','Annen trening']
 };
@@ -777,6 +808,32 @@ var SPORT_TESTS = {
       {id:'s20',label:'Sprint 20m (sek)',type:'number',step:'0.01'},
       {id:'s40',label:'Sprint 40m m/vending (sek)',type:'number',step:'0.01'},
       {id:'jump',label:'Kraftplattform (cm)',type:'number',step:'1'}
+    ]}
+  },
+  'Fotball': {
+    conditioning: {title:'Tester', fields:[
+      {id:'s40',label:'40m sprint (sek)',type:'number',step:'0.01'},
+      {id:'jump',label:'Spenst (cm)',type:'number',step:'1'},
+      {id:'s20',label:'Agility (sek)',type:'number',step:'0.01'}
+    ]}
+  },
+  'Tennis': {
+    strength: {title:'Styrke', fields:[
+      {id:'bench',label:'Push ups (reps)',type:'number',step:'1'},
+      {id:'squat',label:'Pull ups (reps)',type:'number',step:'1'},
+      {id:'clean',label:'Squats (reps)',type:'number',step:'1'},
+      {id:'hangup',label:'Planke (sek)',type:'number',step:'1'}
+    ]},
+    conditioning: {title:'Spenst, kondisjon og sprint', fields:[
+      {id:'jump',label:'Lengdehopp (cm)',type:'number',step:'1'},
+      {id:'extra1',label:'H\u00f8ydehopp (cm)',type:'number',step:'1'},
+      {id:'beep',label:'Beep test (niv\u00e5.del)',type:'text'},
+      {id:'s20',label:'20m sprint (sek)',type:'number',step:'0.01'},
+      {id:'s40',label:'Court agility test (sek)',type:'number',step:'0.01'}
+    ]},
+    mobility: {title:'Mobilitet', fields:[
+      {id:'extra2',label:'Wall test (cm)',type:'number',step:'1'},
+      {id:'extra3',label:'Stand and reach (cm)',type:'number',step:'1'}
     ]}
   },
   'Basketball': {
@@ -801,16 +858,29 @@ function getSportTests(sport) {
   return SPORT_TESTS[sport] || SPORT_TESTS['H\u00e5ndball'];
 }
 
+var SPORT_ATTENDANCE = {
+  'Fotball': [
+    {value:'full', label:'Er med p\u00e5 full \u00f8kt', bg:'var(--green-light)', color:'var(--green-dark)', border:'var(--green)'},
+    {value:'prepp', label:'Er med p\u00e5 prepp og teknisk', bg:'var(--blue-light)', color:'var(--blue)', border:'var(--blue)'},
+    {value:'fysisk', label:'Kun fysisk trening', bg:'#FFF8E7', color:'#7A5C00', border:'#E8B84B'},
+    {value:'ikke', label:'Kan ikke delta, har avtalt med trener', bg:'var(--red-light)', color:'var(--red-dark)', border:'var(--red)'}
+  ]
+};
+
+function getSportAttendanceOptions(sport) {
+  return SPORT_ATTENDANCE[sport] || null; // null = use default meld på/av
+}
+
 function getSportPositions(sport) {
   return SPORT_POSITIONS[sport] || SPORT_POSITIONS['H\u00e5ndball'];
 }
 
 function renderTestSections() {
-  var sport = currentProfile ? (currentProfile.sport || 'Håndball') : 'Håndball';
+  var sport = currentProfile ? (currentProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball';
   var testDef = getSportTests(sport);
   var container = document.getElementById('test-sections-container');
   if (!container) return;
-  var sections = [testDef.strength, testDef.conditioning];
+  var sections = Object.keys(testDef).map(function(k){ return testDef[k]; });
   container.innerHTML = sections.map(function(sec) {
     return '<div class="card"><div class="sec-title">' + sec.title + '</div><div class="test-grid">'
       + sec.fields.map(function(f) {
@@ -819,7 +889,7 @@ function renderTestSections() {
         return '<div class="test-item">'
           + '<div class="tn">' + f.label + '</div>'
           + '<input type="' + f.type + '" id="t-' + f.id + '" placeholder="-"' + stepAttr + '>'
-          + '<div class="goal-row"><span>Mål:</span><input type="' + f.type + '" id="g-' + f.id + '" placeholder="-"' + stepAttr + '></div>'
+          + '<div class="goal-row"><span>M\u00e5l:</span><input type="' + f.type + '" id="g-' + f.id + '" placeholder="-"' + stepAttr + '></div>'
           + (!isText ? '<div class="prog-wrap"><div class="prog-fill" id="p-' + f.id + '"></div></div>' : '')
           + '</div>';
       }).join('')
@@ -1182,7 +1252,16 @@ function switchTab(tab) {
   document.querySelectorAll('.nav-tab').forEach(function(t, i){ t.classList.toggle('active', tabs[i] === tab); });
   document.querySelectorAll('.tab-content').forEach(function(c){ c.classList.remove('active'); });
   document.getElementById('tab-' + tab).classList.add('active');
-  if (tab === 'kalender') { loadCalendar(); loadInjuries(); }
+  if (tab === 'kalender') {
+    loadCalendar(); loadInjuries();
+    // Show tournament section for tennis
+    var isTennis = currentProfile && currentProfile.sport === 'Tennis';
+    var tcard = document.getElementById('tournament-card');
+    var acard = document.getElementById('add-tournament-card');
+    if (tcard) tcard.style.display = isTennis ? 'block' : 'none';
+    if (acard) acard.style.display = isTennis ? 'block' : 'none';
+    if (isTennis) loadTournaments();
+  }
   if (tab === 'dagbok') { renderACWR(); renderSessionLog(); }
   if (tab === 'uke') renderWeeklySummary();
   if (tab === 'grafer') renderGraphs();
@@ -1419,7 +1498,8 @@ async function saveTests() {
     s40: getVal('t-s40'),
     jump: getVal('t-jump'),
     extra1: getStr('t-extra1'),
-    extra2: getStr('t-extra2')
+    extra2: getStr('t-extra2'),
+    extra3: getStr('t-extra3')
   };
   await api('POST', 'tests', entry);
   allTests.unshift(entry);
@@ -1440,7 +1520,8 @@ async function saveGoals() {
     s40: getVal('g-s40'),
     jump: getVal('g-jump'),
     extra1: getStr('g-extra1'),
-    extra2: getStr('g-extra2')
+    extra2: getStr('g-extra2'),
+    extra3: getStr('g-extra3')
   };
   var token = currentUser && currentUser.access_token ? currentUser.access_token : SB_KEY;
   await fetch(SB_URL + '/rest/v1/test_goals?on_conflict=user_id', {
@@ -1966,6 +2047,12 @@ async function loadTrainerView() {
   window._trainerProfilesData = profiles;
   loadTrainerInjuries();
   loadPlayerGamesForTrainer();
+  // Show tennis tournament section
+  var trTourCard = document.getElementById('tr-tournament-card');
+  if (trTourCard) {
+    trTourCard.style.display = trainerSport === 'Tennis' ? 'block' : 'none';
+    if (trainerSport === 'Tennis') loadTrainerTournaments();
+  }
   var sel = document.getElementById('tr-conv-player');
   sel.innerHTML = profiles.map(function(p) { return '<option value="' + p.id + '">' + p.full_name + '</option>'; }).join('');
   var overload = 0; var missing = 0; var logged = 0;
@@ -2218,10 +2305,24 @@ function renderCalendarList(events, myRegs) {
       var status = ev._status || myRegs[ev.id];
       var isPaameldt = status === 'paameldt';
       var isAvmeldt = status === 'avmeldt';
-      var btnHtml = isPersonal ? '<span style="font-size:11px;color:var(--text-muted);font-style:italic">Min kamp</span>' :
-        isPaameldt ? '<button onclick="toggleRegistration(\'' + ev.id + '\')" style="background:var(--red-light);color:var(--red-dark);border:1px solid var(--red);border-radius:7px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">\u274C Meld av</button>' :
-        isAvmeldt ? '<button onclick="toggleRegistration(\'' + ev.id + '\')" style="background:var(--green-light);color:var(--green-dark);border:1px solid var(--green);border-radius:7px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">\u2713 Meld p\u00e5</button>' :
-        '<button onclick="toggleRegistration(\'' + ev.id + '\')" style="background:var(--blue-light);color:var(--blue);border:1px solid var(--blue);border-radius:7px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Meld p\u00e5</button>';
+      var attendanceOpts = getSportAttendanceOptions(currentProfile.sport || 'Håndball');
+      var btnHtml;
+      if (isPersonal) {
+        btnHtml = '<span style="font-size:11px;color:var(--text-muted);font-style:italic">Min kamp</span>';
+      } else if (attendanceOpts) {
+        var currentOpt = attendanceOpts.find(function(o){ return o.value === status; });
+        if (currentOpt) {
+          btnHtml = '<button onclick="showAttendanceMenu(\'' + ev.id + '\',this)" style="background:' + currentOpt.bg + ';color:' + currentOpt.color + ';border:1px solid ' + currentOpt.border + ';border-radius:7px;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer;max-width:160px;white-space:normal;text-align:center;line-height:1.3">' + currentOpt.label + '</button>';
+        } else {
+          btnHtml = '<button onclick="showAttendanceMenu(\'' + ev.id + '\',this)" style="background:var(--bg2);color:var(--text-muted);border:1px solid var(--border);border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;cursor:pointer">Velg svar</button>';
+        }
+      } else if (isPaameldt) {
+        btnHtml = '<button onclick="toggleRegistration(\'' + ev.id + '\')" style="background:var(--red-light);color:var(--red-dark);border:1px solid var(--red);border-radius:7px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">\u274C Meld av</button>';
+      } else if (isAvmeldt) {
+        btnHtml = '<button onclick="toggleRegistration(\'' + ev.id + '\')" style="background:var(--green-light);color:var(--green-dark);border:1px solid var(--green);border-radius:7px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">\u2713 Meld p\u00e5</button>';
+      } else {
+        btnHtml = '<button onclick="toggleRegistration(\'' + ev.id + '\')" style="background:var(--blue-light);color:var(--blue);border:1px solid var(--blue);border-radius:7px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Meld p\u00e5</button>';
+      }
       html += '<div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--bg2);border-radius:9px;margin-bottom:6px;border:1px solid var(--border)">'
         + '<div style="flex:1">'
         + '<div style="font-size:14px;font-weight:700;color:var(--blue)">' + ev.title + '</div>'
@@ -2482,13 +2583,269 @@ async function loadEvents() {
   populateEventFilters();
 }
 
+function showAttendanceMenu(eventId, btn) {
+  var sport = currentProfile.sport || 'H\u00e5ndball';
+  var opts = getSportAttendanceOptions(sport);
+  if (!opts) return;
+  // Remove existing menu
+  var existing = document.getElementById('att-menu');
+  if (existing) { existing.remove(); return; }
+  var menu = document.createElement('div');
+  menu.id = 'att-menu';
+  menu.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-radius:16px 16px 0 0;padding:1rem;z-index:999;box-shadow:0 -4px 24px rgba(0,0,0,.15)';
+  menu.innerHTML = '<div style="font-size:14px;font-weight:700;color:var(--blue);margin-bottom:12px">Velg tilstedev\u00e6relse</div>'
+    + opts.map(function(o) {
+      return '<button onclick="setAttendance(\'' + eventId + '\',\'' + o.value + '\')" style="display:block;width:100%;margin-bottom:8px;background:' + o.bg + ';color:' + o.color + ';border:1.5px solid ' + o.border + ';border-radius:9px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;text-align:left">' + o.label + '</button>';
+    }).join('')
+    + '<button onclick="document.getElementById(\'att-menu\').remove()" style="display:block;width:100%;margin-top:4px;background:var(--bg2);color:var(--text-muted);border:1px solid var(--border);border-radius:9px;padding:10px;font-size:13px;cursor:pointer">Avbryt</button>';
+  document.body.appendChild(menu);
+}
+
+async function setAttendance(eventId, statusValue) {
+  var menu = document.getElementById('att-menu');
+  if (menu) menu.remove();
+  var existing = await api('GET', 'event_registrations?event_id=eq.' + eventId + '&user_id=eq.' + currentProfile.id + '&select=id');
+  if (existing && existing.length) {
+    await fetch(SB_URL + '/rest/v1/event_registrations?id=eq.' + existing[0].id, {
+      method: 'PATCH',
+      headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
+      body: JSON.stringify({status: statusValue})
+    });
+  } else {
+    await fetch(SB_URL + '/rest/v1/event_registrations', {
+      method: 'POST',
+      headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
+      body: JSON.stringify({event_id: eventId, user_id: currentProfile.id, status: statusValue})
+    });
+  }
+  showGlobalToast('\u2713 Svar registrert!');
+  loadCalendar();
+}
+
+// ---- TRAINER: EDIT ATTENDANCE ----
+async function showEventRegsWithEdit(eventId, title) {
+  var regs = await api('GET', 'event_registrations?event_id=eq.' + eventId + '&select=*') || [];
+  var profiles = window._trainerProfilesData || [];
+  var sport = trainerProfile ? (trainerProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball';
+  var attendanceOpts = getSportAttendanceOptions(sport);
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:flex-end;justify-content:center';
+  overlay.onclick = function(e){ if(e.target===overlay) overlay.remove(); };
+  var statusLabel = function(s) {
+    if (!s) return '<span style="color:var(--text-muted)">Ikke svart</span>';
+    if (attendanceOpts) {
+      var o = attendanceOpts.find(function(x){ return x.value === s; });
+      return o ? '<span style="color:' + o.color + ';font-weight:600">' + o.label + '</span>' : s;
+    }
+    return s === 'paameldt' ? '<span style="color:var(--green);font-weight:600">\u2713 P\u00e5meldt</span>' : '<span style="color:var(--red);font-weight:600">\u274C Avmeldt</span>';
+  };
+  var regMap = {};
+  regs.forEach(function(r){ regMap[r.user_id] = r; });
+  var rows = profiles.map(function(p) {
+    var reg = regMap[p.id];
+    var status = reg ? reg.status : null;
+    var regId = reg ? reg.id : null;
+    var options = attendanceOpts
+      ? '<select onchange="updateAttendanceAdmin(\'' + (regId||'') + '\',\'' + eventId + '\',\'' + p.id + '\',this.value)" style="font-size:12px;border:1px solid var(--border);border-radius:6px;padding:4px 6px">'
+        + '<option value="">Ikke svart</option>'
+        + attendanceOpts.map(function(o){ return '<option value="' + o.value + '"' + (status===o.value?' selected':'') + '>' + o.label + '</option>'; }).join('')
+        + '</select>'
+      : '<select onchange="updateAttendanceAdmin(\'' + (regId||'') + '\',\'' + eventId + '\',\'' + p.id + '\',this.value)" style="font-size:12px;border:1px solid var(--border);border-radius:6px;padding:4px 6px">'
+        + '<option value="">Ikke svart</option>'
+        + '<option value="paameldt"' + (status==='paameldt'?' selected':'') + '>P\u00e5meldt</option>'
+        + '<option value="avmeldt"' + (status==='avmeldt'?' selected':'') + '>Avmeldt</option>'
+        + '</select>';
+    return '<tr><td style="padding:8px 4px;font-size:13px;font-weight:600">' + p.full_name + '</td>'
+      + '<td style="padding:8px 4px">' + options + '</td></tr>';
+  }).join('');
+  overlay.innerHTML = '<div style="background:var(--bg);border-radius:16px 16px 0 0;padding:1.5rem;width:100%;max-width:680px;max-height:85vh;overflow-y:auto">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
+    + '<div style="font-size:15px;font-weight:700;color:var(--blue)">' + title + '</div>'
+    + '<div style="display:flex;gap:8px;align-items:center">'
+    + '<button onclick="exportAttendanceSingle(\'' + eventId + '\',\'' + title + '\')" class="btn-sm-blue">Last ned</button>'
+    + '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted)">&times;</button>'
+    + '</div></div>'
+    + '<table style="width:100%;border-collapse:collapse"><tbody>' + rows + '</tbody></table>'
+    + '</div>';
+  document.body.appendChild(overlay);
+}
+
+async function updateAttendanceAdmin(regId, eventId, userId, statusValue) {
+  if (regId) {
+    await fetch(SB_URL + '/rest/v1/event_registrations?id=eq.' + regId, {
+      method: 'PATCH',
+      headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
+      body: JSON.stringify({status: statusValue || null})
+    });
+  } else if (statusValue) {
+    await fetch(SB_URL + '/rest/v1/event_registrations', {
+      method: 'POST',
+      headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
+      body: JSON.stringify({event_id: eventId, user_id: userId, status: statusValue})
+    });
+  }
+  showGlobalToast('\u2713 Tilstedev\u00e6relse oppdatert');
+}
+
+// ---- ATTENDANCE EXPORT ----
+async function showAttendanceExport() {
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:center;justify-content:center';
+  overlay.onclick = function(e){ if(e.target===overlay) overlay.remove(); };
+  overlay.innerHTML = '<div style="background:var(--bg);border-radius:14px;padding:1.5rem;width:90%;max-width:400px">'
+    + '<div style="font-size:15px;font-weight:700;color:var(--blue);margin-bottom:14px">Eksporter tilstedev\u00e6relse</div>'
+    + '<div class="form-group" style="margin-bottom:10px"><label>Fra dato</label><input type="date" id="att-exp-from"></div>'
+    + '<div class="form-group" style="margin-bottom:16px"><label>Til dato</label><input type="date" id="att-exp-to"></div>'
+    + '<div style="display:flex;gap:8px">'
+    + '<button class="btn btn-primary" onclick="exportAttendancePeriod()">Last ned CSV</button>'
+    + '<button class="btn btn-secondary" onclick="this.closest(\'div[style*=fixed]\').remove()">Avbryt</button>'
+    + '</div></div>';
+  document.body.appendChild(overlay);
+}
+
+async function exportAttendancePeriod() {
+  var from = document.getElementById('att-exp-from').value;
+  var to = document.getElementById('att-exp-to').value;
+  if (!from || !to) { showGlobalToast('Velg fra og til dato', 'error'); return; }
+  var sport = trainerProfile ? (trainerProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball';
+  var events = await api('GET', 'training_events?sport=eq.' + encodeURIComponent(sport) + '&date=gte.' + from + '&date=lte.' + to + '&order=date.asc&select=*') || [];
+  events = events.filter(function(ev){
+    var gn = ev.group_names || [];
+    return !gn.some(function(g){ return g.indexOf('player:') === 0; });
+  });
+  var profiles = window._trainerProfilesData || [];
+  var attendanceOpts = getSportAttendanceOptions(sport);
+  var csv = 'Utøver,' + events.map(function(ev){ return '"' + ev.date + ' ' + ev.title + '"'; }).join(',') + '\n';
+  for (var i = 0; i < profiles.length; i++) {
+    var p = profiles[i];
+    var regs = await api('GET', 'event_registrations?user_id=eq.' + p.id + '&select=event_id,status') || [];
+    var regMap = {};
+    regs.forEach(function(r){ regMap[r.event_id] = r.status; });
+    csv += '"' + p.full_name + '",' + events.map(function(ev){
+      var s = regMap[ev.id];
+      if (!s) return 'Ikke svart';
+      if (attendanceOpts) { var o = attendanceOpts.find(function(x){ return x.value === s; }); return o ? '"' + o.label + '"' : s; }
+      return s === 'paameldt' ? 'Påmeldt' : s === 'avmeldt' ? 'Avmeldt' : s;
+    }).join(',') + '\n';
+  }
+  var blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8'});
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'tilstedevarelse-' + from + '-' + to + '.csv'; a.click();
+  document.querySelector('div[style*="fixed"]').remove();
+}
+
+async function exportAttendanceSingle(eventId, title) {
+  var profiles = window._trainerProfilesData || [];
+  var sport = trainerProfile ? (trainerProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball';
+  var attendanceOpts = getSportAttendanceOptions(sport);
+  var regs = await api('GET', 'event_registrations?event_id=eq.' + eventId + '&select=*') || [];
+  var regMap = {};
+  regs.forEach(function(r){ regMap[r.user_id] = r.status; });
+  var csv = 'Utøver,Status\n';
+  profiles.forEach(function(p) {
+    var s = regMap[p.id];
+    var label = !s ? 'Ikke svart' : attendanceOpts ? (function(){ var o = attendanceOpts.find(function(x){return x.value===s;}); return o ? o.label : s; })() : (s === 'paameldt' ? 'Påmeldt' : s === 'avmeldt' ? 'Avmeldt' : s);
+    csv += '"' + p.full_name + '","' + label + '"\n';
+  });
+  var blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8'});
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'tilstedevarelse-' + title.replace(/\s/g,'-') + '.csv'; a.click();
+}
+
+// ---- TENNIS TOURNAMENTS ----
+var allTournaments = [];
+
+async function loadTournaments() {
+  var sport = currentProfile ? (currentProfile.sport || 'Tennis') : 'Tennis';
+  var el = document.getElementById('tournament-list'); if (!el) return;
+  allTournaments = await api('GET', 'tournaments?sport=eq.' + encodeURIComponent(sport) + '&order=start_date.asc&select=*') || [];
+  var today = new Date().toISOString().split('T')[0];
+  var upcoming = allTournaments.filter(function(t){ return (t.end_date || t.start_date) >= today; });
+  if (!upcoming.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen kommende turneringer</div>'; return; }
+  el.innerHTML = upcoming.map(function(t) {
+    var dateStr = t.start_date + (t.end_date && t.end_date !== t.start_date ? ' \u2013 ' + t.end_date : '');
+    var isOwn = t.is_player_created && t.created_by === currentProfile.id;
+    return '<div style="padding:10px;background:var(--bg2);border-radius:9px;margin-bottom:8px;border:1px solid var(--border)">'
+      + '<div style="display:flex;justify-content:space-between;align-items:flex-start">'
+      + '<div><div style="font-size:14px;font-weight:700;color:var(--blue)">' + t.title + '</div>'
+      + '<div style="font-size:12px;color:var(--text-muted);margin-top:2px">' + dateStr + (t.location ? ' \u2022 ' + t.location : '') + '</div>'
+      + (isOwn ? '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;font-style:italic">Min turnering</div>' : '') + '</div>'
+      + (isOwn ? '<button onclick="deleteTournament(\'' + t.id + '\')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:12px">Slett</button>' : '')
+      + '</div></div>';
+  }).join('');
+}
+
+async function savePlayerTournament() {
+  var title = document.getElementById('pt-title').value.trim();
+  var from = document.getElementById('pt-from').value;
+  var to = document.getElementById('pt-to').value;
+  var loc = document.getElementById('pt-loc').value;
+  if (!title || !from) { showGlobalToast('Fyll inn turneringsnavn og startdato', 'error'); return; }
+  await fetch(SB_URL + '/rest/v1/tournaments', {
+    method: 'POST',
+    headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
+    body: JSON.stringify({title: title, start_date: from, end_date: to || from, location: loc, sport: currentProfile.sport || 'Tennis', created_by: currentProfile.id, is_player_created: true})
+  });
+  document.getElementById('pt-title').value = '';
+  document.getElementById('pt-loc').value = '';
+  showGlobalToast('\u2713 Turnering lagt til!');
+  loadTournaments();
+}
+
+async function deleteTournament(id) {
+  if (!confirm('Slette denne turneringen?')) return;
+  await fetch(SB_URL + '/rest/v1/tournaments?id=eq.' + id, {method:'DELETE', headers:{'apikey':SB_ADMIN,'Authorization':'Bearer '+SB_ADMIN}});
+  showGlobalToast('\u2713 Turnering slettet');
+  loadTournaments();
+}
+
+// ---- TRAINER TOURNAMENTS ----
+async function loadTrainerTournaments() {
+  var sport = trainerProfile ? (trainerProfile.sport || 'Tennis') : 'Tennis';
+  var el = document.getElementById('tr-tournament-list'); if (!el) return;
+  var tournaments = await api('GET', 'tournaments?sport=eq.' + encodeURIComponent(sport) + '&is_player_created=eq.false&order=start_date.asc&select=*') || [];
+  if (!tournaments.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen turneringer lagt inn</div>'; return; }
+  el.innerHTML = tournaments.map(function(t) {
+    var dateStr = t.start_date + (t.end_date && t.end_date !== t.start_date ? ' \u2013 ' + t.end_date : '');
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">'
+      + '<div style="flex:1"><div style="font-size:13px;font-weight:700">' + t.title + '</div>'
+      + '<div style="font-size:12px;color:var(--text-muted)">' + dateStr + (t.location ? ' \u2022 ' + t.location : '') + '</div></div>'
+      + '<button onclick="deleteTrainerTournament(\'' + t.id + '\')" class="btn-sm" style="color:var(--red)">Slett</button>'
+      + '</div>';
+  }).join('');
+}
+
+async function saveTrainerTournament() {
+  var title = document.getElementById('tr-tour-title').value.trim();
+  var from = document.getElementById('tr-tour-from').value;
+  var to = document.getElementById('tr-tour-to').value;
+  var loc = document.getElementById('tr-tour-loc').value;
+  if (!title || !from) { showGlobalToast('Fyll inn navn og startdato', 'error'); return; }
+  var sport = trainerProfile ? (trainerProfile.sport || 'Tennis') : 'Tennis';
+  await fetch(SB_URL + '/rest/v1/tournaments', {
+    method: 'POST',
+    headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
+    body: JSON.stringify({title: title, start_date: from, end_date: to || from, location: loc, sport: sport, created_by: trainerProfile.id, is_player_created: false})
+  });
+  document.getElementById('tr-tour-title').value = '';
+  document.getElementById('tr-tour-loc').value = '';
+  showGlobalToast('\u2713 Turnering lagt til!');
+  loadTrainerTournaments();
+}
+
+async function deleteTrainerTournament(id) {
+  if (!confirm('Slette turnering?')) return;
+  await fetch(SB_URL + '/rest/v1/tournaments?id=eq.' + id, {method:'DELETE', headers:{'apikey':SB_ADMIN,'Authorization':'Bearer '+SB_ADMIN}});
+  showGlobalToast('\u2713 Slettet');
+  loadTrainerTournaments();
+}
+
 function handleShowRegs(btn) {
   var eventId = btn.getAttribute('data-eid');
   var title = btn.getAttribute('data-etitle');
-  var groupsStr = btn.getAttribute('data-egroups');
-  var groupNames = groupsStr ? groupsStr.split('|').filter(function(g){ return g.length > 0; }) : [];
-  showEventRegs(eventId, title, groupNames);
+  showEventRegsWithEdit(eventId, title);
 }
+
 
 function handleEditEvent(btn) {
   var evId = btn.getAttribute('data-ev-id');
