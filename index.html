@@ -573,6 +573,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   </div>
 
   <div class="card">
+    <div class="sec-title">Kommende kamper fra utøvere <span style="font-size:12px;color:var(--text-muted);font-weight:400">(neste 7 dager)</span></div>
+    <div id="tr-player-games"><div style="font-size:13px;color:var(--text-muted)">Ingen kamper registrert</div></div>
+  </div>
+
+  <div class="card">
     <div class="sec-title">Aktive skader <span id="tr-injury-count" style="font-size:12px;color:var(--red);font-weight:600"></span></div>
     <div id="tr-injury-list"><div style="font-size:13px;color:var(--text-muted)">Ingen aktive skader</div></div>
   </div>
@@ -1960,6 +1965,7 @@ async function loadTrainerView() {
   });
   window._trainerProfilesData = profiles;
   loadTrainerInjuries();
+  loadPlayerGamesForTrainer();
   var sel = document.getElementById('tr-conv-player');
   sel.innerHTML = profiles.map(function(p) { return '<option value="' + p.id + '">' + p.full_name + '</option>'; }).join('');
   var overload = 0; var missing = 0; var logged = 0;
@@ -2579,12 +2585,11 @@ async function saveEvent() {
   cancelEventEdit();
   showGlobalToast(editId ? '\u2713 \u00d8kt oppdatert!' : '\u2713 \u00d8kt(er) opprettet!');
   loadEvents();
-  // Send push to relevant recipients
+  var sport = trainerProfile ? (trainerProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball';
   if (!editId) {
-    var sport = trainerProfile ? (trainerProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball';
-    var notifTitle = 'Ny trenings\u00f8kt lagt inn';
-    var notifMsg = entry.title + ' \u2013 ' + entry.date + ' kl.' + entry.time;
-    sendPush(notifTitle, notifMsg, []);
+    sendPush('Ny trenings\u00f8kt lagt inn', entry.title + ' \u2013 ' + entry.date + ' kl.' + entry.time, []);
+  } else {
+    sendPush('Trenings\u00f8kt endret', entry.title + ' \u2013 ' + entry.date + ' kl.' + entry.time, []);
   }
 }
 
@@ -2757,13 +2762,24 @@ async function loadPlayerInbox() {
       html += '<div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">' + toLine + '</div>';
       html += '<div style="font-size:14px;padding:8px;background:' + (isSent ? 'rgba(0,47,108,.08)' : 'rgba(29,158,117,.08)') + ';border-radius:7px;margin-bottom:6px">' + m.body + '</div>';
       if (replies.length) {
-        replies.forEach(function(r) {
+        for (var ri = 0; ri < replies.length; ri++) {
+          var r = replies[ri];
           var isMe = r.sender_id === currentProfile.id;
           var isNewReply = !r.read_at && isSent;
-          html += '<div style="font-size:13px;padding:7px;background:' + (isMe ? 'rgba(0,47,108,.08)' : 'rgba(29,158,117,.08)') + ';border-radius:7px;margin-top:4px;border-left:3px solid ' + (isNewReply ? 'var(--blue)' : 'transparent') + '">'
-            + '<strong>' + (isMe ? 'Du' : (trainerName || 'Trener')) + ':</strong> ' + r.body
+          var rName = 'Du';
+          if (!isMe) {
+            if (r._name) {
+              rName = r._name;
+            } else {
+              var rp = await api('GET', 'profiles?id=eq.' + r.sender_id + '&select=full_name');
+              rName = rp && rp[0] ? rp[0].full_name : 'Trener';
+              r._name = rName;
+            }
+          }
+          html += '<div style="font-size:13px;padding:7px;background:' + (isMe ? 'rgba(0,47,108,.08)' : 'rgba(29,158,117,.08)') + ';border-radius:7px;margin-top:4px;border-left:3px solid ' + (isNewReply ? 'var(--blue)' : (isMe ? 'transparent' : 'var(--green)')) + '">'
+            + '<strong>' + rName + ':</strong> ' + r.body
             + '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + formatNorwegianTime(r.created_at) + '</div></div>';
-        });
+        }
       }
       if (isSent && !replies.length) {
         html += '<div style="font-size:12px;color:var(--text-muted);font-style:italic;margin-top:4px">Ikke svart enda</div>';
@@ -2975,6 +2991,13 @@ async function loadTrainerInbox() {
         var sp = await api('GET', 'profiles?id=eq.' + item.msg.sender_id + '&select=full_name') || [];
         var sName = sp[0] ? sp[0].full_name : 'Ukjent';
         var rreplies = await api('GET', 'message_replies?message_id=eq.' + item.msg.id + '&order=created_at.asc&select=*') || [];
+        // Look up sender names for replies from other trainers
+        for (var ri = 0; ri < rreplies.length; ri++) {
+          if (rreplies[ri].sender_id !== tid) {
+            var rp = await api('GET', 'profiles?id=eq.' + rreplies[ri].sender_id + '&select=full_name');
+            rreplies[ri]._senderName = rp && rp[0] ? rp[0].full_name : 'Ukjent';
+          }
+        }
         html += renderTMsg(item.msg, 'Fra: ' + sName, rreplies, false, tid);
         if (isUnread) {
           fetch(SB_URL + '/rest/v1/message_recipients?message_id=eq.' + item.msg.id + '&recipient_id=eq.' + tid, {
@@ -3004,8 +3027,9 @@ function renderTMsg(m, recipientInfo, replies, isSent, tid) {
     + '<div style="font-size:14px;padding:8px;background:var(--bg2);border-radius:7px;margin-bottom:6px">' + m.body + '</div>';
   replies.forEach(function(r) {
     var isMe = r.sender_id === tid;
-    html += '<div style="font-size:13px;padding:7px;background:' + (isMe ? 'var(--green-light)' : 'var(--blue-light)') + ';border-radius:7px;margin-bottom:4px">'
-      + '<strong>' + (isMe ? 'Du' : (isSent ? 'Utøver' : recipientInfo.replace('Fra: ',''))) + ':</strong> ' + r.body
+    var rName = isMe ? 'Du' : (r._senderName || (isSent ? 'Utøver' : recipientInfo.replace('Fra: ','')));
+    html += '<div style="font-size:13px;padding:7px;background:' + (isMe ? 'var(--green-light)' : 'var(--blue-light)') + ';border-radius:7px;margin-bottom:4px;border-left:3px solid ' + (isMe ? 'var(--green)' : 'var(--blue)') + '">'
+      + '<strong>' + rName + ':</strong> ' + r.body
       + '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + formatNorwegianTime(r.created_at) + '</div></div>';
   });
   if (!isSent) {
@@ -3016,6 +3040,7 @@ function renderTMsg(m, recipientInfo, replies, isSent, tid) {
   html += '</div>';
   return html;
 }
+
 
 async function deleteMessage(msgId) {
   if (!confirm('Slette denne meldingen?')) return;
@@ -3295,6 +3320,42 @@ async function deactivateInjury(injId) {
 }
 
 // ---- TRAINER INJURY OVERVIEW ----
+async function loadPlayerGamesForTrainer() {
+  var el = document.getElementById('tr-player-games'); if (!el) return;
+  var today = new Date();
+  var in7 = new Date(today); in7.setDate(in7.getDate() + 7);
+  var todayStr = localDateStr(today);
+  var in7Str = localDateStr(in7);
+  // Get all events with player: marker in the next 7 days
+  var events = await api('GET', 'training_events?date=gte.' + todayStr + '&date=lte.' + in7Str + '&order=date.asc,time.asc&select=*') || [];
+  var playerGames = events.filter(function(ev) {
+    var gn = Array.isArray(ev.group_names) ? ev.group_names : [];
+    return gn.some(function(g){ return g.indexOf('player:') === 0; });
+  });
+  if (!playerGames.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen kamper de neste 7 dagene</div>'; return; }
+  // Look up player names
+  var html = '';
+  for (var i = 0; i < playerGames.length; i++) {
+    var ev = playerGames[i];
+    var gn = ev.group_names || [];
+    var playerId = gn.find(function(g){ return g.indexOf('player:') === 0; });
+    playerId = playerId ? playerId.replace('player:','') : null;
+    var playerName = '';
+    if (playerId) {
+      var p = await api('GET', 'profiles?id=eq.' + playerId + '&select=full_name');
+      playerName = p && p[0] ? p[0].full_name : '';
+    }
+    html += '<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border)">'
+      + '<div style="flex:1">'
+      + '<div style="font-size:13px;font-weight:700">' + ev.title + '</div>'
+      + '<div style="font-size:12px;color:var(--text-muted)">' + ev.date + ' kl.' + ev.time + (ev.location ? ' \u2022 ' + ev.location : '') + '</div>'
+      + '</div>'
+      + '<div style="font-size:12px;color:var(--text-muted);text-align:right">' + playerName + '</div>'
+      + '</div>';
+  }
+  el.innerHTML = html;
+}
+
 async function loadTrainerInjuries() {
   var sport = trainerProfile ? (trainerProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball';
   var el = document.getElementById('tr-injury-list'); if (!el) return;
