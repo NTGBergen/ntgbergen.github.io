@@ -3184,9 +3184,9 @@ async function loadPlayerInbox() {
       if (isSent && !replies.length) {
         html += '<div style="font-size:12px;color:var(--text-muted);font-style:italic;margin-top:4px">Ikke svart enda</div>';
       }
-      if (!isSent) {
+      if (!isSent || replies.length) {
         html += '<div style="display:flex;gap:6px;margin-top:8px">'
-          + '<input type="text" id="preply_' + m.id + '" placeholder="Svar trener..." style="flex:1;font-size:13px;border:1.5px solid var(--border);border-radius:7px;padding:7px 10px;outline:none">'
+          + '<input type="text" id="preply_' + m.id + '" placeholder="Svar..." style="flex:1;font-size:13px;border:1.5px solid var(--border);border-radius:7px;padding:7px 10px;outline:none">'
           + '<button class="btn-sm-blue" onclick="sendPlayerReply(\'' + m.id + '\')">Send svar</button></div>';
       }
       html += '</div>';
