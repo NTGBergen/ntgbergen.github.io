@@ -2027,6 +2027,9 @@ async function loadTrainerView() {
   loadTrainerChat().catch(function(e){ console.log('Chat load error:', e); });
   var today = new Date().toISOString().split('T')[0];
   document.getElementById('ev-date').value = today;
+  // Re-fetch profile from DB to ensure sport is correct
+  var freshProfile = await api('GET', 'profiles?id=eq.' + (trainerProfile ? trainerProfile.id : '') + '&select=*');
+  if (freshProfile && freshProfile[0]) { trainerProfile = freshProfile[0]; currentProfile = freshProfile[0]; }
   var trainerSport = trainerProfile ? (trainerProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball';
   document.getElementById('tr-sport-label').textContent = trainerSport;
   // Set sport default for new student form
@@ -3904,16 +3907,20 @@ async function sendPushNotification(message, title) {
 var realtimeSocket = null;
 var realtimeRef = 0;
 var realtimeHeartbeat = null;
+var realtimeRetries = 0;
+var realtimeMaxRetries = 5;
 
 function initRealtime() {
   if (realtimeSocket) { try { realtimeSocket.close(); } catch(e) {} }
+  if (!currentUser) return;
   var token = currentUser && currentUser.access_token ? currentUser.access_token : SB_KEY;
   var wsUrl = SB_URL.replace('https://', 'wss://') + '/realtime/v1/websocket?apikey=' + SB_KEY + '&vsn=1.0.0';
-  var socket = new WebSocket(wsUrl);
+  var socket;
+  try { socket = new WebSocket(wsUrl); } catch(e) { return; }
   realtimeSocket = socket;
 
   socket.onopen = function() {
-    // Join channel for all public table changes
+    realtimeRetries = 0;
     socket.send(JSON.stringify({
       topic: 'realtime:public',
       event: 'phx_join',
@@ -3949,13 +3956,15 @@ function initRealtime() {
 
   socket.onclose = function() {
     clearInterval(realtimeHeartbeat);
-    // Reconnect after 5 seconds if still logged in
-    if (currentUser) setTimeout(initRealtime, 5000);
+    if (!currentUser) return;
+    realtimeRetries++;
+    if (realtimeRetries <= realtimeMaxRetries) {
+      var delay = Math.min(5000 * realtimeRetries, 30000);
+      setTimeout(initRealtime, delay);
+    }
   };
 
-  socket.onerror = function() {
-    // Silent fail - will reconnect on close
-  };
+  socket.onerror = function() {};
 }
 
 function handleRealtimeChange(table) {
