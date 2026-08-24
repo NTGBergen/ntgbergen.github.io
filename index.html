@@ -2259,14 +2259,20 @@ async function exportAllCSV() {
 }
 
 async function exportAllTests() {
-  var profiles = await api('GET', 'profiles?is_trainer=eq.false&select=*');
+  var sport = getTrainerSport();
+  var profiles = window._trainerProfilesData || await api('GET', 'profiles?is_trainer=eq.false&is_superuser=eq.false&sport=eq.' + encodeURIComponent(sport) + '&select=*') || [];
   var csv = 'Elev,Klasse,Dato,Panda pull/Snatch 2RM,Dips/Push ups 3RM,Chins 3RM,Push Jerk 3RM,Beep test,Sprint 20m,Sprint 40m m/vending,Kraftplattform\n';
   for (var i = 0; i < profiles.length; i++) {
     var p = profiles[i];
     var t = await api('GET', 'tests?user_id=eq.' + p.id + '&order=date.asc&select=*');
-    (t || []).forEach(function(x) { csv += '"' + p.full_name + '",' + p.class + ',' + x.date + ',' + (x.bench||'') + ',' + (x.squat||'') + ',' + (x.clean||'') + ',' + (x.hangup||'') + ',' + (x.beep||'') + ',' + (x.s20||'') + ',' + (x.s40||'') + ',' + (x.jump||'') + '\n'; });
+    (t || []).forEach(function(x) {
+      csv += '"' + p.full_name + '","' + (p.class||'') + '",' + x.date + ',' + (x.bench||'') + ',' + (x.squat||'') + ',' + (x.clean||'') + ',' + (x.hangup||'') + ',' + (x.beep||'') + ',' + (x.s20||'') + ',' + (x.s40||'') + ',' + (x.jump||'') + '\n';
+    });
   }
-  downloadFile(csv, 'NTG_Bergen_testresultater.csv', 'text/csv;charset=utf-8');
+  var blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8'});
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'testresultater-' + sport + '.csv'; a.click();
+  showGlobalToast('\u2713 Eksportert!');
 }
 
 function openSnakkeLink(e) {
@@ -3675,6 +3681,27 @@ async function saveMyGame() {
   document.getElementById('my-game-location').value = '';
   showGlobalToast('Kamp lagt til! \u2713');
   loadCalendar();
+}
+
+function exportStudents() {
+  exportTrainerCSV();
+}
+
+async function exportSessions() {
+  var sport = getTrainerSport();
+  var profiles = window._trainerProfilesData || await api('GET', 'profiles?is_trainer=eq.false&is_superuser=eq.false&sport=eq.' + encodeURIComponent(sport) + '&select=*') || [];
+  var csv = 'Navn,Klasse,Gruppe,Dato,Type,Varighet (min),RPE,Belastning,Kommentar\n';
+  for (var i = 0; i < profiles.length; i++) {
+    var p = profiles[i];
+    var sessions = await api('GET', 'sessions?user_id=eq.' + p.id + '&order=date.asc&select=*') || [];
+    sessions.forEach(function(s) {
+      csv += '"' + p.full_name + '","' + (p.class||'') + '","' + (p.group_name||'') + '","' + s.date + '","' + (s.type||'') + '",' + (s.duration||'') + ',' + (s.rpe||'') + ',' + (s.load||'') + ',"' + (s.comment||'') + '"\n';
+    });
+  }
+  var blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8'});
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'treningsdagboker-' + sport + '.csv'; a.click();
+  showGlobalToast('\u2713 Eksportert!');
 }
 
 function exportTrainerCSV() {
