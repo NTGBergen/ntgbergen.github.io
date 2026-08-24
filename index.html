@@ -3484,7 +3484,7 @@ function switchTrainerTab(tab) {
   var btn = document.getElementById('trtab-btn-' + tab);
   if (content) content.classList.add('active');
   if (btn) btn.classList.add('active');
-  if (tab === 'meldinger') loadTrainerInbox();
+  if (tab === 'meldinger') loadTrainerChat();
   if (tab === 'oversikt') { loadTrainerInjuries(); loadPlayerGamesForTrainer(); }
 }
 
