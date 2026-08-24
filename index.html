@@ -2056,14 +2056,17 @@ async function loadTrainerView() {
     return bS.date.localeCompare(aS.date);
   });
   window._trainerProfilesData = profiles;
-  loadTrainerInjuries();
-  loadPlayerGamesForTrainer();
-  // Show tennis tournament section
-  var trTourCard = document.getElementById('tr-tournament-card');
-  if (trTourCard) {
-    trTourCard.style.display = trainerSport === 'Tennis' ? 'block' : 'none';
-    if (trainerSport === 'Tennis') loadTrainerTournaments();
-  }
+  // Small delay to ensure trainerProfile is set before loading
+  setTimeout(function() {
+    loadTrainerInjuries(trainerSport);
+    loadPlayerGamesForTrainer(trainerSport);
+    // Show tennis tournament section
+    var trTourCard = document.getElementById('tr-tournament-card');
+    if (trTourCard) {
+      trTourCard.style.display = trainerSport === 'Tennis' ? 'block' : 'none';
+      if (trainerSport === 'Tennis') loadTrainerTournaments();
+    }
+  }, 100);
   var sel = document.getElementById('tr-conv-player');
   sel.innerHTML = profiles.map(function(p) { return '<option value="' + p.id + '">' + p.full_name + '</option>'; }).join('');
   var overload = 0; var missing = 0; var logged = 0;
@@ -3479,6 +3482,7 @@ function switchTrainerTab(tab) {
   if (content) content.classList.add('active');
   if (btn) btn.classList.add('active');
   if (tab === 'meldinger') loadTrainerInbox();
+  if (tab === 'oversikt') { loadTrainerInjuries(); loadPlayerGamesForTrainer(); }
 }
 
 // ---- ATTENDANCE BUTTONS (two separate buttons) ----
@@ -3770,60 +3774,66 @@ async function deactivateInjury(injId) {
 }
 
 // ---- TRAINER INJURY OVERVIEW ----
-async function loadPlayerGamesForTrainer() {
+async function loadPlayerGamesForTrainer(forceSport) {
   var el = document.getElementById('tr-player-games'); if (!el) return;
+  var sport = forceSport || (trainerProfile ? (trainerProfile.sport || 'Håndball') : 'Håndball');
   var today = new Date();
-  var in7 = new Date(today); in7.setDate(in7.getDate() + 7);
+  var in14 = new Date(today); in14.setDate(in14.getDate() + 14);
   var todayStr = localDateStr(today);
-  var in7Str = localDateStr(in7);
-  // Get all events with player: marker in the next 7 days
-  var sport = trainerProfile ? (trainerProfile.sport || 'Håndball') : 'Håndball';
-  // Get events with player: marker in next 7 days, filtered by sport
-  var events = await api('GET', 'training_events?sport=eq.' + encodeURIComponent(sport) + '&date=gte.' + todayStr + '&date=lte.' + in7Str + '&order=date.asc,time.asc&select=*') || [];
+  var in14Str = localDateStr(in14);
+  el.innerHTML = '<div class="loading"><div class="spinner"></div>Laster...</div>';
+  var events = await api('GET', 'training_events?sport=eq.' + encodeURIComponent(sport) + '&date=gte.' + todayStr + '&date=lte.' + in14Str + '&order=date.asc,time.asc&select=*') || [];
   var playerGames = events.filter(function(ev) {
     var gn = Array.isArray(ev.group_names) ? ev.group_names : [];
     return gn.some(function(g){ return g.indexOf('player:') === 0; });
   });
-  if (!playerGames.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen kamper de neste 7 dagene</div>'; return; }
-  // Look up player names
+  if (!playerGames.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen kamper de neste 14 dagene</div>'; return; }
+  var profiles = await api('GET', 'profiles?is_trainer=eq.false&sport=eq.' + encodeURIComponent(sport) + '&select=id,full_name') || [];
+  var profileMap = {};
+  profiles.forEach(function(p){ profileMap[p.id] = p.full_name; });
   var html = '';
-  for (var i = 0; i < playerGames.length; i++) {
-    var ev = playerGames[i];
+  playerGames.forEach(function(ev) {
     var gn = ev.group_names || [];
-    var playerId = gn.find(function(g){ return g.indexOf('player:') === 0; });
-    playerId = playerId ? playerId.replace('player:','') : null;
-    var playerName = '';
-    if (playerId) {
-      var p = await api('GET', 'profiles?id=eq.' + playerId + '&select=full_name');
-      playerName = p && p[0] ? p[0].full_name : '';
-    }
+    var playerId = '';
+    gn.forEach(function(g){ if (g.indexOf('player:') === 0) playerId = g.replace('player:',''); });
     html += '<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border)">'
-      + '<div style="flex:1">'
-      + '<div style="font-size:13px;font-weight:700">' + ev.title + '</div>'
-      + '<div style="font-size:12px;color:var(--text-muted)">' + ev.date + ' kl.' + ev.time + (ev.location ? ' \u2022 ' + ev.location : '') + '</div>'
-      + '</div>'
-      + '<div style="font-size:12px;color:var(--text-muted);text-align:right">' + playerName + '</div>'
+      + '<div style="flex:1"><div style="font-size:13px;font-weight:700">' + ev.title + '</div>'
+      + '<div style="font-size:12px;color:var(--text-muted)">' + ev.date + (ev.time ? ' kl.' + ev.time : '') + (ev.location ? ' \u2022 ' + ev.location : '') + '</div></div>'
+      + '<div style="font-size:12px;color:var(--text-muted);text-align:right;flex-shrink:0">' + (profileMap[playerId] || '') + '</div>'
       + '</div>';
-  }
+  });
   el.innerHTML = html;
 }
 
-async function loadTrainerInjuries() {
-  var sport = trainerProfile ? (trainerProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball';
+
+
+async function loadTrainerInjuries(forceSport) {
+  var sport = forceSport || (trainerProfile ? (trainerProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball');
   var el = document.getElementById('tr-injury-list'); if (!el) return;
-  // Fetch profiles for this sport only
+  el.innerHTML = '<div class="loading"><div class="spinner"></div>Laster skader...</div>';
+  // Get all active players in this sport
   var profiles = await api('GET', 'profiles?is_trainer=eq.false&is_superuser=eq.false&sport=eq.' + encodeURIComponent(sport) + '&select=id,full_name') || [];
+  var badge = document.getElementById('tr-injury-count');
+  if (!profiles.length) {
+    el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen utøvere registrert</div>';
+    if (badge) badge.textContent = '';
+    return;
+  }
+  // Fetch all active injuries in one batch
+  var ids = profiles.map(function(p){ return p.id; });
+  var profileMap = {};
+  profiles.forEach(function(p){ profileMap[p.id] = p; });
   var allActiveInjuries = [];
-  for (var i = 0; i < profiles.length; i++) {
-    var p = profiles[i];
-    var injuries = await api('GET', 'injuries?user_id=eq.' + p.id + '&is_active=eq.true&select=*') || [];
-    injuries.forEach(function(inj) { inj._player = p; });
+  // Fetch in batches of 10 to avoid URL length issues
+  for (var i = 0; i < ids.length; i += 10) {
+    var batch = ids.slice(i, i+10);
+    var injuries = await api('GET', 'injuries?user_id=in.(' + batch.join(',') + ')&is_active=eq.true&select=*') || [];
+    injuries.forEach(function(inj){ inj._player = profileMap[inj.user_id]; });
     allActiveInjuries = allActiveInjuries.concat(injuries);
   }
-  var badge = document.getElementById('tr-injury-count');
   if (badge) badge.textContent = allActiveInjuries.length > 0 ? '(' + allActiveInjuries.length + ' aktive)' : '';
   if (!allActiveInjuries.length) {
-    el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen aktive skader i gruppen</div>';
+    el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen aktive skader</div>';
     return;
   }
   el.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:13px">'
@@ -3835,8 +3845,9 @@ async function loadTrainerInjuries() {
     + '</tr></thead><tbody>'
     + allActiveInjuries.map(function(inj) {
       var hasComment = inj.comments && inj.comments.trim();
-      return '<tr onclick="' + (hasComment ? 'showInjuryComment(\'' + inj.id + '\',\'' + inj._player.full_name + '\',`' + inj.comments.replace(/`/g,'') + '`)' : '') + '" style="cursor:' + (hasComment ? 'pointer' : 'default') + '">'
-        + '<td style="padding:8px;border-bottom:1px solid var(--border);font-weight:600">' + inj._player.full_name + (hasComment ? ' <span style="font-size:10px;background:var(--blue-light);color:var(--blue);border-radius:4px;padding:1px 5px">kommentar</span>' : '') + '</td>'
+      var playerName = inj._player ? inj._player.full_name : 'Ukjent';
+      return '<tr onclick="' + (hasComment ? 'showInjuryComment(\'' + inj.id + '\',\'' + playerName.replace(/'/g,"\\'") + '\',' + JSON.stringify(inj.comments) + ')' : '') + '" style="cursor:' + (hasComment ? 'pointer' : 'default') + '">'
+        + '<td style="padding:8px;border-bottom:1px solid var(--border);font-weight:600">' + playerName + (hasComment ? ' <span style="font-size:10px;background:var(--blue-light);color:var(--blue);border-radius:4px;padding:1px 5px">kommentar</span>' : '') + '</td>'
         + '<td style="padding:8px;border-bottom:1px solid var(--border)">' + inj.description + '<br><span style="font-size:11px;color:var(--text-muted)">' + inj.injury_date + '</span></td>'
         + '<td style="padding:8px;border-bottom:1px solid var(--border)">' + (inj.physio_checked ? '<span style="color:var(--green);font-weight:700">\u2713 Ja</span>' : '<span style="color:var(--text-muted)">Nei</span>') + '</td>'
         + '<td style="padding:8px;border-bottom:1px solid var(--border)">' + (inj.expected_return || '\u2013') + '</td>'
