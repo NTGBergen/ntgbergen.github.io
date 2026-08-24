@@ -2032,6 +2032,10 @@ function updateStudentPositions() {
 }
 
 async function loadTrainerView() {
+  // Restore trainerProfile if missing
+  if (!trainerProfile && currentProfile && (currentProfile.is_trainer || currentProfile.is_superuser)) {
+    trainerProfile = currentProfile;
+  }
   document.getElementById('tr-loading').style.display = 'block';
   document.getElementById('tr-table').style.display = 'none';
   await loadGroups();
@@ -3488,6 +3492,11 @@ async function sendTrainerReply(msgId, senderId) {
 
 // ---- TRAINER TABS ----
 function switchTrainerTab(tab) {
+  // Restore trainerProfile if lost
+  if (!trainerProfile && currentProfile && (currentProfile.is_trainer || currentProfile.is_superuser)) {
+    trainerProfile = currentProfile;
+    trainerSportGlobal = currentProfile.sport || 'H\u00e5ndball';
+  }
   document.querySelectorAll('.tr-tab-content').forEach(function(el){ el.classList.remove('active'); });
   document.querySelectorAll('.tr-nav-tab').forEach(function(el){ el.classList.remove('active'); });
   var content = document.getElementById('trtab-' + tab);
@@ -3496,6 +3505,8 @@ function switchTrainerTab(tab) {
   if (btn) btn.classList.add('active');
   if (tab === 'meldinger') loadTrainerChat();
   if (tab === 'oversikt') { loadTrainerInjuries(getTrainerSport()); loadPlayerGamesForTrainer(getTrainerSport()); }
+  if (tab === 'okter') loadEvents();
+  if (tab === 'elever') loadTrainerView();
 }
 
 // ---- ATTENDANCE BUTTONS (two separate buttons) ----
