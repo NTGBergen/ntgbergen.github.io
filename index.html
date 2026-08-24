@@ -3251,6 +3251,10 @@ async function checkPlayerUnread() {
 var trChatAllProfiles = [];
 
 async function loadTrainerChat() {
+  // Wait for trainerProfile if not set yet
+  if (!trainerProfile && currentProfile && currentProfile.is_trainer) {
+    trainerProfile = currentProfile;
+  }
   var sport = trainerProfile ? (trainerProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball';
   trChatAllProfiles = await api('GET', 'profiles?is_trainer=eq.false&is_superuser=eq.false&sport=eq.' + encodeURIComponent(sport) + '&order=full_name.asc&select=*') || [];
   renderTrChatGroupsSelect();
