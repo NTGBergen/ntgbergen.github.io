@@ -934,6 +934,13 @@ var FOKUS_KRAV = {
 var currentUser = null;
 var currentProfile = null;
 var trainerProfile = null;
+var trainerSportGlobal = 'Håndball';
+
+function getTrainerSport() {
+  if (trainerProfile && trainerProfile.sport) return trainerProfile.sport;
+  if (currentProfile && currentProfile.sport) return currentProfile.sport;
+  return trainerSportGlobal;
+}
 var isTrainerViewing = false;
 var allSessions = [];
 var allTests = [];
@@ -2037,7 +2044,8 @@ async function loadTrainerView() {
     var freshProfile = await api('GET', 'profiles?id=eq.' + trainerProfile.id + '&select=*');
     if (freshProfile && freshProfile[0]) { trainerProfile = freshProfile[0]; currentProfile = freshProfile[0]; }
   }
-  var trainerSport = trainerProfile ? (trainerProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball';
+  var trainerSport = trainerProfile ? (trainerProfile.sport || 'H\u00e5ndball') : (currentProfile ? (currentProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball');
+  trainerSportGlobal = trainerSport;
   document.getElementById('tr-sport-label').textContent = trainerSport;
   // Set sport default for new student form
   var sportSel = document.getElementById('new-student-sport');
@@ -2601,8 +2609,7 @@ async function deleteGroup(id) {
 var allTrainerEvents = [];
 
 async function loadEvents() {
-  var sport = trainerProfile ? (trainerProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball';
-  // Populate ev-type dropdown with sport-specific types
+  var sport = getTrainerSport();
   var evType = document.getElementById('ev-type');
   if (evType) evType.innerHTML = getSportSessionTypes(sport).map(function(t){ return '<option>'+t+'</option>'; }).join('');
   var today = new Date().toISOString().split('T')[0];
@@ -3251,11 +3258,10 @@ async function checkPlayerUnread() {
 var trChatAllProfiles = [];
 
 async function loadTrainerChat() {
-  // Wait for trainerProfile if not set yet
   if (!trainerProfile && currentProfile && currentProfile.is_trainer) {
     trainerProfile = currentProfile;
   }
-  var sport = trainerProfile ? (trainerProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball';
+  var sport = getTrainerSport();
   trChatAllProfiles = await api('GET', 'profiles?is_trainer=eq.false&is_superuser=eq.false&sport=eq.' + encodeURIComponent(sport) + '&order=full_name.asc&select=*') || [];
   renderTrChatGroupsSelect();
   renderTrChatPlayersSelect();
@@ -3489,7 +3495,7 @@ function switchTrainerTab(tab) {
   if (content) content.classList.add('active');
   if (btn) btn.classList.add('active');
   if (tab === 'meldinger') loadTrainerChat();
-  if (tab === 'oversikt') { loadTrainerInjuries(); loadPlayerGamesForTrainer(); }
+  if (tab === 'oversikt') { loadTrainerInjuries(getTrainerSport()); loadPlayerGamesForTrainer(getTrainerSport()); }
 }
 
 // ---- ATTENDANCE BUTTONS (two separate buttons) ----
