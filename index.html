@@ -3262,11 +3262,15 @@ async function checkPlayerUnread() {
 var trChatAllProfiles = [];
 
 async function loadTrainerChat() {
-  if (!trainerProfile && currentProfile && currentProfile.is_trainer) {
-    trainerProfile = currentProfile;
-  }
+  if (!trainerProfile) trainerProfile = currentProfile;
   var sport = getTrainerSport();
-  trChatAllProfiles = await api('GET', 'profiles?is_trainer=eq.false&is_superuser=eq.false&sport=eq.' + encodeURIComponent(sport) + '&order=full_name.asc&select=*') || [];
+  // Bruk allerede lastede profiler om tilgjengelig
+  if (window._trainerProfilesData && window._trainerProfilesData.length) {
+    trChatAllProfiles = window._trainerProfilesData;
+  } else {
+    trChatAllProfiles = await api('GET', 'profiles?is_trainer=eq.false&is_superuser=eq.false&sport=eq.' + encodeURIComponent(sport) + '&order=full_name.asc&select=*') || [];
+    window._trainerProfilesData = trChatAllProfiles;
+  }
   renderTrChatGroupsSelect();
   renderTrChatPlayersSelect();
   loadTrainerInbox();
