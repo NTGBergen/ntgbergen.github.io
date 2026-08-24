@@ -2033,8 +2033,10 @@ async function loadTrainerView() {
   var today = new Date().toISOString().split('T')[0];
   document.getElementById('ev-date').value = today;
   // Re-fetch profile from DB to ensure sport is correct
-  var freshProfile = await api('GET', 'profiles?id=eq.' + (trainerProfile ? trainerProfile.id : '') + '&select=*');
-  if (freshProfile && freshProfile[0]) { trainerProfile = freshProfile[0]; currentProfile = freshProfile[0]; }
+  if (trainerProfile && trainerProfile.id) {
+    var freshProfile = await api('GET', 'profiles?id=eq.' + trainerProfile.id + '&select=*');
+    if (freshProfile && freshProfile[0]) { trainerProfile = freshProfile[0]; currentProfile = freshProfile[0]; }
+  }
   var trainerSport = trainerProfile ? (trainerProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball';
   document.getElementById('tr-sport-label').textContent = trainerSport;
   // Set sport default for new student form
@@ -2068,7 +2070,7 @@ async function loadTrainerView() {
     }
   }, 100);
   var sel = document.getElementById('tr-conv-player');
-  sel.innerHTML = profiles.map(function(p) { return '<option value="' + p.id + '">' + p.full_name + '</option>'; }).join('');
+  if (sel) sel.innerHTML = profiles.map(function(p) { return '<option value="' + p.id + '">' + p.full_name + '</option>'; }).join('');
   var overload = 0; var missing = 0; var logged = 0;
   var alerts = '';
   var rows = await Promise.all(profiles.map(async function(p) {
@@ -2180,13 +2182,14 @@ async function startEditStudent(id, name, cls, pos, grp, spt) {
 }
 
 function cancelStudentEdit() {
-  document.getElementById('edit-student-id').value = '';
-  document.getElementById('student-form-title').textContent = 'Opprett elev';
-  document.getElementById('new-student-name').value = '';
-  document.getElementById('new-student-email').value = '';
-  document.getElementById('new-student-pass').value = 'NTG2026';
-  document.getElementById('password-field').style.display = 'block';
-  document.getElementById('edit-cancel-btn').style.display = 'none';
+  var f = function(id){ return document.getElementById(id); };
+  if(f('edit-student-id')) f('edit-student-id').value = '';
+  if(f('student-form-title')) f('student-form-title').textContent = 'Opprett elev';
+  if(f('new-student-name')) f('new-student-name').value = '';
+  if(f('new-student-email')) f('new-student-email').value = '';
+  if(f('new-student-pass')) f('new-student-pass').value = 'NTG2026';
+  if(f('password-field')) f('password-field').style.display = 'block';
+  if(f('edit-cancel-btn')) f('edit-cancel-btn').style.display = 'none';
 }
 
 async function saveTrainerConv() {
