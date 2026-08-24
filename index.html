@@ -2166,6 +2166,7 @@ async function saveStudent() {
 }
 
 async function startEditStudent(id, name, cls, pos, grp, spt) {
+  switchTrainerTab('elever');
   document.getElementById('edit-student-id').value = id;
   document.getElementById('student-form-title').textContent = 'Rediger elev';
   document.getElementById('new-student-name').value = name;
@@ -2173,12 +2174,11 @@ async function startEditStudent(id, name, cls, pos, grp, spt) {
   document.getElementById('new-student-sport').value = spt || 'H\u00e5ndball';
   updateStudentPositions();
   document.getElementById('new-student-pos').value = pos;
-  // Make sure groups are loaded before setting value
   await loadGroups();
   document.getElementById('new-student-group').value = grp || '';
   document.getElementById('password-field').style.display = 'none';
   document.getElementById('edit-cancel-btn').style.display = 'block';
-  document.getElementById('student-form-title').scrollIntoView({behavior: 'smooth'});
+  setTimeout(function(){ document.getElementById('student-form-title').scrollIntoView({behavior:'smooth'}); }, 200);
 }
 
 function cancelStudentEdit() {
