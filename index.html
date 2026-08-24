@@ -2675,9 +2675,15 @@ async function setAttendance(eventId, statusValue) {
 // ---- TRAINER: EDIT ATTENDANCE ----
 async function showEventRegsWithEdit(eventId, title) {
   var regs = await api('GET', 'event_registrations?event_id=eq.' + eventId + '&select=*') || [];
-  var profiles = window._trainerProfilesData || [];
-  var sport = trainerProfile ? (trainerProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball';
+  var allProfiles = window._trainerProfilesData || [];
+  var sport = getTrainerSport();
   var attendanceOpts = getSportAttendanceOptions(sport);
+  // Filter to only athletes in the event's groups
+  var ev = allTrainerEvents.find(function(e){ return e.id === eventId; });
+  var eventGroups = ev && Array.isArray(ev.group_names) ? ev.group_names.filter(function(g){ return g && g.indexOf('player:') !== 0; }) : [];
+  var profiles = eventGroups.length
+    ? allProfiles.filter(function(p){ return eventGroups.indexOf(p.group_name) > -1; })
+    : allProfiles;
   var overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:flex-end;justify-content:center';
   overlay.onclick = function(e){ if(e.target===overlay) overlay.remove(); };
