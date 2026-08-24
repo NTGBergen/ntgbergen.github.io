@@ -70,6 +70,9 @@ textarea{resize:vertical}
 .nav-tab{flex:0 0 auto;padding:7px 10px;font-size:11px;font-weight:700;color:rgba(255,255,255,.6);background:none;border:none;border-radius:6px;cursor:pointer;text-align:center;white-space:nowrap}
 .nav-tab.active{background:var(--gold);color:var(--blue)}
 .tab-content{display:none}.tab-content.active{display:block}
+.tr-tab-content{display:none}.tr-tab-content.active{display:block}
+.tr-nav-tab{background:none;border:none;padding:10px 14px;font-size:13px;font-weight:600;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap}
+.tr-nav-tab.active{color:var(--blue);border-bottom-color:var(--blue)}
 @keyframes fadeInUp{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 .metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:1rem}
 .metric-card{background:var(--bg2);border-radius:8px;padding:10px 12px;border:1px solid var(--border)}
@@ -495,190 +498,192 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
     <div class="metric-card"><div class="ml">Mangler tester</div><div class="mv" id="tr-missing">-</div></div>
   </div>
   <div id="tr-alerts"></div>
-  <div class="card">
-    <div class="sec-title">Grupper</div>
-    <div id="groups-list" style="margin-bottom:10px"></div>
-    <div style="display:flex;gap:8px">
-      <input type="text" id="new-group-name" placeholder="Navn på gruppe, f.eks. Jenter 1" style="flex:1">
-      <button class="btn-sm-blue" style="white-space:nowrap" onclick="saveGroup()">+ Legg til</button>
-    </div>
-    <div class="alert alert-green" id="group-toast" style="margin-top:8px"><div><div class="alert-title">Gruppe lagret!</div></div></div>
+
+  <!-- Trainer nav tabs -->
+  <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:0;overflow-x:auto;-webkit-overflow-scrolling:touch">
+    <button class="tr-nav-tab active" id="trtab-btn-oversikt" onclick="switchTrainerTab('oversikt')">Oversikt</button>
+    <button class="tr-nav-tab" id="trtab-btn-okter" onclick="switchTrainerTab('okter')">&Oslash;kter</button>
+    <button class="tr-nav-tab" id="trtab-btn-elever" onclick="switchTrainerTab('elever')">Elever</button>
+    <button class="tr-nav-tab" id="trtab-btn-meldinger" onclick="switchTrainerTab('meldinger')" style="position:relative">Meldinger <span id="tr-inbox-badge" style="display:none;background:var(--red);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:700;margin-left:3px">!</span></button>
+    <button class="tr-nav-tab" id="trtab-btn-eksport" onclick="switchTrainerTab('eksport')">Eksport</button>
   </div>
 
-  <div class="card">
-    <div class="sec-title" id="event-form-title">Legg inn trenings&oslash;kt</div>
-    <input type="hidden" id="edit-event-id" value="">
-    <div class="form-row">
-      <div class="form-group"><label>Tittel</label><input type="text" id="ev-title" placeholder="f.eks. Styrke VG2"></div>
-      <div class="form-group"><label>Type</label>
-        <select id="ev-type"></select>
+  <!-- TAB: OVERSIKT -->
+  <div class="tr-tab-content active" id="trtab-oversikt">
+    <div class="card" id="tr-tournament-card" style="display:none">
+      <div class="sec-title">Turneringer</div>
+      <div id="tr-tournament-list"><div style="font-size:13px;color:var(--text-muted)">Ingen turneringer</div></div>
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px">Legg til turnering</div>
+        <div class="form-group" style="margin-bottom:8px"><label>Navn</label><input type="text" id="tr-tour-title" placeholder="f.eks. NM Junior"></div>
+        <div class="form-row">
+          <div class="form-group"><label>Fra dato</label><input type="date" id="tr-tour-from"></div>
+          <div class="form-group"><label>Til dato</label><input type="date" id="tr-tour-to"></div>
+        </div>
+        <div class="form-group" style="margin-bottom:10px"><label>Sted</label><input type="text" id="tr-tour-loc" placeholder="f.eks. Oslo"></div>
+        <button class="btn btn-primary" onclick="saveTrainerTournament()">Legg til</button>
       </div>
     </div>
-    <div class="form-row">
-      <div class="form-group"><label>Dato</label><input type="date" id="ev-date"></div>
-      <div class="form-group"><label>Tidspunkt</label><input type="time" id="ev-time" value="16:00"></div>
+    <div class="card">
+      <div class="sec-title">Kommende kamper fra utøvere <span style="font-size:12px;color:var(--text-muted);font-weight:400">(neste 7 dager)</span></div>
+      <div id="tr-player-games"><div style="font-size:13px;color:var(--text-muted)">Ingen kamper registrert</div></div>
     </div>
-    <div class="form-group" style="margin-bottom:10px"><label>Sted</label><input type="text" id="ev-location" placeholder="f.eks. Gymsalen, NTG Bergen"></div>
-    <div class="form-group" style="margin-bottom:10px">
-      <label>Synlig for grupper (velg ingen = alle ser den)</label>
-      <div id="ev-groups-select" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px"></div>
+    <div class="card">
+      <div class="sec-title">Aktive skader <span id="tr-injury-count" style="font-size:12px;color:var(--red);font-weight:600"></span></div>
+      <div id="tr-injury-list"><div style="font-size:13px;color:var(--text-muted)">Ingen aktive skader</div></div>
     </div>
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:10px;background:var(--bg2);border-radius:8px;border:1px solid var(--border)">
-      <input type="checkbox" id="ev-recurring" onchange="document.getElementById('ev-weeks-wrap').style.display=this.checked?'flex':'none'" style="width:18px;height:18px;cursor:pointer">
-      <label for="ev-recurring" style="font-size:13px;font-weight:600;cursor:pointer;margin:0">Gjentakende &oslash;kt</label>
-      <div id="ev-weeks-wrap" style="display:none;align-items:center;gap:6px;margin-left:auto">
-        <span style="font-size:13px;color:var(--text-muted)">Gjenta i</span>
-        <input type="number" id="ev-weeks" min="2" max="52" value="8" style="width:60px;padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:13px">
-        <span style="font-size:13px;color:var(--text-muted)">uker</span>
+    <div class="card">
+      <div class="sec-title">Grupper</div>
+      <div id="groups-list" style="margin-bottom:10px"></div>
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <input type="text" id="new-group-name" placeholder="Gruppenavn..." style="flex:1;font-size:14px;border:1.5px solid var(--border);border-radius:7px;padding:8px 12px;outline:none">
+        <button class="btn-sm-blue" onclick="saveGroup()">Legg til</button>
       </div>
     </div>
-    <div class="login-error" id="event-error"></div>
-    <div class="alert alert-green" id="event-success"><div><div class="alert-title" id="event-success-msg">Økt lagret!</div></div></div>
-    <div class="btn-row">
-      <button class="btn btn-primary" onclick="saveEvent()">Lagre &oslash;kt</button>
-      <button class="btn btn-secondary" id="event-cancel-btn" onclick="cancelEventEdit()" style="display:none">Avbryt</button>
-    </div>
   </div>
 
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div class="sec-title" style="margin-bottom:0">Planlagte &oslash;kter</div>
-      <button class="btn-sm-blue" onclick="toggleEventsList()" id="tr-events-toggle">Skjul</button>
-    </div>
-    <div id="tr-events-content">
-      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-        <select id="ev-filter-group" onchange="renderFilteredEvents()" style="font-size:13px;border:1.5px solid var(--border);border-radius:7px;padding:6px 10px;background:var(--bg)">
-          <option value="">Alle grupper</option>
-        </select>
-        <select id="ev-filter-type" onchange="renderFilteredEvents()" style="font-size:13px;border:1.5px solid var(--border);border-radius:7px;padding:6px 10px;background:var(--bg)">
-          <option value="">Alle typer</option>
-        </select>
-        <label style="font-size:12px;display:flex;align-items:center;gap:5px;cursor:pointer">
-          <input type="checkbox" id="ev-show-old" onchange="renderFilteredEvents()"> Vis eldre enn 7 dager
-        </label>
-        <button class="btn-sm-blue" onclick="showAttendanceExport()">Eksporter tilstedev.</button>
-      </div>
-      <div id="tr-events-list"><div class="loading"><div class="spinner"></div>Laster...</div></div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="sec-title">Send melding til utøvere</div>
-    <div class="form-group" style="margin-bottom:10px">
-      <label>Send til</label>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
-        <div id="tr-chat-all" onclick="toggleTrChatTarget('all')" style="padding:5px 12px;border:1.5px solid var(--blue);border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;background:var(--blue-light);color:var(--blue)">Alle i idretten</div>
-        <div id="tr-chat-groups-toggle" onclick="toggleTrChatTarget('groups')" style="padding:5px 12px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-muted)">Velg grupper</div>
-        <div id="tr-chat-players-toggle" onclick="toggleTrChatTarget('players')" style="padding:5px 12px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-muted)">Velg utøvere</div>
-      </div>
-      <div id="tr-chat-groups-select" style="display:none;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
-      <div id="tr-chat-players-select" style="display:none;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
-    </div>
-    <div class="form-group" style="margin-bottom:10px">
-      <label>Melding</label>
-      <textarea id="tr-chat-body" rows="4" placeholder="Skriv meldingen din her..." style="width:100%;font-size:14px;border:1.5px solid var(--border);border-radius:7px;padding:9px 11px;font-family:inherit;resize:vertical;outline:none"></textarea>
-    </div>
-    <div class="alert alert-green" id="tr-chat-ok"><div><div class="alert-title">Melding sendt!</div></div></div>
-    <div class="login-error" id="tr-chat-err"></div>
-    <button class="btn btn-primary" id="tr-chat-send-btn" onclick="sendTrainerMessage()">Send melding</button>
-  </div>
-
-  <div class="card">
-    <div class="sec-title">Innboks <span id="tr-inbox-badge" style="display:none;background:var(--red);color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:700;margin-left:6px">!</span></div>
-    <div id="tr-chat-inbox"><div class="loading"><div class="spinner"></div>Laster...</div></div>
-  </div>
-
-  <div class="card" id="tr-tournament-card" style="display:none">
-    <div class="sec-title">Turneringer</div>
-    <div id="tr-tournament-list"><div style="font-size:13px;color:var(--text-muted)">Ingen turneringer</div></div>
-    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-      <div style="font-size:13px;font-weight:700;margin-bottom:10px">Legg til turnering</div>
-      <div class="form-group" style="margin-bottom:8px"><label>Navn</label><input type="text" id="tr-tour-title" placeholder="f.eks. NM Junior"></div>
+  <!-- TAB: ØKTER -->
+  <div class="tr-tab-content" id="trtab-okter">
+    <div class="card">
+      <div class="sec-title" id="event-form-title">Legg inn trenings&oslash;kt</div>
       <div class="form-row">
-        <div class="form-group"><label>Fra dato</label><input type="date" id="tr-tour-from"></div>
-        <div class="form-group"><label>Til dato</label><input type="date" id="tr-tour-to"></div>
+        <div class="form-group"><label>Tittel</label><input type="text" id="ev-title" placeholder="f.eks. Styrke&oslash;kt"></div>
+        <div class="form-group"><label>Type</label><select id="ev-type"></select></div>
       </div>
-      <div class="form-group" style="margin-bottom:10px"><label>Sted</label><input type="text" id="tr-tour-loc" placeholder="f.eks. Oslo"></div>
-      <button class="btn btn-primary" onclick="saveTrainerTournament()">Legg til</button>
+      <div class="form-row">
+        <div class="form-group"><label>Dato</label><input type="date" id="ev-date"></div>
+        <div class="form-group"><label>Tid</label><input type="time" id="ev-time" value="16:00"></div>
+      </div>
+      <div class="form-group" style="margin-bottom:10px"><label>Sted</label><input type="text" id="ev-location" placeholder="f.eks. Sparebanken Vest Arena"></div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label>Synlig for grupper (velg ingen = alle ser den)</label>
+        <div id="ev-groups-select" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:10px;background:var(--bg2);border-radius:8px;border:1px solid var(--border)">
+        <input type="checkbox" id="ev-recurring" onchange="document.getElementById('ev-weeks-wrap').style.display=this.checked?'flex':'none'" style="width:18px;height:18px;cursor:pointer">
+        <label for="ev-recurring" style="font-size:13px;font-weight:600;cursor:pointer;margin:0">Gjentakende &oslash;kt</label>
+        <div id="ev-weeks-wrap" style="display:none;align-items:center;gap:6px;margin-left:auto">
+          <span style="font-size:13px;color:var(--text-muted)">Gjenta i</span>
+          <input type="number" id="ev-weeks" min="2" max="52" value="8" style="width:60px;padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:13px">
+          <span style="font-size:13px;color:var(--text-muted)">uker</span>
+        </div>
+      </div>
+      <div class="alert alert-green" id="event-success"><div><div class="alert-title" id="event-success-msg">&Oslash;kt opprettet!</div></div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="saveEvent()">Lagre &oslash;kt</button>
+        <button class="btn btn-secondary" id="cancel-event-edit-btn" onclick="cancelEventEdit()" style="display:none">Avbryt</button>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div class="sec-title" style="margin-bottom:0">Planlagte &oslash;kter</div>
+        <button class="btn-sm-blue" onclick="switchTrainerTab('okter')" id="tr-events-toggle" style="display:none">Skjul</button>
+      </div>
+      <div id="tr-events-content">
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:center">
+          <select id="ev-filter-group" onchange="renderFilteredEvents()" style="font-size:13px;border:1.5px solid var(--border);border-radius:7px;padding:6px 10px;background:var(--bg)">
+            <option value="">Alle grupper</option>
+          </select>
+          <select id="ev-filter-type" onchange="renderFilteredEvents()" style="font-size:13px;border:1.5px solid var(--border);border-radius:7px;padding:6px 10px;background:var(--bg)">
+            <option value="">Alle typer</option>
+          </select>
+          <label style="font-size:12px;display:flex;align-items:center;gap:5px;cursor:pointer">
+            <input type="checkbox" id="ev-show-old" onchange="renderFilteredEvents()"> Vis eldre enn 7 dager
+          </label>
+          <button class="btn-sm-blue" onclick="showAttendanceExport()">Eksporter tilstedev.</button>
+        </div>
+        <div id="tr-events-list"><div class="loading"><div class="spinner"></div>Laster...</div></div>
+      </div>
     </div>
   </div>
 
-  <div class="card">
-    <div class="sec-title">Kommende kamper fra utøvere <span style="font-size:12px;color:var(--text-muted);font-weight:400">(neste 7 dager)</span></div>
-    <div id="tr-player-games"><div style="font-size:13px;color:var(--text-muted)">Ingen kamper registrert</div></div>
+  <!-- TAB: ELEVER -->
+  <div class="tr-tab-content" id="trtab-elever">
+    <div class="card">
+      <div class="sec-title">Opprett elev</div>
+      <div class="form-row">
+        <div class="form-group"><label>Fullt navn</label><input type="text" id="new-student-name" placeholder="Navn"></div>
+        <div class="form-group"><label>Klasse</label><select id="new-student-class"><option>VG1</option><option>VG2</option><option>VG3</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Idrett</label><select id="new-student-sport" onchange="updateStudentPositions()"><option>H&aring;ndball</option><option>Fotball</option><option>Basketball</option><option>Golf</option><option>Sykkel</option><option>Svømming</option><option>Fekting</option><option>Tennis</option><option>Padel</option><option>Mix</option></select></div>
+        <div class="form-group"><label>Posisjon</label><select id="new-student-pos"></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Gruppe</label><select id="new-student-group"><option value="">Ingen gruppe</option></select></div>
+        <div class="form-group"><label>E-post</label><input type="email" id="new-student-email" placeholder="elev@elev.ntg.no"></div>
+      </div>
+      <div id="password-field" class="form-group" style="margin-bottom:10px"><label>Passord</label><input type="text" id="new-student-pass" value="NTG2026"></div>
+      <div class="alert alert-green" id="student-success"><div><div class="alert-title" id="student-success-msg">Elev opprettet!</div></div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="saveStudent()">Lagre elev</button>
+        <button id="cancel-student-edit-btn" class="btn btn-secondary" onclick="cancelStudentEdit()" style="display:none">Avbryt</button>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div class="sec-title" style="margin-bottom:0">Elevstatus</div>
+        <button class="btn-sm-blue" id="tr-table-toggle" onclick="toggleStudentTable()">Skjul</button>
+      </div>
+      <div id="tr-table-content">
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:center">
+          <select id="tr-filter-group" onchange="filterStudentTable()" style="font-size:13px;border:1.5px solid var(--border);border-radius:7px;padding:6px 10px;background:var(--bg)">
+            <option value="">Alle grupper</option>
+          </select>
+          <input type="text" id="tr-filter-name" oninput="filterStudentTable()" placeholder="Søk navn..." style="font-size:13px;border:1.5px solid var(--border);border-radius:7px;padding:6px 10px;width:160px">
+          <button class="btn-sm-blue" onclick="exportTrainerCSV()">Last ned CSV</button>
+        </div>
+        <div id="tr-loading" class="loading"><div class="spinner"></div>Laster elever...</div>
+        <table class="trainer-table" id="tr-table" style="display:none">
+          <thead><tr><th>Elev</th><th>Klasse</th><th>ACWR</th><th>Siste &oslash;kt</th><th>Siste test</th><th></th></tr></thead>
+          <tbody id="trainer-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="sec-title">Samtalelogg</div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase">Velg elev</label>
+        <select id="tr-conv-player" style="width:100%;font-size:14px;border:1.5px solid var(--border);border-radius:7px;padding:8px 12px;margin-top:4px;outline:none"></select>
+      </div>
+      <div class="form-group" style="margin-bottom:10px"><label>Notat</label><textarea id="tr-conv-text" rows="3" placeholder="Kort oppsummering..."></textarea></div>
+      <button class="btn btn-primary" onclick="saveConversation()">Lagre samtale</button>
+      <div class="alert alert-green" id="tr-toast" style="margin-top:8px"><div><div class="alert-title">Samtale lagret!</div></div></div>
+    </div>
   </div>
 
-  <div class="card">
-    <div class="sec-title">Aktive skader <span id="tr-injury-count" style="font-size:12px;color:var(--red);font-weight:600"></span></div>
-    <div id="tr-injury-list"><div style="font-size:13px;color:var(--text-muted)">Ingen aktive skader</div></div>
+  <!-- TAB: MELDINGER -->
+  <div class="tr-tab-content" id="trtab-meldinger">
+    <div class="card">
+      <div class="sec-title">Send melding</div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;display:block;margin-bottom:6px">Mottakere</label>
+        <div id="tr-chat-recipients" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+      </div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label>Melding</label>
+        <textarea id="tr-chat-body" rows="3" placeholder="Skriv melding..." style="width:100%;font-size:14px;border:1.5px solid var(--border);border-radius:7px;padding:9px 11px;font-family:inherit;resize:vertical;outline:none"></textarea>
+      </div>
+      <div class="alert alert-green" id="tr-chat-ok"><div><div class="alert-title">Melding sendt!</div></div></div>
+      <div class="login-error" id="tr-chat-err"></div>
+      <button class="btn btn-primary" id="tr-chat-send-btn" onclick="sendTrainerMessage()">Send melding</button>
+    </div>
+    <div class="card">
+      <div class="sec-title">Innboks</div>
+      <div id="tr-chat-inbox"><div class="loading"><div class="spinner"></div>Laster...</div></div>
+    </div>
   </div>
 
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div class="sec-title" style="margin-bottom:0">Elevstatus</div>
-      <button class="btn-sm-blue" onclick="toggleStudentTable()" id="tr-table-toggle">Skjul</button>
-    </div>
-    <div id="tr-table-content">
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:center">
-        <select id="tr-filter-group" onchange="filterStudentTable()" style="font-size:13px;border:1.5px solid var(--border);border-radius:7px;padding:6px 10px;background:var(--bg)">
-          <option value="">Alle grupper</option>
-        </select>
-        <input type="text" id="tr-filter-name" oninput="filterStudentTable()" placeholder="Søk navn..." style="font-size:13px;border:1.5px solid var(--border);border-radius:7px;padding:6px 10px;width:160px">
-        <button class="btn-sm-blue" onclick="exportTrainerCSV()">Last ned CSV</button>
-      </div>
-      <div id="tr-loading" class="loading"><div class="spinner"></div>Laster elever...</div>
-      <table class="trainer-table" id="tr-table" style="display:none">
-        <thead><tr><th>Elev</th><th>Klasse</th><th>ACWR</th><th>Siste &oslash;kt</th><th>Siste test</th><th></th></tr></thead>
-        <tbody id="trainer-tbody"></tbody>
-      </table>
+  <!-- TAB: EKSPORT -->
+  <div class="tr-tab-content" id="trtab-eksport">
+    <div class="card">
+      <div class="sec-title">Eksport</div>
+      <button class="export-btn" onclick="exportStudents()"><div class="export-icon">👥</div><div><div class="export-label">Utøvere</div><div class="export-sub">CSV</div></div></button>
+      <button class="export-btn" onclick="exportSessions()"><div class="export-icon">📅</div><div><div class="export-label">Treningsdagbøker</div><div class="export-sub">CSV</div></div></button>
+      <button class="export-btn" onclick="exportAllTests()"><div class="export-icon">📋</div><div><div class="export-label">Alle testresultater</div><div class="export-sub">CSV</div></div></button>
     </div>
   </div>
-  <div class="card">
-    <div class="sec-title" id="student-form-title">Opprett elev</div>
-    <input type="hidden" id="edit-student-id" value="">
-    <div class="form-row">
-      <div class="form-group"><label>Fullt navn</label><input type="text" id="new-student-name" placeholder="Ola Nordmann"></div>
-      <div class="form-group"><label>E-post</label><input type="email" id="new-student-email" placeholder="ola.nor@elev.ntg.no"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label>Klasse</label><select id="new-student-class"><option>VG1</option><option>VG2</option><option>VG3</option></select></div>
-      <div class="form-group"><label>Posisjon</label>
-        <select id="new-student-pos"></select>
-      </div>
-    </div>
-    <div class="form-group" style="margin-bottom:10px"><label>Gruppe</label><select id="new-student-group"><option value="">Ingen gruppe</option></select></div>
-    <div class="form-group" style="margin-bottom:10px"><label>Idrett</label>
-      <select id="new-student-sport" onchange="updateStudentPositions()">
-        <option>H&aring;ndball</option><option>Fotball</option><option>Basketball</option>
-        <option>Golf</option><option>Sykkel</option><option>Sv&oslash;mming</option>
-        <option>Fekting</option><option>Tennis</option><option>Padel</option><option>Mix</option>
-      </select>
-    </div>
-    <div class="form-group" id="password-field" style="margin-bottom:10px"><label>Startpassord</label><input type="text" id="new-student-pass" value="NTG2026"></div>
-    <div class="login-error" id="student-error"></div>
-    <div class="alert alert-green" id="student-success"><div><div class="alert-title" id="student-success-msg">Elev opprettet!</div></div></div>
-    <div class="btn-row">
-      <button class="btn btn-primary" onclick="saveStudent()">Lagre elev</button>
-      <button class="btn btn-secondary" id="edit-cancel-btn" onclick="cancelStudentEdit()" style="display:none">Avbryt</button>
-    </div>
-  </div>
-  <div class="card">
-    <div class="sec-title">Logg samtale</div>
-    <div class="form-row">
-      <div class="form-group"><label>Elev</label><select id="tr-conv-player"></select></div>
-      <div class="form-group"><label>Type</label>
-        <select id="tr-conv-type"><option>Utviklingssamtale</option><option>Treningsevaluering</option><option>Kampgjennomgang</option><option>Fokusperiode-evaluering</option><option>Annet</option></select>
-      </div>
-    </div>
-    <div class="form-group" style="margin-bottom:10px"><label>Notat</label><textarea id="tr-conv-text" rows="3" placeholder="Kort oppsummering..."></textarea></div>
-    <button class="btn btn-primary" onclick="saveTrainerConv()">Logg samtale</button>
-    <div class="alert alert-green" id="tr-toast" style="margin-top:8px"><div><div class="alert-title">Samtale lagret!</div></div></div>
-  </div>
-  <div class="card">
-    <div class="sec-title">Eksport - alle elever</div>
-    <button class="export-btn" onclick="exportAllCSV()"><div class="export-icon">📊</div><div><div class="export-label">Alle treningsdagboker</div><div class="export-sub">CSV</div></div></button>
-    <button class="export-btn" onclick="exportAllTests()"><div class="export-icon">📋</div><div><div class="export-label">Alle testresultater</div><div class="export-sub">CSV</div></div></button>
-  </div>
+
 </div>
 
 </div>
@@ -2309,26 +2314,8 @@ function renderCalendarList(events, myRegs) {
     days[date].forEach(function(ev) {
       var isPersonal = ev.created_by === currentProfile.id && ev.type === 'Kamp';
       var status = ev._status || myRegs[ev.id];
-      var isPaameldt = status === 'paameldt';
-      var isAvmeldt = status === 'avmeldt';
-      var attendanceOpts = getSportAttendanceOptions(currentProfile.sport || 'Håndball');
-      var btnHtml;
-      if (isPersonal) {
-        btnHtml = '<span style="font-size:11px;color:var(--text-muted);font-style:italic">Min kamp</span>';
-      } else if (attendanceOpts) {
-        var currentOpt = attendanceOpts.find(function(o){ return o.value === status; });
-        if (currentOpt) {
-          btnHtml = '<button onclick="showAttendanceMenu(\'' + ev.id + '\',this)" style="background:' + currentOpt.bg + ';color:' + currentOpt.color + ';border:1px solid ' + currentOpt.border + ';border-radius:7px;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer;max-width:160px;white-space:normal;text-align:center;line-height:1.3">' + currentOpt.label + '</button>';
-        } else {
-          btnHtml = '<button onclick="showAttendanceMenu(\'' + ev.id + '\',this)" style="background:var(--bg2);color:var(--text-muted);border:1px solid var(--border);border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;cursor:pointer">Velg svar</button>';
-        }
-      } else if (isPaameldt) {
-        btnHtml = '<button onclick="toggleRegistration(\'' + ev.id + '\')" style="background:var(--red-light);color:var(--red-dark);border:1px solid var(--red);border-radius:7px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">\u274C Meld av</button>';
-      } else if (isAvmeldt) {
-        btnHtml = '<button onclick="toggleRegistration(\'' + ev.id + '\')" style="background:var(--green-light);color:var(--green-dark);border:1px solid var(--green);border-radius:7px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">\u2713 Meld p\u00e5</button>';
-      } else {
-        btnHtml = '<button onclick="toggleRegistration(\'' + ev.id + '\')" style="background:var(--blue-light);color:var(--blue);border:1px solid var(--blue);border-radius:7px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Meld p\u00e5</button>';
-      }
+      var sport = currentProfile ? (currentProfile.sport || 'Håndball') : 'Håndball';
+      var btnHtml = getAttendanceBtnsHtml(ev.id, status, isPersonal, sport);
       html += '<div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--bg2);border-radius:9px;margin-bottom:6px;border:1px solid var(--border)">'
         + '<div style="flex:1">'
         + '<div style="font-size:14px;font-weight:700;color:var(--blue)">' + ev.title + '</div>'
@@ -3156,7 +3143,19 @@ async function loadPlayerInbox() {
       }
       var hasNewContent = isUnread || unreadReplies.length > 0;
       var fromLine = isSent ? 'Fra deg \u2013 ' + formatNorwegianTime(m.created_at) : 'Fra: ' + trainerName + ' \u2013 ' + formatNorwegianTime(m.created_at);
-      var toLine = isSent ? 'Til: trenere' : (m.recipients_label ? 'Til: ' + m.recipients_label : 'Til: deg');
+      // Look up recipient names for sent messages
+      var toLine = '';
+      if (isSent) {
+        var recRows2 = await api('GET', 'message_recipients?message_id=eq.' + m.id + '&select=recipient_id') || [];
+        var recNames = [];
+        for (var ri2 = 0; ri2 < recRows2.length; ri2++) {
+          var rp2 = await api('GET', 'profiles?id=eq.' + recRows2[ri2].recipient_id + '&select=full_name');
+          if (rp2 && rp2[0]) recNames.push(rp2[0].full_name);
+        }
+        toLine = 'Til: ' + (recNames.length ? recNames.join(', ') : 'trenere');
+      } else {
+        toLine = m.recipients_label ? 'Til: ' + m.recipients_label : 'Til: deg';
+      }
       html += '<div style="border:1.5px solid ' + (hasNewContent ? 'var(--blue)' : 'var(--border)') + ';border-radius:9px;padding:12px;margin-bottom:10px;background:' + (hasNewContent ? 'var(--blue-light)' : 'var(--bg)') + '">';
       html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:2px">'
         + '<div style="font-size:11px;color:' + (hasNewContent ? 'var(--blue)' : 'var(--text-muted)') + ';font-weight:700">' + fromLine + '</div>'
@@ -3471,7 +3470,56 @@ async function sendTrainerReply(msgId, senderId) {
   loadTrainerInbox();
 }
 
-// ---- CALENDAR VIEW ----
+// ---- TRAINER TABS ----
+function switchTrainerTab(tab) {
+  document.querySelectorAll('.tr-tab-content').forEach(function(el){ el.classList.remove('active'); });
+  document.querySelectorAll('.tr-nav-tab').forEach(function(el){ el.classList.remove('active'); });
+  var content = document.getElementById('trtab-' + tab);
+  var btn = document.getElementById('trtab-btn-' + tab);
+  if (content) content.classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (tab === 'meldinger') loadTrainerInbox();
+}
+
+// ---- ATTENDANCE BUTTONS (two separate buttons) ----
+function getAttendanceBtnsHtml(evId, status, isPersonal, sport) {
+  if (isPersonal) return '<span style="font-size:11px;color:var(--text-muted);font-style:italic">Min kamp</span>';
+  var attendanceOpts = getSportAttendanceOptions(sport);
+  if (attendanceOpts) {
+    var currentOpt = attendanceOpts.find(function(o){ return o.value === status; });
+    if (currentOpt) {
+      return '<button onclick="showAttendanceMenu(\'' + evId + '\',this)" style="background:' + currentOpt.bg + ';color:' + currentOpt.color + ';border:1px solid ' + currentOpt.border + ';border-radius:7px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;max-width:160px;white-space:normal;line-height:1.3;text-align:center">' + currentOpt.label + '</button>';
+    }
+    return '<button onclick="showAttendanceMenu(\'' + evId + '\',this)" style="background:var(--blue-light);color:var(--blue);border:1px solid var(--blue);border-radius:7px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer">Velg svar</button>';
+  }
+  var isPaameldt = status === 'paameldt';
+  var isAvmeldt = status === 'avmeldt';
+  return '<div style="display:flex;gap:6px">'
+    + '<button onclick="setRegistration(\'' + evId + '\',\'paameldt\')" style="background:' + (isPaameldt ? 'var(--green)' : 'var(--green-light)') + ';color:' + (isPaameldt ? '#fff' : 'var(--green-dark)') + ';border:1.5px solid var(--green);border-radius:7px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer">'
+    + (isPaameldt ? '\u2713 P\u00e5meldt' : 'Meld p\u00e5') + '</button>'
+    + '<button onclick="setRegistration(\'' + evId + '\',\'avmeldt\')" style="background:' + (isAvmeldt ? 'var(--red)' : 'var(--red-light)') + ';color:' + (isAvmeldt ? '#fff' : 'var(--red-dark)') + ';border:1.5px solid var(--red);border-radius:7px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer">'
+    + (isAvmeldt ? '\u274C Avmeldt' : 'Meld av') + '</button>'
+    + '</div>';
+}
+
+async function setRegistration(eventId, statusValue) {
+  var existing = await api('GET', 'event_registrations?event_id=eq.' + eventId + '&user_id=eq.' + currentProfile.id + '&select=id');
+  if (existing && existing.length) {
+    await fetch(SB_URL + '/rest/v1/event_registrations?id=eq.' + existing[0].id, {
+      method: 'PATCH',
+      headers: {'apikey':SB_ADMIN,'Authorization':'Bearer '+SB_ADMIN,'Content-Type':'application/json'},
+      body: JSON.stringify({status: statusValue})
+    });
+  } else {
+    await fetch(SB_URL + '/rest/v1/event_registrations', {
+      method: 'POST',
+      headers: {'apikey':SB_ADMIN,'Authorization':'Bearer '+SB_ADMIN,'Content-Type':'application/json'},
+      body: JSON.stringify({event_id: eventId, user_id: currentProfile.id, status: statusValue})
+    });
+  }
+  showGlobalToast(statusValue === 'paameldt' ? '\u2713 P\u00e5meldt!' : '\u274C Avmeldt');
+  loadCalendar();
+}
 var calView = 'grid';
 var calEvents = [];
 
@@ -3557,11 +3605,10 @@ function showDayEvents(dateStr) {
   overlay.onclick = function(e){ if(e.target===overlay) overlay.remove(); };
   var evHtml = dayEvents.length
     ? dayEvents.map(function(ev){
-        var isPersonal = ev.created_by === currentProfile.id && ev.type === 'Kamp';
-        var isReg = ev._status === 'paameldt';
-        var isAv = ev._status === 'avmeldt';
-        var regBtn = isPersonal ? '' :
-          '<button onclick="toggleRegistration(\'' + ev.id + '\');this.closest(\'div[style*=fixed]\').remove();loadCalendar();" style="margin-top:8px;background:' + (isReg ? 'var(--red-light)' : 'var(--blue-light)') + ';color:' + (isReg ? 'var(--red-dark)' : 'var(--blue)') + ';border:1px solid ' + (isReg ? 'var(--red)' : 'var(--blue)') + ';border-radius:7px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">' + (isReg ? '\u274C Meld av' : isAv ? '\u2713 Meld p\u00e5' : 'Meld p\u00e5') + '</button>';
+        var isPersonal2 = ev.created_by === currentProfile.id && ev.type === 'Kamp';
+        var sport2 = currentProfile ? (currentProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball';
+        var regBtn = getAttendanceBtnsHtml(ev.id, ev._status, isPersonal2, sport2)
+          .replace(/loadCalendar\(\)/g, 'this.closest(\'div[style*=fixed]\').remove();loadCalendar()');
         return '<div style="padding:10px;background:var(--bg2);border-radius:9px;margin-bottom:8px;border:1px solid var(--border)">'
           + '<div style="font-size:14px;font-weight:700;color:var(--blue)">' + ev.title + '</div>'
           + '<div style="font-size:12px;color:var(--text-muted);margin-top:2px">' + ev.time + (ev.location ? ' \u2022 ' + ev.location : '') + '</div>'
