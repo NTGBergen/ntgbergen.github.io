@@ -3644,27 +3644,48 @@ function showDayEvents(dateStr) {
   var dayLabel = d.toLocaleDateString('nb-NO', {weekday:'long', day:'numeric', month:'long'});
   dayLabel = dayLabel.charAt(0).toUpperCase() + dayLabel.slice(1);
   var dayEvents = calEvents.filter(function(ev){ return ev.date === dateStr; });
+  var sport = currentProfile ? (currentProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball';
+  var attendanceOpts = getSportAttendanceOptions(sport);
   var overlay = document.createElement('div');
+  overlay.id = 'day-events-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:flex-end;justify-content:center';
   overlay.onclick = function(e){ if(e.target===overlay) overlay.remove(); };
   var evHtml = dayEvents.length
     ? dayEvents.map(function(ev){
-        var isPersonal2 = ev.created_by === currentProfile.id && ev.type === 'Kamp';
-        var sport2 = currentProfile ? (currentProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball';
-        var regBtn = getAttendanceBtnsHtml(ev.id, ev._status, isPersonal2, sport2)
-          .replace(/loadCalendar\(\)/g, 'this.closest(\'div[style*=fixed]\').remove();loadCalendar()');
+        var isPersonal = ev.created_by === currentProfile.id && ev.type === 'Kamp';
+        var status = ev._status;
+        var btnHtml = '';
+        if (isPersonal) {
+          btnHtml = '<span style="font-size:11px;color:var(--text-muted);font-style:italic">Min kamp</span>';
+        } else if (attendanceOpts) {
+          var cur = attendanceOpts.find(function(o){ return o.value === status; });
+          btnHtml = '<button onclick="setAttendance(\'' + ev.id + '\',\'' + (cur ? '' : '') + '\');document.getElementById(\'day-events-overlay\').remove();loadCalendar();" style="background:' + (cur ? cur.bg : 'var(--bg2)') + ';color:' + (cur ? cur.color : 'var(--text-muted)') + ';border:1px solid ' + (cur ? cur.border : 'var(--border)') + ';border-radius:7px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer">'
+            + (cur ? cur.label : 'Velg svar') + '</button>';
+          btnHtml = '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">'
+            + attendanceOpts.map(function(o){
+              var isActive = status === o.value;
+              return '<button onclick="setAttendance(\'' + ev.id + '\',\'' + o.value + '\');document.getElementById(\'day-events-overlay\').remove();loadCalendar();" style="background:' + (isActive ? o.bg : 'var(--bg2)') + ';color:' + (isActive ? o.color : 'var(--text-muted)') + ';border:1.5px solid ' + (isActive ? o.border : 'var(--border)') + ';border-radius:7px;padding:5px 8px;font-size:11px;font-weight:700;cursor:pointer">' + o.label + '</button>';
+            }).join('') + '</div>';
+        } else {
+          var isPaameldt = status === 'paameldt';
+          var isAvmeldt = status === 'avmeldt';
+          btnHtml = '<div style="display:flex;gap:6px;margin-top:6px">'
+            + '<button onclick="registerEvent(\'' + ev.id + '\');document.getElementById(\'day-events-overlay\').remove();loadCalendar();" style="background:var(--green-light);color:var(--green-dark);border:1.5px solid var(--green);border-radius:7px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;' + (isPaameldt?'opacity:.5':'') + '">\u2713 Meld p\u00e5</button>'
+            + '<button onclick="deregisterEvent(\'' + ev.id + '\');document.getElementById(\'day-events-overlay\').remove();loadCalendar();" style="background:var(--red-light);color:var(--red-dark);border:1.5px solid var(--red);border-radius:7px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;' + (isAvmeldt?'opacity:.5':'') + '">\u274C Meld av</button>'
+            + '</div>';
+        }
         return '<div style="padding:10px;background:var(--bg2);border-radius:9px;margin-bottom:8px;border:1px solid var(--border)">'
           + '<div style="font-size:14px;font-weight:700;color:var(--blue)">' + ev.title + '</div>'
           + '<div style="font-size:12px;color:var(--text-muted);margin-top:2px">' + ev.time + (ev.location ? ' \u2022 ' + ev.location : '') + '</div>'
-          + '<div style="font-size:11px;margin-top:3px"><span class="stb">' + ev.type + '</span>' + (isPersonal ? ' <span style="font-size:11px;color:var(--text-muted)">Min kamp</span>' : '') + '</div>'
-          + regBtn
+          + '<div style="font-size:11px;margin-top:3px"><span class="stb">' + ev.type + '</span></div>'
+          + btnHtml
           + '</div>';
       }).join('')
     : '<div style="font-size:13px;color:var(--text-muted)">Ingen \u00f8kter denne dagen</div>';
   overlay.innerHTML = '<div style="background:var(--bg);border-radius:16px 16px 0 0;padding:1.5rem;width:100%;max-width:680px;max-height:80vh;overflow-y:auto">'
     + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
     + '<div style="font-size:15px;font-weight:700;color:var(--blue)">' + dayLabel + '</div>'
-    + '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted)">&times;</button>'
+    + '<button onclick="document.getElementById(\'day-events-overlay\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted)">&times;</button>'
     + '</div>' + evHtml + '</div>';
   document.body.appendChild(overlay);
 }
