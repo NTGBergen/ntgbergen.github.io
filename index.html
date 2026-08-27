@@ -2213,20 +2213,19 @@ function cancelStudentEdit() {
 }
 
 async function saveTrainerConv() {
-  var pid = document.getElementById('tr-conv-player').value;
-  var text = document.getElementById('tr-conv-text').value.trim();
-  if (!text) return;
+  var pid = document.getElementById('tr-conv-player') ? document.getElementById('tr-conv-player').value : '';
+  var text = document.getElementById('tr-conv-text') ? document.getElementById('tr-conv-text').value.trim() : '';
+  if (!text || !pid) { showGlobalToast('Velg utøver og skriv et notat', 'error'); return; }
+  var typeEl = document.getElementById('tr-conv-type');
   await api('POST', 'conversations', {
     user_id: pid,
     date: new Date().toISOString().split('T')[0],
-    type: document.getElementById('tr-conv-type').value,
+    type: typeEl ? typeEl.value : 'Samtale',
     text: text,
     author: 'Trener'
   });
   document.getElementById('tr-conv-text').value = '';
-  var t = document.getElementById('tr-toast');
-  t.classList.add('show');
-  setTimeout(function() { t.classList.remove('show'); }, 2500);
+  showGlobalToast('\u2713 Samtale lagret!');
 }
 
 function downloadFile(content, filename, type) {
