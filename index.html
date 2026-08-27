@@ -3918,6 +3918,10 @@ async function loadTrainerInjuries(forceSport) {
     el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen aktive skader</div>';
     return;
   }
+  var injuryCommentMap = {};
+  allActiveInjuries.forEach(function(inj){ if(inj.comments) injuryCommentMap[inj.id] = inj.comments; });
+  window._injuryCommentMap = injuryCommentMap;
+
   el.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:13px">'
     + '<thead><tr>'
     + '<th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text-muted);font-size:11px;text-transform:uppercase">Utøver</th>'
@@ -3928,7 +3932,7 @@ async function loadTrainerInjuries(forceSport) {
     + allActiveInjuries.map(function(inj) {
       var hasComment = inj.comments && inj.comments.trim();
       var playerName = inj._player ? inj._player.full_name : 'Ukjent';
-      return '<tr onclick="' + (hasComment ? 'showInjuryComment(\'' + inj.id + '\',\'' + playerName.replace(/'/g,"\\'") + '\',' + JSON.stringify(inj.comments) + ')' : '') + '" style="cursor:' + (hasComment ? 'pointer' : 'default') + '">'
+      return '<tr onclick="' + (hasComment ? 'showInjuryCommentById(\'' + inj.id + '\',\'' + playerName.replace(/'/g,'&#39;') + '\')' : '') + '" style="cursor:' + (hasComment ? 'pointer' : 'default') + '">'
         + '<td style="padding:8px;border-bottom:1px solid var(--border);font-weight:600">' + playerName + (hasComment ? ' <span style="font-size:10px;background:var(--blue-light);color:var(--blue);border-radius:4px;padding:1px 5px">kommentar</span>' : '') + '</td>'
         + '<td style="padding:8px;border-bottom:1px solid var(--border)">' + inj.description + '<br><span style="font-size:11px;color:var(--text-muted)">' + inj.injury_date + '</span></td>'
         + '<td style="padding:8px;border-bottom:1px solid var(--border)">' + (inj.physio_checked ? '<span style="color:var(--green);font-weight:700">\u2713 Ja</span>' : '<span style="color:var(--text-muted)">Nei</span>') + '</td>'
@@ -3936,6 +3940,11 @@ async function loadTrainerInjuries(forceSport) {
         + '</tr>';
     }).join('')
     + '</tbody></table>';
+}
+
+function showInjuryCommentById(injId, playerName) {
+  var comment = (window._injuryCommentMap || {})[injId] || '';
+  showInjuryComment(injId, playerName, comment);
 }
 
 function showInjuryComment(id, name, comment) {
