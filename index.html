@@ -2186,7 +2186,6 @@ async function saveStudent() {
 }
 
 async function startEditStudent(id, name, cls, pos, grp, spt) {
-  switchTrainerTab('elever');
   document.getElementById('edit-student-id').value = id;
   document.getElementById('student-form-title').textContent = 'Rediger elev';
   document.getElementById('new-student-name').value = name;
@@ -2198,7 +2197,8 @@ async function startEditStudent(id, name, cls, pos, grp, spt) {
   document.getElementById('new-student-group').value = grp || '';
   document.getElementById('password-field').style.display = 'none';
   document.getElementById('edit-cancel-btn').style.display = 'block';
-  setTimeout(function(){ document.getElementById('student-form-title').scrollIntoView({behavior:'smooth'}); }, 200);
+  switchTrainerTab('elever');
+  setTimeout(function(){ var el = document.getElementById('student-form-title'); if(el) el.scrollIntoView({behavior:'smooth'}); }, 100);
 }
 
 function cancelStudentEdit() {
@@ -3523,7 +3523,6 @@ function switchTrainerTab(tab) {
   if (tab === 'meldinger') loadTrainerChat();
   if (tab === 'oversikt') { loadTrainerInjuries(getTrainerSport()); loadPlayerGamesForTrainer(getTrainerSport()); }
   if (tab === 'okter') loadEvents();
-  if (tab === 'elever') loadTrainerView();
 }
 
 // ---- ATTENDANCE BUTTONS (two separate buttons) ----
