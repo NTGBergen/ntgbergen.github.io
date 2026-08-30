@@ -525,8 +525,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       </div>
     </div>
     <div class="card">
-      <div class="sec-title">Kommende kamper fra utøvere <span style="font-size:12px;color:var(--text-muted);font-weight:400">(neste 7 dager)</span></div>
-      <div id="tr-player-games"><div style="font-size:13px;color:var(--text-muted)">Ingen kamper registrert</div></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div class="sec-title" style="margin-bottom:0">Kommende kamper fra utøvere <span style="font-size:12px;color:var(--text-muted);font-weight:400">(neste 14 dager)</span></div>
+        <button class="btn-sm-blue" id="tr-games-toggle" onclick="togglePlayerGames()">Skjul</button>
+      </div>
+      <div id="tr-player-games-wrap">
+        <div id="tr-player-games"><div style="font-size:13px;color:var(--text-muted)">Ingen kamper registrert</div></div>
+      </div>
     </div>
     <div class="card">
       <div class="sec-title">Aktive skader <span id="tr-injury-count" style="font-size:12px;color:var(--red);font-weight:600"></span></div>
@@ -3527,7 +3532,7 @@ function switchTrainerTab(tab) {
 
 // ---- ATTENDANCE BUTTONS (two separate buttons) ----
 function getAttendanceBtnsHtml(evId, status, isPersonal, sport) {
-  if (isPersonal) return '<span style="font-size:11px;color:var(--text-muted);font-style:italic">Min kamp</span>';
+  if (isPersonal) return '<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end"><span style="font-size:11px;color:var(--text-muted);font-style:italic">Min kamp</span><button onclick="deleteMyGame(\'' + evId + '\')" style="background:none;border:none;color:var(--red);font-size:12px;cursor:pointer;padding:0;font-weight:600">Slett kamp</button></div>';
   var attendanceOpts = getSportAttendanceOptions(sport);
   if (attendanceOpts) {
     var currentOpt = attendanceOpts.find(function(o){ return o.value === status; });
@@ -3656,7 +3661,10 @@ function showDayEvents(dateStr) {
         var status = ev._status;
         var btnHtml = '';
         if (isPersonal) {
-          btnHtml = '<span style="font-size:11px;color:var(--text-muted);font-style:italic">Min kamp</span>';
+          btnHtml = '<div style="display:flex;gap:8px;margin-top:6px;align-items:center">'
+            + '<span style="font-size:11px;color:var(--text-muted);font-style:italic">Min kamp</span>'
+            + '<button onclick="deleteMyGame(\'' + ev.id + '\');document.getElementById(\'day-events-overlay\').remove();loadCalendar();" style="background:none;border:none;color:var(--red);font-size:12px;cursor:pointer;font-weight:600">Slett kamp</button>'
+            + '</div>';
         } else if (attendanceOpts) {
           var cur = attendanceOpts.find(function(o){ return o.value === status; });
           btnHtml = '<button onclick="setAttendance(\'' + ev.id + '\',\'' + (cur ? '' : '') + '\');document.getElementById(\'day-events-overlay\').remove();loadCalendar();" style="background:' + (cur ? cur.bg : 'var(--bg2)') + ';color:' + (cur ? cur.color : 'var(--text-muted)') + ';border:1px solid ' + (cur ? cur.border : 'var(--border)') + ';border-radius:7px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer">'
@@ -3691,6 +3699,16 @@ function showDayEvents(dateStr) {
 }
 
 // ---- PLAYER GAME ----
+async function deleteMyGame(id) {
+  if (!confirm('Slette denne kampen?')) return;
+  await fetch(SB_URL + '/rest/v1/training_events?id=eq.' + id, {
+    method: 'DELETE',
+    headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN}
+  });
+  showGlobalToast('\u2713 Kamp slettet');
+  loadCalendar();
+}
+
 async function saveMyGame() {
   var opp = document.getElementById('my-game-opp').value.trim();
   var home = document.getElementById('my-game-home').value;
@@ -3856,6 +3874,15 @@ async function deactivateInjury(injId) {
 }
 
 // ---- TRAINER INJURY OVERVIEW ----
+function togglePlayerGames() {
+  var wrap = document.getElementById('tr-player-games-wrap');
+  var btn = document.getElementById('tr-games-toggle');
+  if (!wrap || !btn) return;
+  var hidden = wrap.style.display === 'none';
+  wrap.style.display = hidden ? 'block' : 'none';
+  btn.textContent = hidden ? 'Skjul' : 'Vis';
+}
+
 async function loadPlayerGamesForTrainer(forceSport) {
   var el = document.getElementById('tr-player-games'); if (!el) return;
   var sport = forceSport || (trainerProfile ? (trainerProfile.sport || 'Håndball') : 'Håndball');
