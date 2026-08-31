@@ -622,6 +622,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
         <div class="form-group"><label>E-post</label><input type="email" id="new-student-email" placeholder="elev@elev.ntg.no"></div>
       </div>
       <div id="password-field" class="form-group" style="margin-bottom:10px"><label>Passord</label><input type="text" id="new-student-pass" value="NTG2026"></div>
+      <div class="login-error" id="student-error" style="display:none"></div>
       <div class="alert alert-green" id="student-success"><div><div class="alert-title" id="student-success-msg">Elev opprettet!</div></div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-primary" onclick="saveStudent()">Lagre elev</button>
@@ -2154,7 +2155,7 @@ async function saveStudent() {
   var pass = document.getElementById('new-student-pass').value;
   var grp = document.getElementById('new-student-group').value;
   var spt = document.getElementById('new-student-sport').value;
-  var errEl = document.getElementById('student-error');
+  var errEl = document.getElementById('student-error') || document.createElement('div');
   var okEl = document.getElementById('student-success');
   errEl.classList.remove('show'); okEl.classList.remove('show');
   errEl.style.display = 'none';
