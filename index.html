@@ -607,7 +607,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   <!-- TAB: ELEVER -->
   <div class="tr-tab-content" id="trtab-elever">
     <div class="card">
-      <div class="sec-title">Opprett elev</div>
+      <input type="hidden" id="edit-student-id" value="">
+      <div class="sec-title" id="student-form-title">Opprett elev</div>
       <div class="form-row">
         <div class="form-group"><label>Fullt navn</label><input type="text" id="new-student-name" placeholder="Navn"></div>
         <div class="form-group"><label>Klasse</label><select id="new-student-class"><option>VG1</option><option>VG2</option><option>VG3</option></select></div>
@@ -624,7 +625,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       <div class="alert alert-green" id="student-success"><div><div class="alert-title" id="student-success-msg">Elev opprettet!</div></div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-primary" onclick="saveStudent()">Lagre elev</button>
-        <button id="cancel-student-edit-btn" class="btn btn-secondary" onclick="cancelStudentEdit()" style="display:none">Avbryt</button>
+        <button id="edit-cancel-btn" class="btn btn-secondary" onclick="cancelStudentEdit()" style="display:none">Avbryt redigering</button>
       </div>
     </div>
     <div class="card">
