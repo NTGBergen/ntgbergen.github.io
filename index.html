@@ -2191,19 +2191,25 @@ async function saveStudent() {
 }
 
 async function startEditStudent(id, name, cls, pos, grp, spt) {
-  document.getElementById('edit-student-id').value = id;
-  document.getElementById('student-form-title').textContent = 'Rediger elev';
-  document.getElementById('new-student-name').value = name;
-  document.getElementById('new-student-class').value = cls;
-  document.getElementById('new-student-sport').value = spt || 'H\u00e5ndball';
+  // First fill in form values
+  var f = function(elId){ return document.getElementById(elId); };
+  if(f('edit-student-id')) f('edit-student-id').value = id;
+  if(f('student-form-title')) f('student-form-title').textContent = 'Rediger elev';
+  if(f('new-student-name')) f('new-student-name').value = name;
+  if(f('new-student-class')) f('new-student-class').value = cls;
+  if(f('new-student-sport')) f('new-student-sport').value = spt || getTrainerSport();
   updateStudentPositions();
-  document.getElementById('new-student-pos').value = pos;
+  if(f('new-student-pos')) f('new-student-pos').value = pos;
   await loadGroups();
-  document.getElementById('new-student-group').value = grp || '';
-  document.getElementById('password-field').style.display = 'none';
-  document.getElementById('edit-cancel-btn').style.display = 'block';
+  if(f('new-student-group')) f('new-student-group').value = grp || '';
+  if(f('password-field')) f('password-field').style.display = 'none';
+  if(f('edit-cancel-btn')) f('edit-cancel-btn').style.display = 'block';
+  // Switch tab then scroll
   switchTrainerTab('elever');
-  setTimeout(function(){ var el = document.getElementById('student-form-title'); if(el) el.scrollIntoView({behavior:'smooth'}); }, 100);
+  setTimeout(function(){
+    var el = document.getElementById('student-form-title');
+    if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
+  }, 150);
 }
 
 function cancelStudentEdit() {
@@ -2384,7 +2390,7 @@ async function toggleRegistration(eventId) {
 var allGroups = [];
 
 async function loadGroups() {
-  var sport = trainerProfile ? (trainerProfile.sport || 'H\u00e5ndball') : (currentProfile ? (currentProfile.sport || 'H\u00e5ndball') : 'H\u00e5ndball');
+  var sport = getTrainerSport();
   allGroups = await api('GET', 'groups?sport=eq.' + encodeURIComponent(sport) + '&order=name.asc&select=*') || [];
   renderGroupsList();
   renderEventGroupsSelect();
