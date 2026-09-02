@@ -700,29 +700,55 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 
   <!-- TAB: MELDINGER -->
   <div class="tr-tab-content" id="trtab-meldinger">
-    <div class="card">
-      <div class="sec-title">Send melding</div>
-      <div style="margin-bottom:10px">
-        <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;display:block;margin-bottom:6px">Send til</label>
-        <div style="display:flex;gap:6px;margin-bottom:8px">
-          <button id="tr-chat-all" onclick="toggleTrChatTarget('all')" style="padding:5px 12px;border:1.5px solid var(--blue);border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;background:var(--blue-light);color:var(--blue)">Alle</button>
-          <button id="tr-chat-groups-toggle" onclick="toggleTrChatTarget('groups')" style="padding:5px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;background:var(--bg2);color:var(--text-muted)">Grupper</button>
-          <button id="tr-chat-players-toggle" onclick="toggleTrChatTarget('players')" style="padding:5px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;background:var(--bg2);color:var(--text-muted)">Enkeltpersoner</button>
+    <!-- Thread list -->
+    <div id="tr-thread-list-view">
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="padding:16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+          <div class="sec-title" style="margin-bottom:0">Meldinger</div>
+          <button class="btn-sm-blue" onclick="showTrNewMessage()">Ny melding</button>
         </div>
-        <div id="tr-chat-groups-select" style="display:none;flex-wrap:wrap;gap:6px;margin-bottom:6px"></div>
-        <div id="tr-chat-players-select" style="display:none;flex-wrap:wrap;gap:6px;margin-bottom:6px"></div>
+        <div id="tr-chat-inbox"><div class="loading" style="padding:1rem"><div class="spinner"></div>Laster...</div></div>
       </div>
-      <div class="form-group" style="margin-bottom:10px">
-        <label>Melding</label>
-        <textarea id="tr-chat-body" rows="3" placeholder="Skriv melding..." style="width:100%;font-size:14px;border:1.5px solid var(--border);border-radius:7px;padding:9px 11px;font-family:inherit;resize:vertical;outline:none"></textarea>
-      </div>
-      <div class="alert alert-green" id="tr-chat-ok"><div><div class="alert-title">Melding sendt!</div></div></div>
-      <div class="login-error" id="tr-chat-err"></div>
-      <button class="btn btn-primary" id="tr-chat-send-btn" onclick="sendTrainerMessage()">Send melding</button>
     </div>
-    <div class="card">
-      <div class="sec-title">Innboks</div>
-      <div id="tr-chat-inbox"><div class="loading"><div class="spinner"></div>Laster...</div></div>
+    <!-- Thread detail -->
+    <div id="tr-thread-detail-view" style="display:none">
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--blue)">
+          <button onclick="closeTrThreadDetail()" style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer;padding:0">&#8592;</button>
+          <div id="tr-thread-detail-name" style="font-size:15px;font-weight:700;color:#fff;flex:1"></div>
+        </div>
+        <div id="tr-thread-detail-messages" style="padding:12px;max-height:55vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px"></div>
+        <div style="padding:10px;border-top:1px solid var(--border);display:flex;gap:8px">
+          <input type="text" id="tr-thread-reply-input" placeholder="Skriv svar..." style="flex:1;font-size:14px;border:1.5px solid var(--border);border-radius:20px;padding:8px 14px;outline:none">
+          <button onclick="sendTrThreadReply()" style="background:var(--blue);color:#fff;border:none;border-radius:50%;width:38px;height:38px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">&#8593;</button>
+        </div>
+      </div>
+    </div>
+    <!-- New message -->
+    <div id="tr-new-message-view" style="display:none">
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+          <button onclick="closeTrNewMessage()" style="background:none;border:none;color:var(--blue);font-size:20px;cursor:pointer;padding:0">&#8592;</button>
+          <div class="sec-title" style="margin-bottom:0">Ny melding</div>
+        </div>
+        <div style="margin-bottom:10px">
+          <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;display:block;margin-bottom:6px">Send til</label>
+          <div style="display:flex;gap:6px;margin-bottom:8px">
+            <button id="tr-chat-all" onclick="toggleTrChatTarget('all')" style="padding:5px 12px;border:1.5px solid var(--blue);border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;background:var(--blue-light);color:var(--blue)">Alle</button>
+            <button id="tr-chat-groups-toggle" onclick="toggleTrChatTarget('groups')" style="padding:5px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;background:var(--bg2);color:var(--text-muted)">Grupper</button>
+            <button id="tr-chat-players-toggle" onclick="toggleTrChatTarget('players')" style="padding:5px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;background:var(--bg2);color:var(--text-muted)">Enkeltpersoner</button>
+          </div>
+          <div id="tr-chat-groups-select" style="display:none;flex-wrap:wrap;gap:6px;margin-bottom:6px"></div>
+          <div id="tr-chat-players-select" style="display:none;flex-wrap:wrap;gap:6px;margin-bottom:6px"></div>
+        </div>
+        <div class="form-group" style="margin-bottom:10px">
+          <label>Melding</label>
+          <textarea id="tr-chat-body" rows="3" placeholder="Skriv melding..." style="width:100%;font-size:14px;border:1.5px solid var(--border);border-radius:7px;padding:9px 11px;font-family:inherit;resize:vertical;outline:none"></textarea>
+        </div>
+        <div class="alert alert-green" id="tr-chat-ok"><div><div class="alert-title">Melding sendt!</div></div></div>
+        <div class="login-error" id="tr-chat-err"></div>
+        <button class="btn btn-primary" id="tr-chat-send-btn" onclick="sendTrainerMessage()">Send melding</button>
+      </div>
     </div>
   </div>
 
@@ -3479,27 +3505,70 @@ async function sendTrainerMessage() {
   if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = 'Sender...'; }
   try {
     var senderId = trainerProfile ? trainerProfile.id : currentProfile.id;
-    var msgRes = await fetch(SB_URL + '/rest/v1/messages', {
-      method: 'POST',
-      headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json', 'Prefer': 'return=representation'},
-      body: JSON.stringify({sender_id: senderId, body: body, sport: sport, recipients_label: recipientsLabel})
-    });
-    var msgData = await msgRes.json();
-    var msgId = Array.isArray(msgData) ? msgData[0].id : msgData.id;
-    if (!msgId) throw new Error('Kunne ikke opprette melding');
-    for (var i = 0; i < recipientIds.length; i++) {
-      await fetch(SB_URL + '/rest/v1/message_recipients', {
+
+    // Check if existing thread with same recipients (only for single player)
+    var existingMsgId = null;
+    if (trChatTarget === 'players' && recipientIds.length === 1) {
+      var existing = await api('GET', 'messages?sender_id=eq.' + senderId + '&select=id,created_at') || [];
+      for (var ei = 0; ei < existing.length; ei++) {
+        var recips = await api('GET', 'message_recipients?message_id=eq.' + existing[ei].id + '&recipient_id=eq.' + recipientIds[0] + '&select=id') || [];
+        if (recips.length) { existingMsgId = existing[ei].id; break; }
+      }
+      // Also check if player has sent to this trainer
+      if (!existingMsgId) {
+        var playerMsgs = await api('GET', 'messages?sender_id=eq.' + recipientIds[0] + '&select=id') || [];
+        for (var pi = 0; pi < playerMsgs.length; pi++) {
+          var pr = await api('GET', 'message_recipients?message_id=eq.' + playerMsgs[pi].id + '&recipient_id=eq.' + senderId + '&select=id') || [];
+          if (pr.length) { existingMsgId = playerMsgs[pi].id; break; }
+        }
+      }
+    }
+
+    if (existingMsgId) {
+      // Add as reply to existing thread
+      await fetch(SB_URL + '/rest/v1/message_replies', {
         method: 'POST',
         headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
-        body: JSON.stringify({message_id: msgId, recipient_id: recipientIds[i]})
+        body: JSON.stringify({message_id: existingMsgId, sender_id: senderId, body: body})
       });
+      var tName = trainerProfile ? trainerProfile.full_name : 'Trener';
+      sendPush('Ny melding fra ' + tName, body.substring(0,100), recipientIds);
+    } else {
+      // Create new message thread
+      var msgRes = await fetch(SB_URL + '/rest/v1/messages', {
+        method: 'POST',
+        headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json', 'Prefer': 'return=representation'},
+        body: JSON.stringify({sender_id: senderId, body: body, sport: sport, recipients_label: recipientsLabel})
+      });
+      var msgData = await msgRes.json();
+      var msgId = Array.isArray(msgData) ? msgData[0].id : msgData.id;
+      if (!msgId) throw new Error('Kunne ikke opprette melding');
+      for (var i = 0; i < recipientIds.length; i++) {
+        await fetch(SB_URL + '/rest/v1/message_recipients', {
+          method: 'POST',
+          headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
+          body: JSON.stringify({message_id: msgId, recipient_id: recipientIds[i]})
+        });
+      }
+      // Add all trainers in same sport as recipients
+      var allTrainers = await api('GET', 'profiles?is_trainer=eq.true&sport=eq.' + encodeURIComponent(sport) + '&select=id') || [];
+      for (var ti = 0; ti < allTrainers.length; ti++) {
+        if (allTrainers[ti].id !== senderId && recipientIds.indexOf(allTrainers[ti].id) === -1) {
+          await fetch(SB_URL + '/rest/v1/message_recipients', {
+            method: 'POST',
+            headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
+            body: JSON.stringify({message_id: msgId, recipient_id: allTrainers[ti].id})
+          });
+        }
+      }
+      var tName2 = trainerProfile ? trainerProfile.full_name : 'Trener';
+      sendPush('Ny melding fra ' + tName2, body.substring(0,100), recipientIds);
     }
     document.getElementById('tr-chat-body').value = '';
     okEl.classList.add('show');
-    setTimeout(function(){ okEl.classList.remove('show'); }, 2500);
-    // Send push to recipients
-    var senderName = trainerProfile ? trainerProfile.full_name : 'Trener';
-    sendPush('Ny melding fra ' + senderName, body.substring(0, 100), recipientIds);
+    showGlobalToast('\u2713 Melding sendt!');
+    closeTrNewMessage();
+    loadTrainerInbox();
   } catch(e) {
     errEl.textContent = 'Feil: ' + e.message; errEl.style.display = 'block'; errEl.classList.add('show');
   } finally {
@@ -3507,64 +3576,152 @@ async function sendTrainerMessage() {
   }
 }
 
-async function loadTrainerInbox() {
-  var el = document.getElementById('tr-chat-inbox'); if (!el) return;
-  var tid = trainerProfile ? trainerProfile.id : null; if (!tid) return;
-  try {
-    var myMsgs = await api('GET', 'message_recipients?recipient_id=eq.' + tid + '&select=message_id,read_at') || [];
-    var recMsgIds = myMsgs.map(function(r){ return r.message_id; });
-    var sentMsgs = await api('GET', 'messages?sender_id=eq.' + tid + '&order=created_at.desc&select=*') || [];
-    var recMsgs = [];
-    for (var i = 0; i < recMsgIds.length; i++) {
-      var m = await api('GET', 'messages?id=eq.' + recMsgIds[i] + '&select=*');
-      if (m && m[0]) recMsgs.push({msg: m[0], recRow: myMsgs.find(function(r){ return r.message_id === recMsgIds[i]; })});
-    }
-    var unreadCount = 0;
-    var html = '';
-    if (sentMsgs.length) {
-      html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)">Sendt</div>';
-      for (var j = 0; j < sentMsgs.length; j++) {
-        var sm = sentMsgs[j];
-        var sreplies = await api('GET', 'message_replies?message_id=eq.' + sm.id + '&order=created_at.asc&select=*') || [];
-        var recipientInfo = sm.recipients_label ? 'Til: ' + sm.recipients_label : 'Til: utøvere';
-        html += renderTMsg(sm, recipientInfo, sreplies, true, tid);
-      }
-    }
-    if (recMsgs.length) {
-      html += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border)">Mottatt</div>';
-      for (var k = 0; k < recMsgs.length; k++) {
-        var item = recMsgs[k];
-        var isUnread = item.recRow && !item.recRow.read_at;
-        if (isUnread) unreadCount++;
-        var sp = await api('GET', 'profiles?id=eq.' + item.msg.sender_id + '&select=full_name') || [];
-        var sName = sp[0] ? sp[0].full_name : 'Ukjent';
-        var rreplies = await api('GET', 'message_replies?message_id=eq.' + item.msg.id + '&order=created_at.asc&select=*') || [];
-        // Look up sender names for replies from other trainers
-        for (var ri = 0; ri < rreplies.length; ri++) {
-          if (rreplies[ri].sender_id !== tid) {
-            var rp = await api('GET', 'profiles?id=eq.' + rreplies[ri].sender_id + '&select=full_name');
-            rreplies[ri]._senderName = rp && rp[0] ? rp[0].full_name : 'Ukjent';
-          }
-        }
-        html += renderTMsg(item.msg, 'Fra: ' + sName, rreplies, false, tid);
-        if (isUnread) {
-          fetch(SB_URL + '/rest/v1/message_recipients?message_id=eq.' + item.msg.id + '&recipient_id=eq.' + tid, {
-            method: 'PATCH', headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
-            body: JSON.stringify({read_at: new Date().toISOString()})
-          });
-        }
-      }
-    }
-    if (!sentMsgs.length && !recMsgs.length) html = '<div style="font-size:13px;color:var(--text-muted)">Ingen meldinger enda</div>';
-    el.innerHTML = html;
-    var badge = document.getElementById('tr-inbox-badge');
-    if (badge) { badge.style.display = unreadCount > 0 ? 'inline' : 'none'; badge.textContent = unreadCount; }
-  } catch(e) {
-    el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Kunne ikke laste meldinger</div>';
-    console.log('Inbox error:', e);
-  }
+var currentTrThreadMsgId = null;
+
+function showTrNewMessage() {
+  document.getElementById('tr-thread-list-view').style.display = 'none';
+  document.getElementById('tr-new-message-view').style.display = 'block';
+  document.getElementById('tr-thread-detail-view').style.display = 'none';
+}
+function closeTrNewMessage() {
+  document.getElementById('tr-thread-list-view').style.display = 'block';
+  document.getElementById('tr-new-message-view').style.display = 'none';
+  document.getElementById('tr-thread-detail-view').style.display = 'none';
+}
+function closeTrThreadDetail() {
+  document.getElementById('tr-thread-list-view').style.display = 'block';
+  document.getElementById('tr-thread-detail-view').style.display = 'none';
+  currentTrThreadMsgId = null;
+  loadTrainerInbox();
 }
 
+async function openTrThreadDetail(msgId, threadName) {
+  currentTrThreadMsgId = msgId;
+  document.getElementById('tr-thread-list-view').style.display = 'none';
+  document.getElementById('tr-new-message-view').style.display = 'none';
+  document.getElementById('tr-thread-detail-view').style.display = 'block';
+  document.getElementById('tr-thread-detail-name').textContent = threadName;
+  await renderTrThreadMessages(msgId);
+}
+
+async function renderTrThreadMessages(msgId) {
+  var el = document.getElementById('tr-thread-detail-messages'); if (!el) return;
+  el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  var msgs = await api('GET', 'messages?id=eq.' + msgId + '&select=*') || [];
+  if (!msgs.length) { el.innerHTML = ''; return; }
+  var msg = msgs[0];
+  var replies = await api('GET', 'message_replies?message_id=eq.' + msgId + '&order=created_at.asc&select=*') || [];
+  var myId = trainerProfile ? trainerProfile.id : (currentProfile ? currentProfile.id : '');
+  var html = '';
+  var isMine = msg.sender_id === myId;
+  html += '<div style="display:flex;flex-direction:column;align-items:' + (isMine?'flex-end':'flex-start') + '">'
+    + '<div class="msg-bubble ' + (isMine?'sent':'received') + '">' + msg.body + '</div>'
+    + '<div class="msg-time ' + (isMine?'':'left') + '">' + formatNorwegianTime(msg.created_at) + '</div></div>';
+  for (var i = 0; i < replies.length; i++) {
+    var r = replies[i];
+    var mine = r.sender_id === myId;
+    // Get sender name if not mine
+    var rName = '';
+    if (!mine) {
+      var rp = await api('GET', 'profiles?id=eq.' + r.sender_id + '&select=full_name');
+      rName = rp && rp[0] ? rp[0].full_name : '';
+    }
+    html += '<div style="display:flex;flex-direction:column;align-items:' + (mine?'flex-end':'flex-start') + '">'
+      + (rName ? '<div style="font-size:11px;color:var(--text-muted);margin-bottom:2px">' + rName + '</div>' : '')
+      + '<div class="msg-bubble ' + (mine?'sent':'received') + '">' + r.body + '</div>'
+      + '<div class="msg-time ' + (mine?'':'left') + '">' + formatNorwegianTime(r.created_at) + '</div></div>';
+  }
+  el.innerHTML = html;
+  el.scrollTop = el.scrollHeight;
+}
+
+async function sendTrThreadReply() {
+  if (!currentTrThreadMsgId) return;
+  var input = document.getElementById('tr-thread-reply-input');
+  var body = input.value.trim();
+  if (!body) return;
+  var tid = trainerProfile ? trainerProfile.id : (currentProfile ? currentProfile.id : null);
+  var tName = trainerProfile ? trainerProfile.full_name : (currentProfile ? currentProfile.full_name : 'Trener');
+  await fetch(SB_URL + '/rest/v1/message_replies', {
+    method: 'POST',
+    headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
+    body: JSON.stringify({message_id: currentTrThreadMsgId, sender_id: tid, body: body})
+  });
+  input.value = '';
+  // Notify original sender and all recipients
+  var msgs = await api('GET', 'messages?id=eq.' + currentTrThreadMsgId + '&select=sender_id') || [];
+  var recips = await api('GET', 'message_recipients?message_id=eq.' + currentTrThreadMsgId + '&select=recipient_id') || [];
+  var notifyIds = recips.map(function(r){ return r.recipient_id; });
+  if (msgs[0] && msgs[0].sender_id !== tid) notifyIds.push(msgs[0].sender_id);
+  notifyIds = notifyIds.filter(function(id){ return id !== tid; });
+  if (notifyIds.length) sendPush('Svar fra ' + tName, body.substring(0,100), notifyIds);
+  renderTrThreadMessages(currentTrThreadMsgId);
+}
+
+async function loadTrainerInbox() {
+  var el = document.getElementById('tr-chat-inbox'); if (!el) return;
+  el.innerHTML = '<div class="loading" style="padding:1rem"><div class="spinner"></div>Laster...</div>';
+  try {
+    var myId = trainerProfile ? trainerProfile.id : (currentProfile ? currentProfile.id : '');
+    var sport = getTrainerSport();
+    // Messages sent by me
+    var sentMsgs = await api('GET', 'messages?sender_id=eq.' + myId + '&order=created_at.desc&select=*') || [];
+    // Messages I received
+    var recRows = await api('GET', 'message_recipients?recipient_id=eq.' + myId + '&select=message_id,read_at') || [];
+    var threads = [];
+    var seen = {};
+    // Process sent messages
+    for (var i = 0; i < sentMsgs.length; i++) {
+      var m = sentMsgs[i];
+      if (seen[m.id]) continue;
+      seen[m.id] = true;
+      var replies = await api('GET', 'message_replies?message_id=eq.' + m.id + '&order=created_at.desc&select=*') || [];
+      var lastMsg = replies.length ? replies[0] : m;
+      var unread = replies.filter(function(r){ return !r.read_at && r.sender_id !== myId; }).length;
+      var recips = await api('GET', 'message_recipients?message_id=eq.' + m.id + '&select=recipient_id') || [];
+      var names = [];
+      for (var k = 0; k < Math.min(recips.length, 3); k++) {
+        var p = await api('GET', 'profiles?id=eq.' + recips[k].recipient_id + '&select=full_name,is_trainer');
+        if (p && p[0] && !p[0].is_trainer) names.push(p[0].full_name);
+      }
+      if (recips.length > 3) names.push('...');
+      var label = m.recipients_label || names.join(', ') || 'Alle';
+      threads.push({id: m.id, name: label, lastBody: lastMsg.body, lastTime: lastMsg.created_at, unread: unread});
+    }
+    // Process received messages
+    for (var j = 0; j < recRows.length; j++) {
+      var msgId = recRows[j].message_id;
+      if (seen[msgId]) continue;
+      seen[msgId] = true;
+      var mArr = await api('GET', 'messages?id=eq.' + msgId + '&select=*') || [];
+      if (!mArr.length) continue;
+      var m2 = mArr[0];
+      var replies2 = await api('GET', 'message_replies?message_id=eq.' + msgId + '&order=created_at.desc&select=*') || [];
+      var lastMsg2 = replies2.length ? replies2[0] : m2;
+      var unread2 = (!recRows[j].read_at ? 1 : 0) + replies2.filter(function(r){ return !r.read_at && r.sender_id !== myId; }).length;
+      var sp = await api('GET', 'profiles?id=eq.' + m2.sender_id + '&select=full_name') || [];
+      threads.push({id: msgId, name: sp[0] ? sp[0].full_name : 'Utøver', lastBody: lastMsg2.body, lastTime: lastMsg2.created_at, unread: unread2});
+    }
+    threads.sort(function(a,b){ return b.lastTime.localeCompare(a.lastTime); });
+    if (!threads.length) { el.innerHTML = '<div style="padding:1rem;font-size:13px;color:var(--text-muted)">Ingen meldinger enda</div>'; return; }
+    el.innerHTML = threads.map(function(t) {
+      var initials = t.name.split(' ').slice(0,2).map(function(n){ return n[0]||''; }).join('').toUpperCase();
+      return '<div class="thread-item ' + (t.unread?'thread-unread':'') + '" onclick="openTrThreadDetail(\'' + t.id + '\',\'' + t.name.replace(/'/g,'&#39;') + '\')">'
+        + '<div class="thread-avatar">' + initials + '</div>'
+        + '<div style="flex:1;min-width:0">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center">'
+        + '<span style="font-size:14px;font-weight:' + (t.unread?'800':'600') + ';color:' + (t.unread?'var(--blue)':'var(--text)') + '">' + t.name + '</span>'
+        + '<span style="font-size:11px;color:var(--text-muted);flex-shrink:0;margin-left:8px">' + formatNorwegianTime(t.lastTime) + '</span>'
+        + '</div>'
+        + '<div style="display:flex;align-items:center;gap:6px;margin-top:2px">'
+        + '<div class="thread-preview">' + t.lastBody + '</div>'
+        + (t.unread ? '<div class="thread-dot"></div>' : '')
+        + '</div></div></div>';
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<div style="padding:1rem;font-size:13px;color:var(--text-muted)">Kunne ikke laste meldinger</div>';
+  }
+}
 function renderTMsg(m, recipientInfo, replies, isSent, tid) {
   var html = '<div style="border:1px solid var(--border);border-radius:9px;padding:12px;margin-bottom:10px">'
     + '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">'
