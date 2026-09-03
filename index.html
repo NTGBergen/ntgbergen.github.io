@@ -1438,7 +1438,7 @@ function switchTab(tab) {
   if (tab === 'kalender') {
     loadCalendar(); loadInjuries();
     // Show tournament section for tennis
-    var isTennis = currentProfile && currentProfile.sport === 'Tennis';
+    var isTennis = currentProfile && (currentProfile.sport === 'Tennis' || currentProfile.sport === 'Tennis/Padel');
     var tcard = document.getElementById('tournament-card');
     var acard = document.getElementById('add-tournament-card');
     if (tcard) tcard.style.display = isTennis ? 'block' : 'none';
@@ -2248,8 +2248,8 @@ async function loadTrainerView() {
     // Show tennis tournament section
     var trTourCard = document.getElementById('tr-tournament-card');
     if (trTourCard) {
-      trTourCard.style.display = trainerSport === 'Tennis' ? 'block' : 'none';
-      if (trainerSport === 'Tennis') loadTrainerTournaments();
+      trTourCard.style.display = (trainerSport === 'Tennis' || trainerSport === 'Tennis/Padel') ? 'block' : 'none';
+      if (trainerSport === 'Tennis' || trainerSport === 'Tennis/Padel') loadTrainerTournaments();
     }
   }, 100);
   var sel = document.getElementById('tr-conv-player');
@@ -3020,7 +3020,7 @@ async function savePlayerTournament() {
   await fetch(SB_URL + '/rest/v1/tournaments', {
     method: 'POST',
     headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
-    body: JSON.stringify({title: title, start_date: from, end_date: to || from, location: loc, sport: currentProfile.sport || 'Tennis', created_by: currentProfile.id, is_player_created: true})
+    body: JSON.stringify({title: title, start_date: from, end_date: to || from, location: loc, sport: currentProfile.sport || 'Tennis/Padel', created_by: currentProfile.id, is_player_created: true})
   });
   document.getElementById('pt-title').value = '';
   document.getElementById('pt-loc').value = '';
