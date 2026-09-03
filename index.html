@@ -601,8 +601,26 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       </div>
       <div class="form-group" style="margin-bottom:10px"><label>Sted</label><input type="text" id="ev-location" placeholder="f.eks. Sparebanken Vest Arena"></div>
       <div class="form-group" style="margin-bottom:10px">
-        <label>Synlig for grupper (velg ingen = alle ser den)</label>
-        <div id="ev-groups-select" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px"></div>
+        <div class="form-group" style="margin-bottom:10px" id="ev-sport-wrap">
+          <label>Idrett for denne økten</label>
+          <select id="ev-sport-select" onchange="updateEventAthletes()" style="font-size:14px;border:1.5px solid var(--border);border-radius:7px;padding:8px 12px;width:100%;outline:none">
+            <option>Tennis/Padel</option>
+            <option>Tennis</option>
+            <option>Padel</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:10px" id="ev-groups-wrap">
+          <label>Synlig for grupper (velg ingen = alle ser den)</label>
+          <div id="ev-groups-select" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px"></div>
+        </div>
+        <div id="ev-athletes-wrap" style="display:none;margin-bottom:10px">
+          <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;display:block;margin-bottom:6px">Velg utøvere</label>
+          <div style="margin-bottom:6px;display:flex;gap:6px">
+            <button type="button" onclick="selectAllEventAthletes(true)" style="font-size:11px;padding:3px 10px;border:1px solid var(--border);border-radius:5px;cursor:pointer;background:var(--bg2)">Velg alle</button>
+            <button type="button" onclick="selectAllEventAthletes(false)" style="font-size:11px;padding:3px 10px;border:1px solid var(--border);border-radius:5px;cursor:pointer;background:var(--bg2)">Ingen</button>
+          </div>
+          <div id="ev-athletes-select" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+        </div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:10px;background:var(--bg2);border-radius:8px;border:1px solid var(--border)">
         <input type="checkbox" id="ev-recurring" onchange="document.getElementById('ev-weeks-wrap').style.display=this.checked?'flex':'none'" style="width:18px;height:18px;cursor:pointer">
@@ -652,7 +670,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
         <div class="form-group"><label>Klasse</label><select id="new-student-class"><option>VG1</option><option>VG2</option><option>VG3</option></select></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label>Idrett</label><select id="new-student-sport" onchange="updateStudentPositions()"><option>H&aring;ndball</option><option>Fotball</option><option>Basketball</option><option>Golf</option><option>Sykkel</option><option>Svømming</option><option>Fekting</option><option>Tennis</option><option>Padel</option><option>Mix</option></select></div>
+        <div class="form-group"><label>Idrett</label><select id="new-student-sport" onchange="updateStudentPositions()"><option>H&aring;ndball</option><option>Fotball</option><option>Basketball</option><option>Golf</option><option>Sykkel</option><option>Svømming</option><option>Fekting</option><option>Tennis/Padel</option><option>Tennis</option><option>Padel</option><option>Mix</option></select></div>
         <div class="form-group"><label>Posisjon</label><select id="new-student-pos"></select></div>
       </div>
       <div class="form-row">
@@ -831,6 +849,11 @@ var SPORTS_DATA = {
     {key:'forsvar', label:'Tekniske ferdigheter \u2013 forsvar', items:['Parader og respons','Distansekontroll','Motangrep','Retretter','Sirkelbevegelser']},
     {key:'taktikk', label:'Taktikk og forst\u00e5else', items:['Lese motstanderen','Prioritetsregler','Aksjonsvalg under press','Tidsbruk og scoringstrategi']}
   ]},
+  'Tennis/Padel': { cats: [
+    {key:'teknikk', label:'Tekniske ferdigheter', items:['Forehand','Backhand','Serve og retur','Volley og nett','Bevegelse og footwork','Lob og smash']},
+    {key:'taktikk', label:'Taktikk og forst\u00e5else', items:['Spillforst\u00e5else og mønster','Posisjonering','Lese motspiller','Serve-taktikk']},
+    {key:'fysikk', label:'Fysikk', items:['Hurtighet og agility','Eksplosivitet','Utholdenhet','Styrke og stabilitet']}
+  ]},
   'Tennis': { cats: [
     {key:'slag', label:'Tekniske ferdigheter \u2013 slag', items:['Forehand grunn- og toppspinn','Backhand ett- og toh\u00e5nds','Serve \u2013 flat, slice og kick','Retur av serve','Volley forehand og backhand','Smasj og overhead','Lobb og dropshot']},
     {key:'bevegelighet', label:'Tekniske ferdigheter \u2013 bevegelighet', items:['Splittsteg og startposisjon','Sidevegsbevegelighet','Recovery til midten','Bevegelse inn til nettet','Rekkeviddesteg']},
@@ -857,7 +880,7 @@ var SPORT_POSITIONS = {
   'Sykkel': ['Spurter','Klatrer','Allrounder','Tempo'],
   'Sv\u00f8mming': ['Crawl','Bryst','Butterfly','Rygg','Medley','Alle distanser'],
   'Fekting': ['Florett','K\u00e5rde','Sabel'],
-  'Tennis': ['Singel','Dobbel','Begge'],
+  'Tennis/Padel': ['Singel','Dobbel','Begge'],
   'Padel': ['H\u00f8yre side','Venstre side','Begge'],
   'Mix': ['Ingen posisjon']
 };
@@ -870,6 +893,7 @@ var SPORT_SESSION_TYPES = {
   'Sykkel': ['Sykkel \u2013 trening','Sykkel \u2013 ritt','Intervall','Styrke','Utholdenhet','Annen trening'],
   'Sv\u00f8mming': ['Sv\u00f8mming \u2013 trening','Sv\u00f8mming \u2013 stevne','Teknikk','Styrke','Utholdenhet','Annen trening'],
   'Fekting': ['Fekting \u2013 trening','Fekting \u2013 konkurranse','Teknikk','Styrke','Utholdenhet','Annen trening'],
+  'Tennis/Padel': ['Tennis \u2013 trening','Tennis \u2013 kamp','Padel \u2013 trening','Padel \u2013 kamp','Styrke','Kondisjon','Stretch','Compensation','Annen trening'],
   'Tennis': ['Tennis \u2013 trening','Tennis \u2013 kamp','Styrke','Kondisjon','Stretch','Compensation','Annen trening'],
   'Padel': ['Padel \u2013 trening','Padel \u2013 kamp','Teknikk','Styrke','Utholdenhet','Annen trening'],
   'Mix': ['Trening','Kamp','Teknikk','Styrke','Utholdenhet','Plyometri','Annen trening']
@@ -899,6 +923,25 @@ var SPORT_TESTS = {
       {id:'s40',label:'40m sprint (sek)',type:'number',step:'0.01'},
       {id:'jump',label:'Spenst (cm)',type:'number',step:'1'},
       {id:'s20',label:'Agility (sek)',type:'number',step:'0.01'}
+    ]}
+  },
+  'Tennis/Padel': {
+    strength: {title:'Styrke', fields:[
+      {id:'bench',label:'Push ups (reps)',type:'number',step:'1'},
+      {id:'squat',label:'Pull ups (reps)',type:'number',step:'1'},
+      {id:'clean',label:'Squats (reps)',type:'number',step:'1'},
+      {id:'hangup',label:'Planke (sek)',type:'number',step:'1'}
+    ]},
+    conditioning: {title:'Spenst, kondisjon og sprint', fields:[
+      {id:'jump',label:'Lengdehopp (cm)',type:'number',step:'1'},
+      {id:'extra1',label:'H\u00f8ydehopp (cm)',type:'number',step:'1'},
+      {id:'beep',label:'Beep test (niv\u00e5.del)',type:'text'},
+      {id:'s20',label:'20m sprint (sek)',type:'number',step:'0.01'},
+      {id:'s40',label:'Court agility test (sek)',type:'number',step:'0.01'}
+    ]},
+    mobility: {title:'Mobilitet', fields:[
+      {id:'extra2',label:'Wall test (cm)',type:'number',step:'1'},
+      {id:'extra3',label:'Stand and reach (cm)',type:'number',step:'1'}
     ]}
   },
   'Tennis': {
@@ -951,8 +994,59 @@ var SPORT_ATTENDANCE = {
   ]
 };
 
+// Sports that use individual athlete selection instead of groups
+var SPORT_INDIVIDUAL_TARGETING = ['Tennis', 'Padel', 'Tennis/Padel'];
+
+function usesIndividualTargeting(sport) {
+  return SPORT_INDIVIDUAL_TARGETING.indexOf(sport) > -1;
+}
+
+var evSelectedAthletes = [];
+
+async function updateEventAthletes() {
+  var sport = document.getElementById('ev-sport-select') ? document.getElementById('ev-sport-select').value : getTrainerSport();
+  var useIndividual = usesIndividualTargeting(sport);
+  var groupsWrap = document.getElementById('ev-groups-wrap');
+  var athletesWrap = document.getElementById('ev-athletes-wrap');
+  if (groupsWrap) groupsWrap.style.display = useIndividual ? 'none' : 'block';
+  if (athletesWrap) athletesWrap.style.display = useIndividual ? 'block' : 'none';
+  if (useIndividual) {
+    var profiles = await api('GET', 'profiles?is_trainer=eq.false&is_superuser=eq.false&sport=eq.' + encodeURIComponent(sport) + '&order=full_name.asc&select=id,full_name') || [];
+    var el = document.getElementById('ev-athletes-select'); if (!el) return;
+    evSelectedAthletes = profiles.map(function(p){ return p.id; });
+    el.innerHTML = profiles.map(function(p) {
+      return '<div id="evath_' + p.id + '" onclick="toggleEventAthlete(\'' + p.id + '\')" style="padding:5px 12px;border:1.5px solid var(--blue);border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;background:var(--blue-light);color:var(--blue)">' + p.full_name + '</div>';
+    }).join('');
+  }
+}
+
+function toggleEventAthlete(id) {
+  var el = document.getElementById('evath_' + id);
+  var idx = evSelectedAthletes.indexOf(id);
+  if (idx > -1) {
+    evSelectedAthletes.splice(idx, 1);
+    if (el) { el.style.background = 'var(--bg2)'; el.style.color = 'var(--text-muted)'; el.style.borderColor = 'var(--border)'; }
+  } else {
+    evSelectedAthletes.push(id);
+    if (el) { el.style.background = 'var(--blue-light)'; el.style.color = 'var(--blue)'; el.style.borderColor = 'var(--blue)'; }
+  }
+}
+
+function selectAllEventAthletes(selectAll) {
+  var els = document.querySelectorAll('#ev-athletes-select div');
+  evSelectedAthletes = [];
+  els.forEach(function(el) {
+    var id = el.id.replace('evath_','');
+    if (selectAll) {
+      evSelectedAthletes.push(id);
+      el.style.background = 'var(--blue-light)'; el.style.color = 'var(--blue)'; el.style.borderColor = 'var(--blue)';
+    } else {
+      el.style.background = 'var(--bg2)'; el.style.color = 'var(--text-muted)'; el.style.borderColor = 'var(--border)';
+    }
+  });
+}
 function getSportAttendanceOptions(sport) {
-  return SPORT_ATTENDANCE[sport] || null; // null = use default meld på/av
+  return SPORT_ATTENDANCE[sport] || null;
 }
 
 function getSportPositions(sport) {
@@ -2383,6 +2477,8 @@ async function loadCalendar() {
       return gn.indexOf('player:' + currentProfile.id) > -1;
     }
     if (gn.length === 0) return true;
+    // Individual athlete targeting - check if player's ID is in group_names
+    if (gn.indexOf(currentProfile.id) > -1) return true;
     if (!group) return true;
     return gn.indexOf(group) > -1;
   });
@@ -2700,6 +2796,14 @@ async function loadEvents() {
   var sport = getTrainerSport();
   var evType = document.getElementById('ev-type');
   if (evType) evType.innerHTML = getSportSessionTypes(sport).map(function(t){ return '<option>'+t+'</option>'; }).join('');
+  // Show sport selector for Tennis/Padel trainers (combined sport)
+  var evSportWrap = document.getElementById('ev-sport-wrap');
+  if (evSportWrap) evSportWrap.style.display = (sport === 'Tennis' || sport === 'Padel' || sport === 'Tennis/Padel') ? 'block' : 'none';
+  // Set default value on sport select
+  var evSportSel = document.getElementById('ev-sport-select');
+  if (evSportSel && !evSportSel.value) evSportSel.value = sport;
+  // Also load events for both Tennis and Padel if trainer covers both
+  updateEventAthletes();
   var today = new Date().toISOString().split('T')[0];
   allTrainerEvents = (await api('GET', 'training_events?sport=eq.' + encodeURIComponent(sport) + '&order=date.asc,time.asc&select=*') || [])
     .filter(function(ev) {
@@ -3045,19 +3149,23 @@ async function showEventRegs(eventId, title, groupNames) {
 }
 
 async function saveEvent() {
-  var editId = document.getElementById('edit-event-id').value;
+  var editId = document.getElementById('edit-event-id') ? document.getElementById('edit-event-id').value : '';
   var title = document.getElementById('ev-title').value.trim();
   var errEl = document.getElementById('event-error');
-  errEl.classList.remove('show'); errEl.style.display = 'none';
-  if (!title) { errEl.textContent = 'Tittel er p\u00e5krevd.'; errEl.style.display = 'block'; errEl.classList.add('show'); return; }
+  if (errEl) { errEl.classList.remove('show'); errEl.style.display = 'none'; }
+  if (!title) { if(errEl){errEl.textContent='Tittel er påkrevd.';errEl.style.display='block';errEl.classList.add('show');} return; }
+  var evSportSel = document.getElementById('ev-sport-select');
+  var sport = evSportSel ? evSportSel.value : getTrainerSport();
+  var useIndividual = usesIndividualTargeting(sport);
+  var groupNames = useIndividual ? evSelectedAthletes.slice() : selectedEventGroups.slice();
   var entry = {
     title: title,
     date: document.getElementById('ev-date').value,
     time: document.getElementById('ev-time').value,
     location: document.getElementById('ev-location').value,
     type: document.getElementById('ev-type').value,
-    group_names: selectedEventGroups.slice(),
-    sport: getTrainerSport(),
+    group_names: groupNames,
+    sport: sport,
     created_by: trainerProfile ? trainerProfile.id : currentProfile.id
   };
   if (editId) { await api('PATCH', 'training_events?id=eq.' + editId, entry); }
