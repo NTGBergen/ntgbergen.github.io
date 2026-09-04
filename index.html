@@ -2474,8 +2474,8 @@ async function loadCalendar() {
   var sport = currentProfile.sport || 'Håndball';
   var sportEvents = await api('GET', 'training_events?sport=eq.' + encodeURIComponent(sport) + '&order=date.asc,time.asc&select=*') || [];
   var myGames = await api('GET', 'training_events?created_by=eq.' + currentProfile.id + '&order=date.asc&select=*') || [];
-  // Fetch events where this player is individually targeted (UUID in group_names)
-  var individualEvents = await fetch(SB_URL + '/rest/v1/training_events?group_names=cs.%5B%22' + currentProfile.id + '%22%5D&select=*', {
+  // Fetch events where this player is individually targeted (UUID in group_names text array)
+  var individualEvents = await fetch(SB_URL + '/rest/v1/training_events?group_names=cs.%7B' + currentProfile.id + '%7D&select=*', {
     headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN}
   }).then(function(r){ return r.json(); }).catch(function(){ return []; }) || [];
   var allIds = {};
