@@ -979,6 +979,18 @@ var SPORT_TESTS = {
   }
 };
 
+function isUUID(s) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+}
+
+function groupNamesLabel(groupNames) {
+  if (!groupNames || !groupNames.length) return 'Alle grupper';
+  var uuids = groupNames.filter(isUUID);
+  var groups = groupNames.filter(function(g){ return !isUUID(g) && g.indexOf('player:') !== 0; });
+  if (uuids.length) return uuids.length + ' utvalgte utøvere';
+  return groups.join(', ');
+}
+
 function getSportTests(sport) {
   return SPORT_TESTS[sport] || SPORT_TESTS['H\u00e5ndball'];
 }
@@ -2461,10 +2473,16 @@ async function loadCalendar() {
   var today = new Date().toISOString().split('T')[0];
   var sport = currentProfile.sport || 'Håndball';
   var sportEvents = await api('GET', 'training_events?sport=eq.' + encodeURIComponent(sport) + '&order=date.asc,time.asc&select=*') || [];
+  // Also fetch events where this player is individually targeted
+  var individualEvents = await api('GET', 'training_events?order=date.asc&select=*') || [];
+  individualEvents = individualEvents.filter(function(ev) {
+    var gn = Array.isArray(ev.group_names) ? ev.group_names : [];
+    return gn.indexOf(currentProfile.id) > -1;
+  });
   var myGames = await api('GET', 'training_events?created_by=eq.' + currentProfile.id + '&order=date.asc&select=*') || [];
   var allIds = {};
   var allEvents = [];
-  sportEvents.concat(myGames).forEach(function(ev) {
+  sportEvents.concat(myGames).concat(individualEvents).forEach(function(ev) {
     if (!allIds[ev.id]) { allIds[ev.id] = true; allEvents.push(ev); }
   });
   var group = currentProfile.group_name || null;
@@ -2699,7 +2717,7 @@ async function renderFilteredEvents() {
       + '<div><div style="font-size:14px;font-weight:700;color:var(--blue)">' + ev.title + '</div>'
       + '<div style="font-size:12px;color:var(--text-muted);margin-top:2px">' + ev.date + ' kl.' + ev.time + (ev.location ? ' \u2022 ' + ev.location : '') + '</div>'
       + '<div style="font-size:11px;margin-top:3px"><span class="stb">' + ev.type + '</span>'
-      + (ev.group_names && ev.group_names.length ? ' <span style="color:var(--text-muted)">' + ev.group_names.join(', ') + '</span>' : ' <span style="color:var(--text-muted)">Alle grupper</span>') + '</div>'
+      + (ev.group_names && ev.group_names.length ? ' <span style="color:var(--text-muted)">' + groupNamesLabel(ev.group_names) + '</span>' : ' <span style="color:var(--text-muted)">Alle grupper</span>') + '</div>'
       + '<div id="ev-count-' + ev.id + '" style="font-size:11px;color:var(--text-muted);margin-top:4px">Laster svar...</div>'
       + '</div>'
       + '<button class="btn-sm-blue" data-eid="' + ev.id + '" data-etitle="' + ev.title.replace(/"/g,'&quot;') + '" onclick="handleShowRegs(this)">Rediger svar</button>'
