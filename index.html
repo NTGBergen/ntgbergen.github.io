@@ -3218,14 +3218,17 @@ function editEvent(ev) {
 }
 
 function cancelEventEdit() {
-  document.getElementById('edit-event-id').value = '';
-  document.getElementById('event-form-title').textContent = 'Legg inn trenings\u00f8kt';
-  document.getElementById('ev-title').value = '';
-  document.getElementById('ev-location').value = '';
-  document.getElementById('ev-time').value = '16:00';
+  var f = function(id){ return document.getElementById(id); };
+  if(f('edit-event-id')) f('edit-event-id').value = '';
+  if(f('event-form-title')) f('event-form-title').textContent = 'Legg inn trenings\u00f8kt';
+  if(f('ev-title')) f('ev-title').value = '';
+  if(f('ev-location')) f('ev-location').value = '';
+  if(f('ev-time')) f('ev-time').value = '16:00';
   selectedEventGroups = [];
   renderEventGroupsSelect();
-  document.getElementById('event-cancel-btn').style.display = 'none';
+  if(f('event-cancel-btn')) f('event-cancel-btn').style.display = 'none';
+  if(f('ev-recurring')) f('ev-recurring').checked = false;
+  if(f('ev-weeks-wrap')) f('ev-weeks-wrap').style.display = 'none';
 }
 
 async function deleteEvent(id) {
