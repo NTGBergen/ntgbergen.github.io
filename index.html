@@ -1014,7 +1014,11 @@ function usesIndividualTargeting(sport) {
 var evSelectedAthletes = [];
 
 async function updateEventAthletes() {
-  var sport = document.getElementById('ev-sport-select') ? document.getElementById('ev-sport-select').value : getTrainerSport();
+  var evSportWrap = document.getElementById('ev-sport-wrap');
+  var isVisible = evSportWrap && evSportWrap.style.display !== 'none';
+  var sport = isVisible && document.getElementById('ev-sport-select')
+    ? document.getElementById('ev-sport-select').value
+    : getTrainerSport();
   var useIndividual = usesIndividualTargeting(sport);
   var groupsWrap = document.getElementById('ev-groups-wrap');
   var athletesWrap = document.getElementById('ev-athletes-wrap');
@@ -3738,6 +3742,22 @@ async function renderTrThreadMessages(msgId) {
   var msg = msgs[0];
   var replies = await api('GET', 'message_replies?message_id=eq.' + msgId + '&order=created_at.asc&select=*') || [];
   var myId = trainerProfile ? trainerProfile.id : (currentProfile ? currentProfile.id : '');
+  // Mark received message as read
+  await fetch(SB_URL + '/rest/v1/message_recipients?message_id=eq.' + msgId + '&recipient_id=eq.' + myId, {
+    method: 'PATCH',
+    headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
+    body: JSON.stringify({read_at: new Date().toISOString()})
+  });
+  // Mark unread replies as read
+  for (var i = 0; i < replies.length; i++) {
+    if (!replies[i].read_at && replies[i].sender_id !== myId) {
+      await fetch(SB_URL + '/rest/v1/message_replies?id=eq.' + replies[i].id, {
+        method: 'PATCH',
+        headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
+        body: JSON.stringify({read_at: new Date().toISOString()})
+      });
+    }
+  }
   var html = '';
   var isMine = msg.sender_id === myId;
   html += '<div style="display:flex;flex-direction:column;align-items:' + (isMine?'flex-end':'flex-start') + '">'
