@@ -439,6 +439,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
           <div class="sec-title" style="margin-bottom:0">Meldinger</div>
           <button class="btn-sm-blue" onclick="showNewMessageForm()">Ny melding</button>
         </div>
+        <div style="padding:10px 16px;border-bottom:1px solid var(--border)">
+          <input type="text" id="player-inbox-search" oninput="filterPlayerInbox()" placeholder="Søk navn eller gruppe..." style="width:100%;font-size:13px;border:1.5px solid var(--border);border-radius:20px;padding:7px 14px;outline:none;background:var(--bg2)">
+        </div>
         <div id="chat-inbox"><div class="loading" style="padding:1rem"><div class="spinner"></div>Laster...</div></div>
       </div>
     </div>
@@ -728,6 +731,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
         <div style="padding:16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
           <div class="sec-title" style="margin-bottom:0">Meldinger</div>
           <button class="btn-sm-blue" onclick="showTrNewMessage()">Ny melding</button>
+        </div>
+        <div style="padding:10px 16px;border-bottom:1px solid var(--border)">
+          <input type="text" id="tr-inbox-search" oninput="filterTrInbox()" placeholder="Søk navn eller gruppe..." style="width:100%;font-size:13px;border:1.5px solid var(--border);border-radius:20px;padding:7px 14px;outline:none;background:var(--bg2)">
         </div>
         <div id="tr-chat-inbox"><div class="loading" style="padding:1rem"><div class="spinner"></div>Laster...</div></div>
       </div>
@@ -2623,6 +2629,12 @@ async function showGroupStudents(groupId, groupName) {
 
 async function deleteStudent(userId, name) {
   if (!confirm('Slette ' + name + '?\n\nAll data vil bli permanent slettet.')) return;
+  // Remove from table immediately
+  var rows = document.querySelectorAll('#trainer-tbody tr');
+  rows.forEach(function(row) {
+    if (row.cells[0] && row.cells[0].textContent.trim() === name) row.remove();
+  });
+  showGlobalToast('\u2713 ' + name + ' slettes...');
   try {
     // Delete all related data first to avoid FK constraint errors
     await fetch(SB_URL + '/rest/v1/message_replies?sender_id=eq.' + userId, {method:'DELETE', headers:{'apikey':SB_ADMIN,'Authorization':'Bearer '+SB_ADMIN}});
@@ -3058,6 +3070,7 @@ async function savePlayerTournament() {
 async function deleteTournament(id) {
   if (!confirm('Slette denne turneringen?')) return;
   await fetch(SB_URL + '/rest/v1/tournaments?id=eq.' + id, {method:'DELETE', headers:{'apikey':SB_ADMIN,'Authorization':'Bearer '+SB_ADMIN}});
+  allTournaments = allTournaments.filter(function(t){ return t.id !== id; });
   showGlobalToast('\u2713 Turnering slettet');
   loadTournaments();
 }
@@ -3098,9 +3111,10 @@ async function saveTrainerTournament() {
 
 async function deleteTrainerTournament(id) {
   if (!confirm('Slette turnering?')) return;
+  var tourRow = document.querySelector('[data-tour-id="' + id + '"]');
+  if (tourRow) tourRow.remove();
   await fetch(SB_URL + '/rest/v1/tournaments?id=eq.' + id, {method:'DELETE', headers:{'apikey':SB_ADMIN,'Authorization':'Bearer '+SB_ADMIN}});
   showGlobalToast('\u2713 Slettet');
-  loadTrainerTournaments();
 }
 
 function handleShowRegs(btn) {
@@ -3263,8 +3277,11 @@ function cancelEventEdit() {
 async function deleteEvent(id) {
   if (typeof id !== 'string') return;
   if (!confirm('Slette denne \u00f8kten?')) return;
+  var row = document.getElementById('ev-row-' + id);
+  if (row) row.remove();
+  allTrainerEvents = allTrainerEvents.filter(function(e){ return e.id !== id; });
   await api('DELETE', 'training_events?id=eq.' + id);
-  loadEvents();
+  showGlobalToast('\u2713 \u00d8kt slettet');
 }
 
 function renderGroupsSelect() {}
@@ -3717,6 +3734,26 @@ async function sendTrainerMessage() {
 
 var currentTrThreadMsgId = null;
 
+function filterTrInbox() {
+  var q = (document.getElementById('tr-inbox-search').value || '').toLowerCase().trim();
+  var items = document.querySelectorAll('#tr-chat-inbox .thread-item');
+  items.forEach(function(item) {
+    var name = (item.querySelector('span') ? item.querySelector('span').textContent : '').toLowerCase();
+    var preview = (item.querySelector('.thread-preview') ? item.querySelector('.thread-preview').textContent : '').toLowerCase();
+    item.style.display = (!q || name.indexOf(q) > -1 || preview.indexOf(q) > -1) ? '' : 'none';
+  });
+}
+
+function filterPlayerInbox() {
+  var q = (document.getElementById('player-inbox-search').value || '').toLowerCase().trim();
+  var items = document.querySelectorAll('#chat-inbox .thread-item');
+  items.forEach(function(item) {
+    var name = (item.querySelector('span') ? item.querySelector('span').textContent : '').toLowerCase();
+    var preview = (item.querySelector('.thread-preview') ? item.querySelector('.thread-preview').textContent : '').toLowerCase();
+    item.style.display = (!q || name.indexOf(q) > -1 || preview.indexOf(q) > -1) ? '' : 'none';
+  });
+}
+
 function showTrNewMessage() {
   document.getElementById('tr-thread-list-view').style.display = 'none';
   document.getElementById('tr-new-message-view').style.display = 'block';
@@ -3906,6 +3943,7 @@ async function deleteMessage(msgId) {
   if (!confirm('Slette denne meldingen?')) return;
   await fetch(SB_URL + '/rest/v1/message_replies?message_id=eq.' + msgId, {method:'DELETE', headers:{'apikey':SB_ADMIN,'Authorization':'Bearer '+SB_ADMIN}});
   await fetch(SB_URL + '/rest/v1/message_recipients?message_id=eq.' + msgId, {method:'DELETE', headers:{'apikey':SB_ADMIN,'Authorization':'Bearer '+SB_ADMIN}});
+  closeTrThreadDetail();
   await fetch(SB_URL + '/rest/v1/messages?id=eq.' + msgId, {method:'DELETE', headers:{'apikey':SB_ADMIN,'Authorization':'Bearer '+SB_ADMIN}});
   loadTrainerInbox();
 }
@@ -4280,13 +4318,22 @@ async function saveInjury() {
 
 async function deactivateInjury(injId) {
   if (!confirm('Marker skaden som avsluttet? Den vil ikke lenger vises som aktiv, men historikken beholdes.')) return;
+  allInjuries = allInjuries.map(function(i){ return i.id === injId ? Object.assign({}, i, {is_active: false}) : i; });
+  renderInjuryList();
   await fetch(SB_URL + '/rest/v1/injuries?id=eq.' + injId, {
     method: 'PATCH',
     headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
     body: JSON.stringify({is_active: false, updated_at: new Date().toISOString()})
   });
   showGlobalToast('\u2713 Skade markert som avsluttet');
-  await loadInjuries();
+}
+
+async function deleteSkillEntry(skillId) {
+  if (!confirm('Slette denne selvvurderingen?')) return;
+  allSkills = allSkills.filter(function(s){ return s.id !== skillId; });
+  renderSkillsHistory();
+  await fetch(SB_URL + '/rest/v1/skills?id=eq.' + skillId, {method:'DELETE', headers:{'apikey':SB_ADMIN,'Authorization':'Bearer '+SB_ADMIN}});
+  showGlobalToast('\u2713 Selvvurdering slettet');
 }
 
 // ---- TRAINER INJURY OVERVIEW ----
@@ -4406,9 +4453,7 @@ function showInjuryComment(id, name, comment) {
 // ---- SKILLS EDIT/DELETE ----
 async function deleteSkillEntry(skillId) {
   if (!confirm('Slette denne selvvurderingen?')) return;
-  await fetch(SB_URL + '/rest/v1/skills?id=eq.' + skillId, {method:'DELETE', headers:{'apikey':SB_ADMIN,'Authorization':'Bearer '+SB_ADMIN}});
   allSkills = allSkills.filter(function(s){ return s.id !== skillId; });
-  showGlobalToast('\u2713 Selvvurdering slettet');
   renderSkillsHistory();
 }
 
