@@ -453,8 +453,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
           <div id="thread-detail-name" style="font-size:15px;font-weight:700;color:#fff;flex:1"></div>
         </div>
         <div id="thread-detail-messages" style="padding:12px;max-height:55vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px"></div>
-        <div style="padding:10px;border-top:1px solid var(--border);display:flex;gap:8px">
-          <textarea id="thread-reply-input" placeholder="Skriv svar..." rows="1" style="flex:1;font-size:14px;border:1.5px solid var(--border);border-radius:14px;padding:8px 14px;outline:none;resize:none;font-family:inherit;line-height:1.4;overflow:hidden" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+        <div id="thread-reply-area" style="padding:10px;border-top:1px solid var(--border);display:flex;gap:8px"> placeholder="Skriv svar..." rows="1" style="flex:1;font-size:14px;border:1.5px solid var(--border);border-radius:14px;padding:8px 14px;outline:none;resize:none;font-family:inherit;line-height:1.4;overflow:hidden" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
           <button onclick="sendThreadReply()" style="background:var(--blue);color:#fff;border:none;border-radius:50%;width:38px;height:38px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">&#8593;</button>
         </div>
       </div>
@@ -3446,6 +3445,10 @@ async function renderThreadMessages(msgId) {
     }
   }
   var myId = currentProfile.id;
+  // Check if this is a group/broadcast message
+  var recips = await api('GET', 'message_recipients?message_id=eq.' + msgId + '&select=recipient_id') || [];
+  var isSentByMe = msg.sender_id === myId;
+  var isGroupMsg = !isSentByMe && recips.length > 1;
   var html = '';
   // Original message
   var isMine = msg.sender_id === myId;
@@ -3461,6 +3464,9 @@ async function renderThreadMessages(msgId) {
   });
   el.innerHTML = html;
   el.scrollTop = el.scrollHeight;
+  // Hide reply field for group/broadcast messages
+  var replyArea = document.getElementById('thread-reply-area');
+  if (replyArea) replyArea.style.display = isGroupMsg ? 'none' : 'flex';
   setTimeout(checkPlayerUnread, 300);
 }
 
