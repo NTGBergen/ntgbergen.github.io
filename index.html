@@ -299,11 +299,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
     </div>
 
     <div class="card" id="tournament-card" style="display:none">
-      <div class="sec-title">Turneringer</div>
+      <div class="sec-title">Turneringer/hendelser</div>
       <div id="tournament-list"><div style="font-size:13px;color:var(--text-muted)">Laster...</div></div>
     </div>
     <div class="card" id="add-tournament-card" style="display:none">
-      <div class="sec-title">Legg til turnering</div>
+      <div class="sec-title">Legg til turnering/hendelse</div>
       <div class="form-group" style="margin-bottom:10px"><label>Turneringsnavn</label><input type="text" id="pt-title" placeholder="f.eks. NM Junior"></div>
       <div class="form-row">
         <div class="form-group"><label>Fra dato</label><input type="date" id="pt-from"></div>
@@ -454,7 +454,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
         </div>
         <div id="thread-detail-messages" style="padding:12px;max-height:55vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px"></div>
         <div style="padding:10px;border-top:1px solid var(--border);display:flex;gap:8px">
-          <input type="text" id="thread-reply-input" placeholder="Skriv svar..." style="flex:1;font-size:14px;border:1.5px solid var(--border);border-radius:20px;padding:8px 14px;outline:none">
+          <textarea id="thread-reply-input" placeholder="Skriv svar..." rows="1" style="flex:1;font-size:14px;border:1.5px solid var(--border);border-radius:14px;padding:8px 14px;outline:none;resize:none;font-family:inherit;line-height:1.4;overflow:hidden" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
           <button onclick="sendThreadReply()" style="background:var(--blue);color:#fff;border:none;border-radius:50%;width:38px;height:38px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">&#8593;</button>
         </div>
       </div>
@@ -555,7 +555,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   <!-- TAB: OVERSIKT -->
   <div class="tr-tab-content active" id="trtab-oversikt">
     <div class="card" id="tr-tournament-card" style="display:none">
-      <div class="sec-title">Turneringer</div>
+      <div class="sec-title">Turneringer/hendelser</div>
       <div id="tr-tournament-list"><div style="font-size:13px;color:var(--text-muted)">Ingen turneringer</div></div>
       <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
         <div style="font-size:13px;font-weight:700;margin-bottom:10px">Legg til turnering</div>
@@ -747,7 +747,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
         </div>
         <div id="tr-thread-detail-messages" style="padding:12px;max-height:55vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px"></div>
         <div style="padding:10px;border-top:1px solid var(--border);display:flex;gap:8px">
-          <input type="text" id="tr-thread-reply-input" placeholder="Skriv svar..." style="flex:1;font-size:14px;border:1.5px solid var(--border);border-radius:20px;padding:8px 14px;outline:none">
+          <textarea id="tr-thread-reply-input" placeholder="Skriv svar..." rows="1" style="flex:1;font-size:14px;border:1.5px solid var(--border);border-radius:14px;padding:8px 14px;outline:none;resize:none;font-family:inherit;line-height:1.4;overflow:hidden" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
           <button onclick="sendTrThreadReply()" style="background:var(--blue);color:#fff;border:none;border-radius:50%;width:38px;height:38px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">&#8593;</button>
         </div>
       </div>
@@ -934,10 +934,10 @@ var SPORT_TESTS = {
   },
   'Tennis/Padel': {
     strength: {title:'Styrke', fields:[
-      {id:'bench',label:'Push ups (reps)',type:'number',step:'1'},
-      {id:'squat',label:'Pull ups (reps)',type:'number',step:'1'},
+      {id:'bench',label:'Push ups (antall)',type:'number',step:'1'},
+      {id:'squat',label:'Pull ups (antall)',type:'number',step:'1'},
       {id:'clean',label:'Squats (reps)',type:'number',step:'1'},
-      {id:'hangup',label:'Planke (sek)',type:'number',step:'1'}
+      {id:'hangup',label:'Planke (min:sek, f.eks. 2:30)',type:'text'}
     ]},
     conditioning: {title:'Spenst, kondisjon og sprint', fields:[
       {id:'jump',label:'Lengdehopp (cm)',type:'number',step:'1'},
@@ -947,7 +947,7 @@ var SPORT_TESTS = {
       {id:'s40',label:'Court agility test (sek)',type:'number',step:'0.01'}
     ]},
     mobility: {title:'Mobilitet', fields:[
-      {id:'extra2',label:'Wall test (cm)',type:'number',step:'1'},
+      {id:'extra2',label:'Wall test',type:'select',options:['Godkjent','Ikke godkjent']},
       {id:'extra3',label:'Stand and reach (cm)',type:'number',step:'1'}
     ]}
   },
@@ -1089,9 +1089,11 @@ function renderTestSections() {
         var stepAttr = f.step && !isText ? ' step="' + f.step + '"' : '';
         return '<div class="test-item">'
           + '<div class="tn">' + f.label + '</div>'
-          + '<input type="' + f.type + '" id="t-' + f.id + '" placeholder="-"' + stepAttr + '>'
-          + '<div class="goal-row"><span>M\u00e5l:</span><input type="' + f.type + '" id="g-' + f.id + '" placeholder="-"' + stepAttr + '></div>'
-          + (!isText ? '<div class="prog-wrap"><div class="prog-fill" id="p-' + f.id + '"></div></div>' : '')
+          + (f.type === 'select'
+            ? '<select id="t-' + f.id + '" style="font-size:13px;border:1.5px solid var(--border);border-radius:7px;padding:7px 10px;width:100%;outline:none"><option value="">-</option>' + (f.options||[]).map(function(o){ return '<option>' + o + '</option>'; }).join('') + '</select>'
+            : '<input type="' + f.type + '" id="t-' + f.id + '" placeholder="-"' + (f.step && f.type !== 'text' ? ' step="' + f.step + '"' : '') + '>')
+          + (f.type !== 'select' ? '<div class="goal-row"><span>M\u00e5l:</span><input type="' + f.type + '" id="g-' + f.id + '" placeholder="-"' + (f.step && f.type !== 'text' ? ' step="' + f.step + '"' : '') + '></div>' : '')
+          + (f.type === 'number' ? '<div class="prog-wrap"><div class="prog-fill" id="p-' + f.id + '"></div></div>' : '')
           + '</div>';
       }).join('')
       + '</div></div>';
@@ -2494,7 +2496,7 @@ async function loadCalendar() {
   // Fetch events where this player is individually targeted (UUID in group_names text array)
   var individualEvents = await fetch(SB_URL + '/rest/v1/training_events?group_names=cs.%7B' + currentProfile.id + '%7D&select=*', {
     headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN}
-  }).then(function(r){ return r.json(); }).catch(function(){ return []; }) || [];
+  }).then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; }) || [];
   var allIds = {};
   var allEvents = [];
   sportEvents.concat(myGames).concat(individualEvents).forEach(function(ev) {
@@ -3031,23 +3033,53 @@ async function exportAttendanceSingle(eventId, title) {
 var allTournaments = [];
 
 async function loadTournaments() {
-  var sport = currentProfile ? (currentProfile.sport || 'Tennis') : 'Tennis';
+  var sport = currentProfile ? (currentProfile.sport || 'Tennis/Padel') : 'Tennis/Padel';
   var el = document.getElementById('tournament-list'); if (!el) return;
   allTournaments = await api('GET', 'tournaments?sport=eq.' + encodeURIComponent(sport) + '&order=start_date.asc&select=*') || [];
   var today = new Date().toISOString().split('T')[0];
   var upcoming = allTournaments.filter(function(t){ return (t.end_date || t.start_date) >= today; });
-  if (!upcoming.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen kommende turneringer</div>'; return; }
+  // Fetch my registrations
+  var myRegs = await api('GET', 'tournament_registrations?user_id=eq.' + currentProfile.id + '&select=tournament_id') || [];
+  var myRegIds = myRegs.map(function(r){ return r.tournament_id; });
+  if (!upcoming.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen kommende turneringer/hendelser</div>'; return; }
   el.innerHTML = upcoming.map(function(t) {
     var dateStr = t.start_date + (t.end_date && t.end_date !== t.start_date ? ' \u2013 ' + t.end_date : '');
     var isOwn = t.is_player_created && t.created_by === currentProfile.id;
+    var isRegistered = myRegIds.indexOf(t.id) > -1;
+    var regBtn = !t.is_player_created
+      ? (isRegistered
+        ? '<button onclick="unregisterTournament(\'' + t.id + '\')" style="font-size:11px;background:var(--red-light);color:var(--red-dark);border:1px solid var(--red);border-radius:6px;padding:3px 10px;cursor:pointer;font-weight:600">\u274C Meld av</button>'
+        : '<button onclick="registerTournament(\'' + t.id + '\')" style="font-size:11px;background:var(--green-light);color:var(--green-dark);border:1px solid var(--green);border-radius:6px;padding:3px 10px;cursor:pointer;font-weight:600">\u2713 Meld p\u00e5</button>')
+      : '';
     return '<div style="padding:10px;background:var(--bg2);border-radius:9px;margin-bottom:8px;border:1px solid var(--border)">'
       + '<div style="display:flex;justify-content:space-between;align-items:flex-start">'
       + '<div><div style="font-size:14px;font-weight:700;color:var(--blue)">' + t.title + '</div>'
       + '<div style="font-size:12px;color:var(--text-muted);margin-top:2px">' + dateStr + (t.location ? ' \u2022 ' + t.location : '') + '</div>'
       + (isOwn ? '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;font-style:italic">Min turnering</div>' : '') + '</div>'
+      + '<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">'
+      + regBtn
       + (isOwn ? '<button onclick="deleteTournament(\'' + t.id + '\')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:12px">Slett</button>' : '')
-      + '</div></div>';
+      + '</div></div></div>';
   }).join('');
+}
+
+async function registerTournament(tid) {
+  await fetch(SB_URL + '/rest/v1/tournament_registrations', {
+    method: 'POST',
+    headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
+    body: JSON.stringify({tournament_id: tid, user_id: currentProfile.id})
+  });
+  showGlobalToast('\u2713 P\u00e5meldt!');
+  loadTournaments();
+}
+
+async function unregisterTournament(tid) {
+  await fetch(SB_URL + '/rest/v1/tournament_registrations?tournament_id=eq.' + tid + '&user_id=eq.' + currentProfile.id, {
+    method: 'DELETE',
+    headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN}
+  });
+  showGlobalToast('\u2713 Avmeldt');
+  loadTournaments();
 }
 
 async function savePlayerTournament() {
@@ -3434,7 +3466,7 @@ async function renderThreadMessages(msgId) {
 
 async function sendThreadReply() {
   if (!currentThreadMsgId) return;
-  var input = document.getElementById('thread-reply-input');
+  var input = document.getElementById('thread-reply-input'); if(input) input.style.height='auto';
   var body = input.value.trim();
   if (!body) return;
   var btn = document.querySelector('#chat-thread-detail-view button[onclick="sendThreadReply()"]');
@@ -3829,7 +3861,7 @@ async function renderTrThreadMessages(msgId) {
 
 async function sendTrThreadReply() {
   if (!currentTrThreadMsgId) return;
-  var input = document.getElementById('tr-thread-reply-input');
+  var input = document.getElementById('tr-thread-reply-input'); if(input) input.style.height='auto';
   var body = input.value.trim();
   if (!body) return;
   var tid = trainerProfile ? trainerProfile.id : (currentProfile ? currentProfile.id : null);
