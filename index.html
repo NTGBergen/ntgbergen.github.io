@@ -580,6 +580,21 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       <div class="sec-title">Aktive skader <span id="tr-injury-count" style="font-size:12px;color:var(--red);font-weight:600"></span></div>
       <div id="tr-injury-list"><div style="font-size:13px;color:var(--text-muted)">Ingen aktive skader</div></div>
     </div>
+    <div class="card" style="margin-top:14px">
+      <div class="sec-title">Registrer testresultater for utøver</div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label>Velg utøver</label>
+        <select id="trainer-test-player" onchange="loadTrainerTestFields()" style="width:100%;font-size:14px;border:1.5px solid var(--border);border-radius:7px;padding:8px 12px;outline:none"></select>
+      </div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label>Dato</label>
+        <input type="date" id="trainer-test-date" style="width:100%;font-size:14px;border:1.5px solid var(--border);border-radius:7px;padding:8px 12px;outline:none">
+      </div>
+      <div id="trainer-test-fields" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px"></div>
+      <div class="alert alert-green" id="trainer-test-ok"><div><div class="alert-title">Testresultat lagret!</div></div></div>
+      <div class="login-error" id="trainer-test-err"></div>
+      <button class="btn btn-primary" onclick="saveTrainerTest()">Lagre testresultat</button>
+    </div>
     <div class="card">
       <div class="sec-title">Grupper</div>
       <div id="groups-list" style="margin-bottom:10px"></div>
@@ -606,7 +621,16 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       </div>
       <div class="form-group" style="margin-bottom:10px"><label>Sted</label><input type="text" id="ev-location" placeholder="f.eks. Sparebanken Vest Arena"></div>
       <div class="form-group" style="margin-bottom:10px">
-        <div class="form-group" style="margin-bottom:10px" id="ev-sport-wrap">
+        <div id="ev-templates-wrap" style="display:none;margin-bottom:12px">
+      <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;display:block;margin-bottom:6px">Hurtigmaler</label>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <button type="button" class="btn-sm-blue" onclick="applyEventTemplate('Tennis 1','07:30','09:00')">Tennis 1 (07:30–09:00)</button>
+        <button type="button" class="btn-sm-blue" onclick="applyEventTemplate('Tennis 2','09:00','10:30')">Tennis 2 (09:00–10:30)</button>
+        <button type="button" class="btn-sm-blue" onclick="applyEventTemplate('Fysisk 1','08:00','09:00')">Fysisk 1 (08:00–09:00)</button>
+        <button type="button" class="btn-sm-blue" onclick="applyEventTemplate('Fysisk 2','09:00','10:00')">Fysisk 2 (09:00–10:00)</button>
+        <button type="button" class="btn-sm-blue" onclick="applyEventTemplate('Match day','08:00','10:00')">Match day (08:00–10:00)</button>
+      </div>
+    </div>
           <label>Idrett for denne økten</label>
           <select id="ev-sport-select" onchange="updateEventAthletes()" style="font-size:14px;border:1.5px solid var(--border);border-radius:7px;padding:8px 12px;width:100%;outline:none">
             <option>Tennis/Padel</option>
@@ -1020,6 +1044,69 @@ function usesIndividualTargeting(sport) {
 }
 
 var evSelectedAthletes = [];
+
+function loadTrainerTestFields() {
+  var sel = document.getElementById('trainer-test-player');
+  if (!sel || !sel.value) return;
+  // Find the athlete's sport to render correct test fields
+  var profiles = window._trainerProfilesData || [];
+  var p = profiles.find(function(x){ return x.id === sel.value; });
+  var sport = p ? (p.sport || getTrainerSport()) : getTrainerSport();
+  var tests = getSportTests(sport);
+  var el = document.getElementById('trainer-test-fields'); if (!el) return;
+  var fields = [];
+  if (tests) Object.values(tests).forEach(function(section){ (section.fields||[]).forEach(function(f){ fields.push(f); }); });
+  el.innerHTML = fields.map(function(f) {
+    return '<div><label style="font-size:12px;color:var(--text-muted)">' + f.label + '</label>'
+      + (f.type === 'select'
+        ? '<select id="tt-' + f.id + '" style="width:100%;font-size:13px;border:1px solid var(--border);border-radius:6px;padding:6px 8px;outline:none"><option value="">-</option>' + (f.options||[]).map(function(o){ return '<option>' + o + '</option>'; }).join('') + '</select>'
+        : '<input type="' + f.type + '" id="tt-' + f.id + '" placeholder="-"' + (f.step ? ' step="' + f.step + '"' : '') + ' style="width:100%;font-size:13px;border:1px solid var(--border);border-radius:6px;padding:6px 8px;outline:none">')
+      + '</div>';
+  }).join('');
+}
+
+async function saveTrainerTest() {
+  var sel = document.getElementById('trainer-test-player');
+  var dateEl = document.getElementById('trainer-test-date');
+  var errEl = document.getElementById('trainer-test-err');
+  var okEl = document.getElementById('trainer-test-ok');
+  errEl.style.display = 'none'; errEl.classList.remove('show'); okEl.classList.remove('show');
+  if (!sel || !sel.value) { errEl.textContent = 'Velg utøver.'; errEl.style.display = 'block'; errEl.classList.add('show'); return; }
+  if (!dateEl || !dateEl.value) { errEl.textContent = 'Velg dato.'; errEl.style.display = 'block'; errEl.classList.add('show'); return; }
+  var profiles = window._trainerProfilesData || [];
+  var p = profiles.find(function(x){ return x.id === sel.value; });
+  var sport = p ? (p.sport || getTrainerSport()) : getTrainerSport();
+  var tests = getSportTests(sport);
+  var entry = {user_id: sel.value, date: dateEl.value};
+  var fields = [];
+  if (tests) Object.values(tests).forEach(function(section){ (section.fields||[]).forEach(function(f){ fields.push(f); }); });
+  fields.forEach(function(f) {
+    var el = document.getElementById('tt-' + f.id);
+    if (!el) return;
+    if (f.type === 'number') entry[f.id] = parseFloat(el.value) || null;
+    else entry[f.id] = el.value || null;
+  });
+  await api('POST', 'tests', entry);
+  okEl.classList.add('show');
+  showGlobalToast('\u2713 Testresultat lagret!');
+  setTimeout(function(){ okEl.classList.remove('show'); }, 3000);
+}
+
+function applyEventTemplate(title, startTime, endTime) {
+  var titleEl = document.getElementById('ev-title');
+  var timeEl = document.getElementById('ev-time');
+  var endEl = document.getElementById('ev-end-time');
+  if (titleEl) titleEl.value = title;
+  if (timeEl) timeEl.value = startTime;
+  if (endEl) endEl.value = endTime;
+  var typeEl = document.getElementById('ev-type');
+  if (typeEl) {
+    var opts = Array.from(typeEl.options).map(function(o){ return o.value; });
+    if (title.indexOf('Tennis') > -1) typeEl.value = opts.find(function(o){ return o.indexOf('Tennis') > -1; }) || opts[0];
+    if (title.indexOf('Fysisk') > -1) typeEl.value = opts.find(function(o){ return o.indexOf('Styrke') > -1 || o.indexOf('Kondisjon') > -1; }) || opts[0];
+    if (title === 'Match day') typeEl.value = opts.find(function(o){ return o.indexOf('kamp') > -1; }) || opts[0];
+  }
+}
 
 async function updateEventAthletes() {
   var evSportWrap = document.getElementById('ev-sport-wrap');
@@ -2267,6 +2354,14 @@ async function loadTrainerView() {
     return bS.date.localeCompare(aS.date);
   });
   window._trainerProfilesData = profiles;
+  // Populate trainer test player dropdown
+  var testSel = document.getElementById('trainer-test-player');
+  if (testSel) {
+    testSel.innerHTML = '<option value="">Velg utøver...</option>' + profiles.map(function(p){ return '<option value="' + p.id + '">' + p.full_name + '</option>'; }).join('');
+    var today = new Date().toISOString().split('T')[0];
+    var testDate = document.getElementById('trainer-test-date');
+    if (testDate && !testDate.value) testDate.value = today;
+  }
   // Small delay to ensure trainerProfile is set before loading
   setTimeout(function() {
     loadTrainerInjuries(trainerSport);
@@ -2834,6 +2929,8 @@ async function loadEvents() {
   var sport = getTrainerSport();
   var evType = document.getElementById('ev-type');
   if (evType) evType.innerHTML = getSportSessionTypes(sport).map(function(t){ return '<option>'+t+'</option>'; }).join('');
+  var evTemplatesWrap = document.getElementById('ev-templates-wrap');
+  if (evTemplatesWrap) evTemplatesWrap.style.display = (sport === 'Tennis/Padel' || sport === 'Tennis') ? 'block' : 'none';
   // Show sport selector for Tennis/Padel trainers (combined sport)
   var evSportWrap = document.getElementById('ev-sport-wrap');
   if (evSportWrap) evSportWrap.style.display = (sport === 'Tennis' || sport === 'Padel' || sport === 'Tennis/Padel') ? 'block' : 'none';
@@ -3360,27 +3457,53 @@ async function sendPlayerMessage() {
   if (!selectedChatTrainers.length) { errEl.textContent = 'Velg minst \u00e9n trener.'; errEl.style.display = 'block'; errEl.classList.add('show'); return; }
   if (btn) { btn.disabled = true; btn.textContent = 'Sender...'; }
   try {
-    var msgRes = await fetch(SB_URL + '/rest/v1/messages', {
-      method: 'POST',
-      headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json', 'Prefer': 'return=representation'},
-      body: JSON.stringify({sender_id: currentProfile.id, body: body, sport: currentProfile.sport || 'H\u00e5ndball'})
-    });
-    var msgData = await msgRes.json();
-    var msgId = Array.isArray(msgData) ? msgData[0].id : msgData.id;
-    if (!msgId) throw new Error('Kunne ikke opprette melding');
-    for (var i = 0; i < selectedChatTrainers.length; i++) {
-      await fetch(SB_URL + '/rest/v1/message_recipients', {
+    // Check for existing 1-to-1 thread with these trainers
+    var existingMsgId = null;
+    if (selectedChatTrainers.length === 1) {
+      var myMsgs = await api('GET', 'messages?sender_id=eq.' + currentProfile.id + '&select=id') || [];
+      for (var mi = 0; mi < myMsgs.length; mi++) {
+        var recs = await api('GET', 'message_recipients?message_id=eq.' + myMsgs[mi].id + '&recipient_id=eq.' + selectedChatTrainers[0] + '&select=id') || [];
+        if (recs.length) { existingMsgId = myMsgs[mi].id; break; }
+      }
+      // Also check if trainer has sent to me
+      if (!existingMsgId) {
+        var trMsgs = await api('GET', 'messages?sender_id=eq.' + selectedChatTrainers[0] + '&select=id') || [];
+        for (var ti = 0; ti < trMsgs.length; ti++) {
+          var trRecs = await api('GET', 'message_recipients?message_id=eq.' + trMsgs[ti].id + '&recipient_id=eq.' + currentProfile.id + '&select=id') || [];
+          if (trRecs.length) { existingMsgId = trMsgs[ti].id; break; }
+        }
+      }
+    }
+    if (existingMsgId) {
+      // Add as reply to existing thread
+      await fetch(SB_URL + '/rest/v1/message_replies', {
         method: 'POST',
         headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
-        body: JSON.stringify({message_id: msgId, recipient_id: selectedChatTrainers[i]})
+        body: JSON.stringify({message_id: existingMsgId, sender_id: currentProfile.id, body: body})
       });
+    } else {
+      // Create new thread
+      var msgRes = await fetch(SB_URL + '/rest/v1/messages', {
+        method: 'POST',
+        headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json', 'Prefer': 'return=representation'},
+        body: JSON.stringify({sender_id: currentProfile.id, body: body, sport: currentProfile.sport || 'H\u00e5ndball'})
+      });
+      var msgData = await msgRes.json();
+      var msgId = Array.isArray(msgData) ? msgData[0].id : msgData.id;
+      if (!msgId) throw new Error('Kunne ikke opprette melding');
+      for (var i = 0; i < selectedChatTrainers.length; i++) {
+        await fetch(SB_URL + '/rest/v1/message_recipients', {
+          method: 'POST',
+          headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
+          body: JSON.stringify({message_id: msgId, recipient_id: selectedChatTrainers[i]})
+        });
+      }
     }
     document.getElementById('chat-msg-body').value = '';
     okEl.classList.add('show');
     setTimeout(function(){ okEl.classList.remove('show'); }, 2500);
     loadPlayerInbox();
     closeNewMessageForm();
-    // Varsle trenere
     var playerName = currentProfile ? currentProfile.full_name : 'Utøver';
     sendPush('Ny melding fra ' + playerName, body.substring(0, 100), selectedChatTrainers);
   } catch(e) {
