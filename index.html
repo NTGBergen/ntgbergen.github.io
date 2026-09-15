@@ -611,6 +611,16 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       <input type="hidden" id="edit-event-id" value="">
       <div class="sec-title" id="event-form-title">Legg inn trenings&oslash;kt</div>
       <div class="login-error" id="event-error"></div>
+      <div id="ev-templates-wrap" style="display:none;margin-bottom:12px">
+        <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;display:block;margin-bottom:6px">Hurtigmaler</label>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          <button type="button" class="btn-sm-blue" onclick="applyEventTemplate('Tennis 1','07:30','09:00')">Tennis 1 (07:30–09:00)</button>
+          <button type="button" class="btn-sm-blue" onclick="applyEventTemplate('Tennis 2','09:00','10:30')">Tennis 2 (09:00–10:30)</button>
+          <button type="button" class="btn-sm-blue" onclick="applyEventTemplate('Fysisk 1','08:00','09:00')">Fysisk 1 (08:00–09:00)</button>
+          <button type="button" class="btn-sm-blue" onclick="applyEventTemplate('Fysisk 2','09:00','10:00')">Fysisk 2 (09:00–10:00)</button>
+          <button type="button" class="btn-sm-blue" onclick="applyEventTemplate('Match day','08:00','10:00')">Match day (08:00–10:00)</button>
+        </div>
+      </div>
       <div class="form-row">
         <div class="form-group"><label>Tittel</label><input type="text" id="ev-title" placeholder="f.eks. Styrke&oslash;kt"></div>
         <div class="form-group"><label>Type</label><select id="ev-type"></select></div>
@@ -620,36 +630,23 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
         <div class="form-group"><label>Tid</label><input type="time" id="ev-time" value="16:00"></div>
       </div>
       <div class="form-group" style="margin-bottom:10px"><label>Sted</label><input type="text" id="ev-location" placeholder="f.eks. Sparebanken Vest Arena"></div>
-      <div class="form-group" style="margin-bottom:10px">
-        <div id="ev-templates-wrap" style="display:none;margin-bottom:12px">
-      <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;display:block;margin-bottom:6px">Hurtigmaler</label>
-      <div style="display:flex;flex-wrap:wrap;gap:6px">
-        <button type="button" class="btn-sm-blue" onclick="applyEventTemplate('Tennis 1','07:30','09:00')">Tennis 1 (07:30–09:00)</button>
-        <button type="button" class="btn-sm-blue" onclick="applyEventTemplate('Tennis 2','09:00','10:30')">Tennis 2 (09:00–10:30)</button>
-        <button type="button" class="btn-sm-blue" onclick="applyEventTemplate('Fysisk 1','08:00','09:00')">Fysisk 1 (08:00–09:00)</button>
-        <button type="button" class="btn-sm-blue" onclick="applyEventTemplate('Fysisk 2','09:00','10:00')">Fysisk 2 (09:00–10:00)</button>
-        <button type="button" class="btn-sm-blue" onclick="applyEventTemplate('Match day','08:00','10:00')">Match day (08:00–10:00)</button>
+      <div class="form-group" id="ev-sport-wrap" style="display:none;margin-bottom:10px">
+        <label>Idrett for denne &oslash;kten</label>
+        <select id="ev-sport-select" onchange="updateEventAthletes()" style="font-size:14px;border:1.5px solid var(--border);border-radius:7px;padding:8px 12px;width:100%;outline:none">
+          <option>Tennis/Padel</option>
+        </select>
       </div>
-    </div>
-          <label>Idrett for denne økten</label>
-          <select id="ev-sport-select" onchange="updateEventAthletes()" style="font-size:14px;border:1.5px solid var(--border);border-radius:7px;padding:8px 12px;width:100%;outline:none">
-            <option>Tennis/Padel</option>
-            <option>Tennis</option>
-            <option>Padel</option>
-          </select>
+      <div class="form-group" style="margin-bottom:10px" id="ev-groups-wrap">
+        <label>Synlig for grupper (velg ingen = alle ser den)</label>
+        <div id="ev-groups-select" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px"></div>
+      </div>
+      <div id="ev-athletes-wrap" style="display:none;margin-bottom:10px">
+        <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;display:block;margin-bottom:6px">Velg ut&oslash;vere</label>
+        <div style="margin-bottom:6px;display:flex;gap:6px">
+          <button type="button" onclick="selectAllEventAthletes(true)" style="font-size:11px;padding:3px 10px;border:1px solid var(--border);border-radius:5px;cursor:pointer;background:var(--bg2)">Velg alle</button>
+          <button type="button" onclick="selectAllEventAthletes(false)" style="font-size:11px;padding:3px 10px;border:1px solid var(--border);border-radius:5px;cursor:pointer;background:var(--bg2)">Ingen</button>
         </div>
-        <div class="form-group" style="margin-bottom:10px" id="ev-groups-wrap">
-          <label>Synlig for grupper (velg ingen = alle ser den)</label>
-          <div id="ev-groups-select" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px"></div>
-        </div>
-        <div id="ev-athletes-wrap" style="display:none;margin-bottom:10px">
-          <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;display:block;margin-bottom:6px">Velg utøvere</label>
-          <div style="margin-bottom:6px;display:flex;gap:6px">
-            <button type="button" onclick="selectAllEventAthletes(true)" style="font-size:11px;padding:3px 10px;border:1px solid var(--border);border-radius:5px;cursor:pointer;background:var(--bg2)">Velg alle</button>
-            <button type="button" onclick="selectAllEventAthletes(false)" style="font-size:11px;padding:3px 10px;border:1px solid var(--border);border-radius:5px;cursor:pointer;background:var(--bg2)">Ingen</button>
-          </div>
-          <div id="ev-athletes-select" style="display:flex;flex-wrap:wrap;gap:6px"></div>
-        </div>
+        <div id="ev-athletes-select" style="display:flex;flex-wrap:wrap;gap:6px"></div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:10px;background:var(--bg2);border-radius:8px;border:1px solid var(--border)">
         <input type="checkbox" id="ev-recurring" onchange="document.getElementById('ev-weeks-wrap').style.display=this.checked?'flex':'none'" style="width:18px;height:18px;cursor:pointer">
@@ -669,9 +666,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
         <div class="sec-title" style="margin-bottom:0">Planlagte &oslash;kter</div>
-        <button class="btn-sm-blue" onclick="switchTrainerTab('okter')" id="tr-events-toggle" style="display:none">Skjul</button>
       </div>
-      <div id="tr-events-content">
+      <div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:center">
           <select id="ev-filter-group" onchange="renderFilteredEvents()" style="font-size:13px;border:1.5px solid var(--border);border-radius:7px;padding:6px 10px;background:var(--bg)">
             <option value="">Alle grupper</option>
@@ -2334,6 +2330,19 @@ async function loadTrainerView() {
   }
   var trainerSport = getTrainerSport();
   trainerSportGlobal = trainerSport;
+  // Configure event form based on sport
+  var evSportWrap = document.getElementById('ev-sport-wrap');
+  var evTemplatesWrap = document.getElementById('ev-templates-wrap');
+  var isRacket = usesIndividualTargeting(trainerSport);
+  if (evSportWrap) evSportWrap.style.display = isRacket ? 'block' : 'none';
+  if (evTemplatesWrap) evTemplatesWrap.style.display = isRacket ? 'block' : 'none';
+  if (isRacket) updateEventAthletes();
+  else {
+    var evGroupsWrap = document.getElementById('ev-groups-wrap');
+    var evAthletesWrap = document.getElementById('ev-athletes-wrap');
+    if (evGroupsWrap) evGroupsWrap.style.display = 'block';
+    if (evAthletesWrap) evAthletesWrap.style.display = 'none';
+  }
   document.getElementById('tr-sport-label').textContent = trainerSport;
   // Set sport default for new student form
   var sportSel = document.getElementById('new-student-sport');
@@ -3375,7 +3384,14 @@ function editEvent(ev) {
   document.getElementById('ev-time').value = ev.time;
   document.getElementById('ev-location').value = ev.location || '';
   document.getElementById('ev-type').value = ev.type;
-  selectedEventGroups = ev.group_names ? ev.group_names.slice() : [];
+  // Only set sport picker for Tennis/Padel trainers
+  var evSportSel = document.getElementById('ev-sport-select');
+  var evSportWrap = document.getElementById('ev-sport-wrap');
+  if (evSportSel && evSportWrap && evSportWrap.style.display !== 'none') {
+    evSportSel.value = ev.sport || getTrainerSport();
+    updateEventAthletes();
+  }
+  selectedEventGroups = ev.group_names ? ev.group_names.filter(function(g){ return !isUUID(g); }) : [];
   renderEventGroupsSelect();
   selectedEventGroups.forEach(function(n) {
     var g = allGroups.find(function(g) { return g.name === n; });
@@ -3384,7 +3400,7 @@ function editEvent(ev) {
       if (el) { el.style.borderColor = 'var(--blue)'; el.style.background = 'var(--blue-light)'; el.style.color = 'var(--blue)'; }
     }
   });
-  document.getElementById('event-cancel-btn').style.display = 'block';
+  if(document.getElementById('event-cancel-btn')) document.getElementById('event-cancel-btn').style.display = 'block';
   document.getElementById('event-form-title').scrollIntoView({behavior: 'smooth'});
 }
 
@@ -3568,10 +3584,11 @@ async function renderThreadMessages(msgId) {
     }
   }
   var myId = currentProfile.id;
-  // Check if this is a group/broadcast message
-  var recips = await api('GET', 'message_recipients?message_id=eq.' + msgId + '&select=recipient_id') || [];
+  // Is this a group/broadcast message? Check sender and recipients
   var isSentByMe = msg.sender_id === myId;
-  var isGroupMsg = !isSentByMe && recips.length > 1;
+  var recips = await api('GET', 'message_recipients?message_id=eq.' + msgId + '&select=recipient_id') || [];
+  // Group message = sent by trainer (not me) to multiple recipients, OR has a group label
+  var isGroupMsg = !isSentByMe && (recips.length > 1 || (msg.recipients_label && msg.recipients_label !== currentProfile.full_name && msg.recipients_label !== 'Trener'));
   var html = '';
   // Original message
   var isMine = msg.sender_id === myId;
