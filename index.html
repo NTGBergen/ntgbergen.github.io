@@ -2323,10 +2323,10 @@ async function loadTrainerView() {
   document.getElementById('tr-loading').style.display = 'block';
   document.getElementById('tr-table').style.display = 'none';
   await loadGroups();
-  await loadEvents();
   loadTrainerChat().catch(function(e){ console.log('Chat load error:', e); });
   var today = new Date().toISOString().split('T')[0];
-  document.getElementById('ev-date').value = today;
+  var evDateEl = document.getElementById('ev-date');
+  if (evDateEl) evDateEl.value = today;
   // Re-fetch profile from DB to ensure sport is correct
   if (trainerProfile && trainerProfile.id) {
     var freshProfile = await api('GET', 'profiles?id=eq.' + trainerProfile.id + '&select=*');
