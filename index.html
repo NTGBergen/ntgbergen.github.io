@@ -734,10 +734,16 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       <div class="sec-title">Samtalelogg</div>
       <div style="margin-bottom:10px">
         <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase">Velg elev</label>
-        <select id="tr-conv-player" style="width:100%;font-size:14px;border:1.5px solid var(--border);border-radius:7px;padding:8px 12px;margin-top:4px;outline:none"></select>
+        <select id="tr-conv-player" onchange="loadTrainerConvLog(this.value)" style="width:100%;font-size:14px;border:1.5px solid var(--border);border-radius:7px;padding:8px 12px;margin-top:4px;outline:none"></select>
       </div>
       <div class="form-group" style="margin-bottom:10px"><label>Notat</label><textarea id="tr-conv-text" rows="3" placeholder="Kort oppsummering..."></textarea></div>
       <button class="btn btn-primary" onclick="saveTrainerConv()">Lagre samtale</button>
+    </div>
+    <div class="card" style="margin-top:14px" id="tr-conv-log-card" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div class="sec-title" style="margin-bottom:0">Loggede samtaler</div>
+      </div>
+      <div id="tr-conv-log-list"><div style="font-size:13px;color:var(--text-muted)">Velg utøver for å se samtaler</div></div>
       <div class="alert alert-green" id="tr-toast" style="margin-top:8px"><div><div class="alert-title">Samtale lagret!</div></div></div>
     </div>
   </div>
@@ -2526,15 +2532,74 @@ async function saveTrainerConv() {
   var text = document.getElementById('tr-conv-text') ? document.getElementById('tr-conv-text').value.trim() : '';
   if (!text || !pid) { showGlobalToast('Velg utøver og skriv et notat', 'error'); return; }
   var typeEl = document.getElementById('tr-conv-type');
-  await api('POST', 'conversations', {
-    user_id: pid,
-    date: new Date().toISOString().split('T')[0],
-    type: typeEl ? typeEl.value : 'Samtale',
-    text: text,
-    author: 'Trener'
+  var editId = document.getElementById('tr-conv-edit-id') ? document.getElementById('tr-conv-edit-id').value : '';
+  if (editId) {
+    await fetch(SB_URL + '/rest/v1/conversations?id=eq.' + editId, {
+      method: 'PATCH',
+      headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json'},
+      body: JSON.stringify({text: text})
+    });
+    if (document.getElementById('tr-conv-edit-id')) document.getElementById('tr-conv-edit-id').value = '';
+    document.getElementById('tr-conv-text').value = '';
+    showGlobalToast('\u2713 Samtale oppdatert!');
+  } else {
+    await api('POST', 'conversations', {
+      user_id: pid,
+      date: new Date().toISOString().split('T')[0],
+      type: typeEl ? typeEl.value : 'Samtale',
+      text: text,
+      author: trainerProfile ? trainerProfile.full_name : 'Trener'
+    });
+    document.getElementById('tr-conv-text').value = '';
+    showGlobalToast('\u2713 Samtale lagret!');
+  }
+  loadTrainerConvLog(pid);
+}
+
+async function loadTrainerConvLog(pid) {
+  if (!pid) return;
+  var card = document.getElementById('tr-conv-log-card');
+  var el = document.getElementById('tr-conv-log-list');
+  if (!card || !el) return;
+  card.style.display = 'block';
+  el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  var convs = await api('GET', 'conversations?user_id=eq.' + pid + '&order=date.desc&select=*') || [];
+  if (!convs.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen samtaler logget enda</div>'; return; }
+  el.innerHTML = convs.map(function(c) {
+    return '<div style="padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px">'
+      + '<div style="display:flex;justify-content:space-between;align-items:flex-start">'
+      + '<div style="font-size:12px;color:var(--text-muted)">' + c.date + ' \u2022 ' + c.author + '</div>'
+      + '<div style="display:flex;gap:6px">'
+      + '<button onclick="editTrainerConv(\'' + c.id + '\',\'' + c.text.replace(/'/g,"&#39;") + '\')" style="background:none;border:none;color:var(--blue);cursor:pointer;font-size:12px;padding:0">Rediger</button>'
+      + '<button onclick="deleteTrainerConv(\'' + c.id + '\',\'' + pid + '\')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;padding:0">Slett</button>'
+      + '</div></div>'
+      + '<div style="font-size:13px;margin-top:4px">' + c.text + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function editTrainerConv(id, text) {
+  var el = document.getElementById('tr-conv-text');
+  if (el) el.value = text;
+  var hidEl = document.getElementById('tr-conv-edit-id');
+  if (!hidEl) {
+    hidEl = document.createElement('input');
+    hidEl.type = 'hidden';
+    hidEl.id = 'tr-conv-edit-id';
+    document.getElementById('tr-conv-text').parentNode.appendChild(hidEl);
+  }
+  hidEl.value = id;
+  document.getElementById('tr-conv-text').scrollIntoView({behavior:'smooth'});
+}
+
+async function deleteTrainerConv(id, pid) {
+  if (!confirm('Slette denne samtalen?')) return;
+  await fetch(SB_URL + '/rest/v1/conversations?id=eq.' + id, {
+    method: 'DELETE',
+    headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN}
   });
-  document.getElementById('tr-conv-text').value = '';
-  showGlobalToast('\u2713 Samtale lagret!');
+  showGlobalToast('\u2713 Samtale slettet');
+  loadTrainerConvLog(pid);
 }
 
 function downloadFile(content, filename, type) {
