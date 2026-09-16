@@ -2977,6 +2977,14 @@ function showAttendanceMenu(eventId, btn) {
   document.body.appendChild(menu);
 }
 
+async function registerEvent(eventId) {
+  await setAttendance(eventId, 'paameldt');
+}
+
+async function deregisterEvent(eventId) {
+  await setAttendance(eventId, 'avmeldt');
+}
+
 async function setAttendance(eventId, statusValue) {
   var menu = document.getElementById('att-menu');
   if (menu) menu.remove();
