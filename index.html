@@ -2466,7 +2466,13 @@ async function saveStudent() {
         body: JSON.stringify({email: email, password: pass, email_confirm: true})
       });
       var adminData = await adminRes.json();
-      if (!adminRes.ok || !adminData.id) throw new Error(adminData.message || 'Kunne ikke opprette bruker');
+      if (!adminRes.ok || !adminData.id) {
+        var msg = adminData.message || adminData.msg || JSON.stringify(adminData);
+        if (msg.toLowerCase().indexOf('already') > -1 || msg.toLowerCase().indexOf('exists') > -1 || adminRes.status === 422) {
+          throw new Error('E-posten ' + email + ' er allerede registrert. Prøv en annen e-post eller rediger eksisterende bruker.');
+        }
+        throw new Error('Supabase-feil (' + adminRes.status + '): ' + msg);
+      }
       await api('POST', 'profiles', {id: adminData.id, full_name: name, class: cls, position: pos, group_name: grp || null, sport: spt, is_trainer: false, is_superuser: false});
       document.getElementById('student-success-msg').textContent = 'Elev opprettet!';
     }
