@@ -3557,8 +3557,11 @@ async function sendPlayerMessage() {
     if (selectedChatTrainers.length === 1) {
       var myMsgs = await api('GET', 'messages?sender_id=eq.' + currentProfile.id + '&select=id') || [];
       for (var mi = 0; mi < myMsgs.length; mi++) {
-        var recs = await api('GET', 'message_recipients?message_id=eq.' + myMsgs[mi].id + '&recipient_id=eq.' + selectedChatTrainers[0] + '&select=id') || [];
-        if (recs.length) { existingMsgId = myMsgs[mi].id; break; }
+        var allRecs = await api('GET', 'message_recipients?message_id=eq.' + myMsgs[mi].id + '&select=recipient_id') || [];
+        // Only reuse 1-to-1 threads
+        if (allRecs.length === 1 && allRecs[0].recipient_id === selectedChatTrainers[0]) {
+          existingMsgId = myMsgs[mi].id; break;
+        }
       }
       // Also check if trainer has sent to me
       if (!existingMsgId) {
@@ -3924,10 +3927,13 @@ async function sendTrainerMessage() {
     if (trChatTarget === 'players' && recipientIds.length === 1) {
       var existing = await api('GET', 'messages?sender_id=eq.' + senderId + '&select=id,created_at') || [];
       for (var ei = 0; ei < existing.length; ei++) {
-        var recips = await api('GET', 'message_recipients?message_id=eq.' + existing[ei].id + '&recipient_id=eq.' + recipientIds[0] + '&select=id') || [];
-        if (recips.length) { existingMsgId = existing[ei].id; break; }
+        var allRecips = await api('GET', 'message_recipients?message_id=eq.' + existing[ei].id + '&select=recipient_id') || [];
+        // Only reuse if it was a 1-to-1 thread (exactly 1 recipient = this player)
+        if (allRecips.length === 1 && allRecips[0].recipient_id === recipientIds[0]) {
+          existingMsgId = existing[ei].id; break;
+        }
       }
-      // Also check if player has sent to this trainer
+      // Also check if player has sent to this trainer (1-to-1 only)
       if (!existingMsgId) {
         var playerMsgs = await api('GET', 'messages?sender_id=eq.' + recipientIds[0] + '&select=id') || [];
         for (var pi = 0; pi < playerMsgs.length; pi++) {
