@@ -618,6 +618,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
           <button type="button" class="btn-sm-blue" onclick="applyEventTemplate('Tennis 2','09:00','10:30')">Tennis 2 (09:00–10:30)</button>
           <button type="button" class="btn-sm-blue" onclick="applyEventTemplate('Fysisk 1','08:00','09:00')">Fysisk 1 (08:00–09:00)</button>
           <button type="button" class="btn-sm-blue" onclick="applyEventTemplate('Fysisk 2','09:00','10:00')">Fysisk 2 (09:00–10:00)</button>
+          <button type="button" class="btn-sm-blue" onclick="applyEventTemplate('Activation','07:30','08:00')">Activation (07:30–08:00)</button>
           <button type="button" class="btn-sm-blue" onclick="applyEventTemplate('Match day','08:00','10:00')">Match day (08:00–10:00)</button>
         </div>
       </div>
@@ -1050,7 +1051,6 @@ var evSelectedAthletes = [];
 function loadTrainerTestFields() {
   var sel = document.getElementById('trainer-test-player');
   if (!sel || !sel.value) return;
-  // Find the athlete's sport to render correct test fields
   var profiles = window._trainerProfilesData || [];
   var p = profiles.find(function(x){ return x.id === sel.value; });
   var sport = p ? (p.sport || getTrainerSport()) : getTrainerSport();
@@ -1058,6 +1058,7 @@ function loadTrainerTestFields() {
   var el = document.getElementById('trainer-test-fields'); if (!el) return;
   var fields = [];
   if (tests) Object.values(tests).forEach(function(section){ (section.fields||[]).forEach(function(f){ fields.push(f); }); });
+  // Render empty fields (always cleared when switching athlete)
   el.innerHTML = fields.map(function(f) {
     return '<div><label style="font-size:12px;color:var(--text-muted)">' + f.label + '</label>'
       + (f.type === 'select'
@@ -3297,14 +3298,30 @@ async function loadTrainerTournaments() {
   var el = document.getElementById('tr-tournament-list'); if (!el) return;
   var tournaments = await api('GET', 'tournaments?sport=eq.' + encodeURIComponent(sport) + '&is_player_created=eq.false&order=start_date.asc&select=*') || [];
   if (!tournaments.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen turneringer lagt inn</div>'; return; }
-  el.innerHTML = tournaments.map(function(t) {
+  // Fetch all profiles for name lookup
+  var profiles = window._trainerProfilesData || await api('GET', 'profiles?is_trainer=eq.false&sport=eq.' + encodeURIComponent(sport) + '&select=id,full_name') || [];
+  var profileMap = {};
+  profiles.forEach(function(p){ profileMap[p.id] = p.full_name; });
+  var html = '';
+  for (var i = 0; i < tournaments.length; i++) {
+    var t = tournaments[i];
     var dateStr = t.start_date + (t.end_date && t.end_date !== t.start_date ? ' \u2013 ' + t.end_date : '');
-    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">'
-      + '<div style="flex:1"><div style="font-size:13px;font-weight:700">' + t.title + '</div>'
-      + '<div style="font-size:12px;color:var(--text-muted)">' + dateStr + (t.location ? ' \u2022 ' + t.location : '') + '</div></div>'
+    var regs = await api('GET', 'tournament_registrations?tournament_id=eq.' + t.id + '&select=user_id') || [];
+    var regNames = regs.map(function(r){ return profileMap[r.user_id] || r.user_id; });
+    html += '<div style="padding:10px;background:var(--bg2);border-radius:9px;margin-bottom:8px;border:1px solid var(--border)">'
+      + '<div style="display:flex;justify-content:space-between;align-items:flex-start">'
+      + '<div><div style="font-size:13px;font-weight:700;color:var(--blue)">' + t.title + '</div>'
+      + '<div style="font-size:12px;color:var(--text-muted);margin-top:2px">' + dateStr + (t.location ? ' \u2022 ' + t.location : '') + '</div></div>'
       + '<button onclick="deleteTrainerTournament(\'' + t.id + '\')" class="btn-sm" style="color:var(--red)">Slett</button>'
-      + '</div>';
-  }).join('');
+      + '</div>'
+      + '<div style="margin-top:8px;font-size:12px">'
+      + (regs.length
+        ? '<div style="font-weight:600;color:var(--text-muted);margin-bottom:4px">\u2713 P\u00e5meldt (' + regs.length + '):</div>'
+          + '<div style="display:flex;flex-wrap:wrap;gap:4px">' + regNames.map(function(n){ return '<span style="background:var(--blue-light);color:var(--blue);border-radius:5px;padding:2px 8px;font-size:11px">' + n + '</span>'; }).join('') + '</div>'
+        : '<div style="color:var(--text-muted);font-style:italic">Ingen p\u00e5meldte enda</div>')
+      + '</div></div>';
+  }
+  el.innerHTML = html;
 }
 
 async function saveTrainerTournament() {
