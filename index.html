@@ -735,7 +735,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       <div class="sec-title">Samtalelogg</div>
       <div style="margin-bottom:10px">
         <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase">Velg elev</label>
-        <select id="tr-conv-player" onchange="loadTrainerConvLog(this.value)" style="width:100%;font-size:14px;border:1.5px solid var(--border);border-radius:7px;padding:8px 12px;margin-top:4px;outline:none"></select>
+        <input type="text" id="tr-conv-search" oninput="filterConvPlayerList()" placeholder="Søk navn..." style="width:100%;font-size:14px;border:1.5px solid var(--border);border-radius:7px;padding:8px 12px;margin-bottom:6px;outline:none;box-sizing:border-box">
+        <select id="tr-conv-player" onchange="loadTrainerConvLog(this.value)" size="5" style="width:100%;font-size:14px;border:1.5px solid var(--border);border-radius:7px;padding:4px;outline:none;height:auto"></select>
       </div>
       <div class="form-group" style="margin-bottom:10px"><label>Notat</label><textarea id="tr-conv-text" rows="3" placeholder="Kort oppsummering..."></textarea></div>
       <button class="btn btn-primary" onclick="saveTrainerConv()">Lagre samtale</button>
@@ -1047,6 +1048,15 @@ function usesIndividualTargeting(sport) {
 }
 
 var evSelectedAthletes = [];
+
+function filterConvPlayerList() {
+  var q = (document.getElementById('tr-conv-search').value || '').toLowerCase().trim();
+  var sel = document.getElementById('tr-conv-player'); if (!sel) return;
+  var all = sel._allOptions || [];
+  var filtered = q ? all.filter(function(p){ return p.full_name.toLowerCase().indexOf(q) > -1; }) : all;
+  sel.innerHTML = filtered.map(function(p){ return '<option value="' + p.id + '">' + p.full_name + '</option>'; }).join('');
+  sel.selectedIndex = -1;
+}
 
 function loadTrainerTestFields() {
   var sel = document.getElementById('trainer-test-player');
@@ -2371,6 +2381,14 @@ async function loadTrainerView() {
   });
   window._trainerProfilesData = profiles;
   // Populate trainer test player dropdown
+  // Populate conv player dropdown (alphabetical)
+  var convSel = document.getElementById('tr-conv-player');
+  if (convSel) {
+    var sorted = profiles.slice().sort(function(a,b){ return a.full_name.localeCompare(b.full_name, 'nb'); });
+    convSel._allOptions = sorted;
+    convSel.innerHTML = sorted.map(function(p){ return '<option value="' + p.id + '">' + p.full_name + '</option>'; }).join('');
+    convSel.selectedIndex = -1;
+  }
   var testSel = document.getElementById('trainer-test-player');
   if (testSel) {
     testSel.innerHTML = '<option value="">Velg utøver...</option>' + profiles.map(function(p){ return '<option value="' + p.id + '">' + p.full_name + '</option>'; }).join('');
@@ -2529,9 +2547,12 @@ function cancelStudentEdit() {
 }
 
 async function saveTrainerConv() {
-  var pid = document.getElementById('tr-conv-player') ? document.getElementById('tr-conv-player').value : '';
+  var selEl = document.getElementById('tr-conv-player');
+  var pid = selEl ? selEl.value : '';
+  var playerName = selEl && selEl.options[selEl.selectedIndex] ? selEl.options[selEl.selectedIndex].text : '';
   var text = document.getElementById('tr-conv-text') ? document.getElementById('tr-conv-text').value.trim() : '';
-  if (!text || !pid) { showGlobalToast('Velg utøver og skriv et notat', 'error'); return; }
+  if (!pid) { showGlobalToast('Velg utøver f\u00f8rst!', 'error'); return; }
+  if (!text) { showGlobalToast('Skriv et notat f\u00f8rst!', 'error'); return; }
   var typeEl = document.getElementById('tr-conv-type');
   var editId = document.getElementById('tr-conv-edit-id') ? document.getElementById('tr-conv-edit-id').value : '';
   if (editId) {
@@ -2541,8 +2562,7 @@ async function saveTrainerConv() {
       body: JSON.stringify({text: text})
     });
     if (document.getElementById('tr-conv-edit-id')) document.getElementById('tr-conv-edit-id').value = '';
-    document.getElementById('tr-conv-text').value = '';
-    showGlobalToast('\u2713 Samtale oppdatert!');
+    showGlobalToast('\u2713 Samtale oppdatert for ' + playerName + '!');
   } else {
     await api('POST', 'conversations', {
       user_id: pid,
@@ -2551,10 +2571,15 @@ async function saveTrainerConv() {
       text: text,
       author: trainerProfile ? trainerProfile.full_name : 'Trener'
     });
-    document.getElementById('tr-conv-text').value = '';
-    showGlobalToast('\u2713 Samtale lagret!');
+    showGlobalToast('\u2713 Samtale lagret for ' + playerName + '!');
   }
-  loadTrainerConvLog(pid);
+  // Reset form completely after save
+  document.getElementById('tr-conv-text').value = '';
+  selEl.value = '';
+  var logCard = document.getElementById('tr-conv-log-card');
+  var logList = document.getElementById('tr-conv-log-list');
+  if (logCard) logCard.style.display = 'none';
+  if (logList) logList.innerHTML = '';
 }
 
 async function loadTrainerConvLog(pid) {
