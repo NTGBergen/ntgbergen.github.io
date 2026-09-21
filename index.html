@@ -1681,7 +1681,7 @@ async function logSession() {
     comment: document.getElementById('session-comment').value || null
   };
   if (editId) {
-    await api('PATCH', 'sessions?id=eq.' + editId, entry);
+    await fetch(SB_URL + '/rest/v1/sessions?id=eq.' + editId, {method:'PATCH', headers:{'apikey':SB_ADMIN,'Authorization':'Bearer '+SB_ADMIN,'Content-Type':'application/json'}, body:JSON.stringify(entry)});
     var idx = allSessions.findIndex(function(s){ return s.id === editId; });
     if (idx > -1) allSessions[idx] = Object.assign({id: editId}, entry);
     document.getElementById('session-edit-id').value = '';
@@ -1691,11 +1691,17 @@ async function logSession() {
   } else {
     var res = await fetch(SB_URL + '/rest/v1/sessions', {
       method: 'POST',
-      headers: {'apikey': SB_KEY, 'Authorization': 'Bearer ' + (currentUser.access_token || SB_KEY), 'Content-Type': 'application/json', 'Prefer': 'return=representation'},
+      headers: {'apikey': SB_ADMIN, 'Authorization': 'Bearer ' + SB_ADMIN, 'Content-Type': 'application/json', 'Prefer': 'return=representation'},
       body: JSON.stringify(entry)
     });
+    if (!res.ok) {
+      var errBody = await res.text();
+      showGlobalToast('\u26a0 Kunne ikke lagre \u00f8kt: ' + res.status, 'error');
+      console.error('Session save error:', errBody);
+      return;
+    }
     var newSession = await res.json();
-    if (Array.isArray(newSession)) entry = Object.assign({id: newSession[0].id}, entry);
+    if (Array.isArray(newSession) && newSession[0]) entry = Object.assign({}, entry, {id: newSession[0].id});
     allSessions.push(entry);
   }
   document.getElementById('session-comment').value = '';
@@ -3605,12 +3611,15 @@ async function sendPlayerMessage() {
           existingMsgId = myMsgs[mi].id; break;
         }
       }
-      // Also check if trainer has sent to me
+      // Also check if trainer has sent to me (1-to-1 only - exactly 1 recipient)
       if (!existingMsgId) {
         var trMsgs = await api('GET', 'messages?sender_id=eq.' + selectedChatTrainers[0] + '&select=id') || [];
         for (var ti = 0; ti < trMsgs.length; ti++) {
-          var trRecs = await api('GET', 'message_recipients?message_id=eq.' + trMsgs[ti].id + '&recipient_id=eq.' + currentProfile.id + '&select=id') || [];
-          if (trRecs.length) { existingMsgId = trMsgs[ti].id; break; }
+          var allTrRecs = await api('GET', 'message_recipients?message_id=eq.' + trMsgs[ti].id + '&select=recipient_id') || [];
+          // Only reuse if exactly 1 recipient = me (not a group message)
+          if (allTrRecs.length === 1 && allTrRecs[0].recipient_id === currentProfile.id) {
+            existingMsgId = trMsgs[ti].id; break;
+          }
         }
       }
     }
