@@ -614,12 +614,15 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       <div id="ev-templates-wrap" style="display:none;margin-bottom:12px">
         <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;display:block;margin-bottom:6px">Hurtigmaler</label>
         <div style="display:flex;flex-wrap:wrap;gap:6px">
-          <button type="button" class="btn-sm-blue" onclick="applyEventTemplate('Tennis 1','07:30','09:00')">Tennis 1 (07:30–09:00)</button>
-          <button type="button" class="btn-sm-blue" onclick="applyEventTemplate('Tennis 2','09:00','10:30')">Tennis 2 (09:00–10:30)</button>
-          <button type="button" class="btn-sm-blue" onclick="applyEventTemplate('Fysisk 1','08:00','09:00')">Fysisk 1 (08:00–09:00)</button>
-          <button type="button" class="btn-sm-blue" onclick="applyEventTemplate('Fysisk 2','09:00','10:00')">Fysisk 2 (09:00–10:00)</button>
-          <button type="button" class="btn-sm-blue" onclick="applyEventTemplate('Activation','07:30','08:00')">Activation (07:30–08:00)</button>
+          <button type="button" class="btn-sm-blue" onclick="applyEventTemplate('Tennis','08:00','09:00')">Tennis (08:00–09:00)</button>
+          <button type="button" class="btn-sm-blue" onclick="applyEventTemplate('Tennis','09:00','10:00')">Tennis (09:00–10:00)</button>
+          <button type="button" class="btn-sm-blue" onclick="applyEventTemplate('Tennis','07:30','09:00')">Tennis (07:30–09:00)</button>
+          <button type="button" class="btn-sm-blue" onclick="applyEventTemplate('Tennis','09:00','10:30')">Tennis (09:00–10:30)</button>
+          <button type="button" class="btn-sm-blue" onclick="applyEventTemplate('Fysisk','08:00','09:00')">Fysisk (08:00–09:00)</button>
+          <button type="button" class="btn-sm-blue" onclick="applyEventTemplate('Fysisk','09:00','10:00')">Fysisk (09:00–10:00)</button>
           <button type="button" class="btn-sm-blue" onclick="applyEventTemplate('Match day','08:00','10:00')">Match day (08:00–10:00)</button>
+          <button type="button" class="btn-sm-blue" onclick="applyEventTemplate('Activation','07:30','08:00')">Activation (07:30–08:00)</button>
+          <button type="button" class="btn-sm-blue" onclick="applyEventTemplate('Padel','08:00','10:00')">Padel (08:00–10:00)</button>
         </div>
       </div>
       <div class="form-row">
@@ -1708,22 +1711,41 @@ async function logSession() {
   showToast(); renderACWR(); renderSessionLog();
 }
 
+var showAllSessions = false;
+
+function toggleOldSessions() {
+  showAllSessions = !showAllSessions;
+  renderSessionLog();
+}
+
 function renderSessionLog() {
   var el = document.getElementById('session-log-list'); if (!el) return;
   if (!allSessions.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Ingen \u00f8kter logget enda</div>'; return; }
   var sorted = allSessions.slice().sort(function(a,b){ return b.date.localeCompare(a.date); });
-  el.innerHTML = sorted.slice(0, 20).map(function(s) {
+  var cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 14);
+  var cutoffStr = localDateStr(cutoff);
+  var recent = sorted.filter(function(s){ return s.date >= cutoffStr; });
+  var old = sorted.filter(function(s){ return s.date < cutoffStr; });
+  function sessionRow(s) {
     return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">'
       + '<div style="flex:1">'
       + '<div style="font-size:13px;font-weight:600">' + s.type + '</div>'
-      + '<div style="font-size:12px;color:var(--text-muted)">' + s.date + ' &bull; ' + s.duration + ' min &bull; RPE ' + s.rpe + ' &bull; ' + s.load + ' AU</div>'
+      + '<div style="font-size:12px;color:var(--text-muted)">' + s.date + ' \u2022 ' + s.duration + ' min \u2022 RPE ' + s.rpe + ' \u2022 ' + s.load + ' AU</div>'
       + (s.comment ? '<div style="font-size:12px;color:var(--text-muted);font-style:italic">' + s.comment + '</div>' : '')
       + '</div>'
       + '<div style="display:flex;gap:4px">'
       + (s.id ? '<button class="btn-sm" onclick="editSession(\'' + s.id + '\')">Rediger</button>' : '')
       + (s.id ? '<button class="btn-sm" style="color:var(--red)" onclick="deleteSession(\'' + s.id + '\')">Slett</button>' : '')
       + '</div></div>';
-  }).join('');
+  }
+  var html = recent.map(sessionRow).join('');
+  if (old.length) {
+    html += '<div style="text-align:center;margin-top:8px">'
+      + '<button onclick="toggleOldSessions()" style="background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:6px 14px;font-size:12px;cursor:pointer;color:var(--text-muted)">'
+      + (showAllSessions ? '\u25b2 Skjul eldre \u00f8kter' : '\u25bc Vis ' + old.length + ' eldre \u00f8kter') + '</button></div>';
+    if (showAllSessions) html += old.map(sessionRow).join('');
+  }
+  el.innerHTML = html;
 }
 
 function editSession(sessionId) {
@@ -2724,7 +2746,8 @@ async function loadCalendar() {
   var regs = await api('GET', 'event_registrations?user_id=eq.' + currentProfile.id + '&select=event_id,status') || [];
   var myRegs = {};
   regs.forEach(function(r){ myRegs[r.event_id] = r.status; });
-  allEvents.forEach(function(ev){ ev._status = myRegs[ev.id] || null; });
+  // Default status is 'paameldt' - athletes are auto-registered
+  allEvents.forEach(function(ev){ ev._status = myRegs[ev.id] || 'paameldt'; });
   calEvents = allEvents;
   if (calView === 'grid') {
     renderCalGrid(calEvents);
@@ -3770,47 +3793,45 @@ async function loadPlayerInbox() {
   var el = document.getElementById('chat-inbox'); if (!el) return;
   try {
     var myId = currentProfile.id;
-    // Sent messages
-    var sentMsgs = await api('GET', 'messages?sender_id=eq.' + myId + '&order=created_at.desc&select=*') || [];
-    // Received messages
-    var recRows = await api('GET', 'message_recipients?recipient_id=eq.' + myId + '&select=message_id,read_at') || [];
-    var recMsgIds = recRows.map(function(r){ return r.message_id; });
+    // Fetch all data in parallel
+    var [sentMsgs, recRows, allReplies, allRecipients] = await Promise.all([
+      api('GET', 'messages?sender_id=eq.' + myId + '&order=created_at.desc&select=*') || [],
+      api('GET', 'message_recipients?recipient_id=eq.' + myId + '&select=message_id,read_at') || [],
+      api('GET', 'message_replies?order=created_at.desc&select=*') || [],
+      api('GET', 'message_recipients?select=message_id,recipient_id') || []
+    ]);
+    sentMsgs = sentMsgs || []; recRows = recRows || []; allReplies = allReplies || []; allRecipients = allRecipients || [];
+    // Fetch received messages in one batch
+    var recMsgIds = (recRows || []).map(function(r){ return r.message_id; });
     var recMsgs = [];
-    for (var i = 0; i < recMsgIds.length; i++) {
-      var m = await api('GET', 'messages?id=eq.' + recMsgIds[i] + '&select=*');
-      if (m && m[0]) recMsgs.push({msg: m[0], recRow: recRows.find(function(r){ return r.message_id === recMsgIds[i]; })});
+    if (recMsgIds.length) {
+      var fetched = await api('GET', 'messages?id=in.(' + recMsgIds.join(',') + ')&select=*') || [];
+      fetched.forEach(function(m){ recMsgs.push({msg: m, recRow: recRows.find(function(r){ return r.message_id === m.id; })}); });
     }
+    // Fetch all trainer profiles for name lookup
+    var trainerProfiles = await api('GET', 'profiles?is_trainer=eq.true&select=id,full_name') || [];
+    var trainerMap = {};
+    trainerProfiles.forEach(function(p){ trainerMap[p.id] = p.full_name; });
     // Build threads
     var threads = [];
-    // Sent threads
-    for (var j = 0; j < sentMsgs.length; j++) {
-      var m = sentMsgs[j];
-      var replies = await api('GET', 'message_replies?message_id=eq.' + m.id + '&order=created_at.desc&select=*') || [];
+    var seen = {};
+    sentMsgs.forEach(function(m) {
+      if (seen[m.id]) return; seen[m.id] = true;
+      var replies = allReplies.filter(function(r){ return r.message_id === m.id; });
       var lastMsg = replies.length ? replies[0] : m;
       var unread = replies.filter(function(r){ return !r.read_at && r.sender_id !== myId; }).length;
-      // Get recipient names
-      var recNames = await api('GET', 'message_recipients?message_id=eq.' + m.id + '&select=recipient_id') || [];
-      var names = [];
-      for (var k = 0; k < recNames.length; k++) {
-        var p = await api('GET', 'profiles?id=eq.' + recNames[k].recipient_id + '&select=full_name');
-        if (p && p[0]) names.push(p[0].full_name);
-      }
-      threads.push({id: m.id, name: names.join(', ') || 'Trener', lastBody: lastMsg.body, lastTime: lastMsg.created_at, unread: unread, isSent: true});
-    }
-    // Received threads
-    for (var r2 = 0; r2 < recMsgs.length; r2++) {
-      var item = recMsgs[r2];
+      var recips = allRecipients.filter(function(r){ return r.message_id === m.id; });
+      var names = recips.map(function(r){ return trainerMap[r.recipient_id] || ''; }).filter(Boolean);
+      threads.push({id: m.id, name: names.join(', ') || 'Trener', lastBody: lastMsg.body, lastTime: lastMsg.created_at, unread: unread});
+    });
+    recMsgs.forEach(function(item) {
       var m2 = item.msg;
-      // Check if already in threads
-      if (threads.find(function(t){ return t.id === m2.id; })) continue;
-      var replies2 = await api('GET', 'message_replies?message_id=eq.' + m2.id + '&order=created_at.desc&select=*') || [];
+      if (seen[m2.id]) return; seen[m2.id] = true;
+      var replies2 = allReplies.filter(function(r){ return r.message_id === m2.id; });
       var lastMsg2 = replies2.length ? replies2[0] : m2;
       var unread2 = (!item.recRow.read_at ? 1 : 0) + replies2.filter(function(r){ return !r.read_at && r.sender_id !== myId; }).length;
-      var sp = await api('GET', 'profiles?id=eq.' + m2.sender_id + '&select=full_name') || [];
-      var senderName = sp[0] ? sp[0].full_name : 'Trener';
-      threads.push({id: m2.id, name: senderName, lastBody: lastMsg2.body, lastTime: lastMsg2.created_at, unread: unread2, isSent: false});
-    }
-    // Sort by most recent
+      threads.push({id: m2.id, name: trainerMap[m2.sender_id] || 'Trener', lastBody: lastMsg2.body, lastTime: lastMsg2.created_at, unread: unread2});
+    });
     threads.sort(function(a,b){ return b.lastTime.localeCompare(a.lastTime); });
     if (!threads.length) { el.innerHTML = '<div style="padding:1rem;font-size:13px;color:var(--text-muted)">Ingen meldinger enda</div>'; return; }
     el.innerHTML = threads.map(function(t) {
@@ -4169,45 +4190,45 @@ async function loadTrainerInbox() {
   el.innerHTML = '<div class="loading" style="padding:1rem"><div class="spinner"></div>Laster...</div>';
   try {
     var myId = trainerProfile ? trainerProfile.id : (currentProfile ? currentProfile.id : '');
-    var sport = getTrainerSport();
-    // Messages sent by me
-    var sentMsgs = await api('GET', 'messages?sender_id=eq.' + myId + '&order=created_at.desc&select=*') || [];
-    // Messages I received
-    var recRows = await api('GET', 'message_recipients?recipient_id=eq.' + myId + '&select=message_id,read_at') || [];
+    // Fetch everything in parallel
+    var [sentMsgs, recRows, allReplies, allRecipients, allProfiles] = await Promise.all([
+      api('GET', 'messages?sender_id=eq.' + myId + '&order=created_at.desc&select=*'),
+      api('GET', 'message_recipients?recipient_id=eq.' + myId + '&select=message_id,read_at'),
+      api('GET', 'message_replies?order=created_at.desc&select=*'),
+      api('GET', 'message_recipients?select=message_id,recipient_id'),
+      api('GET', 'profiles?select=id,full_name,is_trainer')
+    ]);
+    sentMsgs = sentMsgs || []; recRows = recRows || []; allReplies = allReplies || []; allRecipients = allRecipients || []; allProfiles = allProfiles || [];
+    var profileMap = {};
+    allProfiles.forEach(function(p){ profileMap[p.id] = p; });
+    // Fetch received messages in one batch
+    var recMsgIds = recRows.map(function(r){ return r.message_id; });
+    var recMsgMap = {};
+    if (recMsgIds.length) {
+      var fetched = await api('GET', 'messages?id=in.(' + recMsgIds.join(',') + ')&select=*') || [];
+      fetched.forEach(function(m){ recMsgMap[m.id] = m; });
+    }
     var threads = [];
     var seen = {};
-    // Process sent messages
-    for (var i = 0; i < sentMsgs.length; i++) {
-      var m = sentMsgs[i];
-      if (seen[m.id]) continue;
-      seen[m.id] = true;
-      var replies = await api('GET', 'message_replies?message_id=eq.' + m.id + '&order=created_at.desc&select=*') || [];
+    sentMsgs.forEach(function(m) {
+      if (seen[m.id]) return; seen[m.id] = true;
+      var replies = allReplies.filter(function(r){ return r.message_id === m.id; });
       var lastMsg = replies.length ? replies[0] : m;
       var unread = replies.filter(function(r){ return !r.read_at && r.sender_id !== myId; }).length;
-      var recips = await api('GET', 'message_recipients?message_id=eq.' + m.id + '&select=recipient_id') || [];
-      var names = [];
-      for (var k = 0; k < Math.min(recips.length, 3); k++) {
-        var p = await api('GET', 'profiles?id=eq.' + recips[k].recipient_id + '&select=full_name,is_trainer');
-        if (p && p[0] && !p[0].is_trainer) names.push(p[0].full_name);
-      }
+      var recips = allRecipients.filter(function(r){ return r.message_id === m.id; });
+      var names = recips.slice(0,3).map(function(r){ var p = profileMap[r.recipient_id]; return p && !p.is_trainer ? p.full_name : null; }).filter(Boolean);
       if (recips.length > 3) names.push('...');
-      var label = m.recipients_label || names.join(', ') || 'Alle';
-      threads.push({id: m.id, name: label, lastBody: lastMsg.body, lastTime: lastMsg.created_at, unread: unread});
-    }
-    // Process received messages
-    for (var j = 0; j < recRows.length; j++) {
-      var msgId = recRows[j].message_id;
-      if (seen[msgId]) continue;
-      seen[msgId] = true;
-      var mArr = await api('GET', 'messages?id=eq.' + msgId + '&select=*') || [];
-      if (!mArr.length) continue;
-      var m2 = mArr[0];
-      var replies2 = await api('GET', 'message_replies?message_id=eq.' + msgId + '&order=created_at.desc&select=*') || [];
+      threads.push({id: m.id, name: m.recipients_label || names.join(', ') || 'Alle', lastBody: lastMsg.body, lastTime: lastMsg.created_at, unread: unread});
+    });
+    recRows.forEach(function(row) {
+      var m2 = recMsgMap[row.message_id];
+      if (!m2 || seen[m2.id]) return; seen[m2.id] = true;
+      var replies2 = allReplies.filter(function(r){ return r.message_id === m2.id; });
       var lastMsg2 = replies2.length ? replies2[0] : m2;
-      var unread2 = (!recRows[j].read_at ? 1 : 0) + replies2.filter(function(r){ return !r.read_at && r.sender_id !== myId; }).length;
-      var sp = await api('GET', 'profiles?id=eq.' + m2.sender_id + '&select=full_name') || [];
-      threads.push({id: msgId, name: sp[0] ? sp[0].full_name : 'Utøver', lastBody: lastMsg2.body, lastTime: lastMsg2.created_at, unread: unread2});
-    }
+      var unread2 = (!row.read_at ? 1 : 0) + replies2.filter(function(r){ return !r.read_at && r.sender_id !== myId; }).length;
+      var senderP = profileMap[m2.sender_id];
+      threads.push({id: m2.id, name: senderP ? senderP.full_name : 'Utøver', lastBody: lastMsg2.body, lastTime: lastMsg2.created_at, unread: unread2});
+    });
     threads.sort(function(a,b){ return b.lastTime.localeCompare(a.lastTime); });
     if (!threads.length) { el.innerHTML = '<div style="padding:1rem;font-size:13px;color:var(--text-muted)">Ingen meldinger enda</div>'; return; }
     el.innerHTML = threads.map(function(t) {
@@ -4309,13 +4330,17 @@ function getAttendanceBtnsHtml(evId, status, isPersonal, sport) {
     }
     return '<button onclick="showAttendanceMenu(\'' + evId + '\',this)" style="background:var(--blue-light);color:var(--blue);border:1px solid var(--blue);border-radius:7px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer">Velg svar</button>';
   }
-  var isPaameldt = status === 'paameldt';
   var isAvmeldt = status === 'avmeldt';
-  return '<div style="display:flex;gap:6px">'
-    + '<button onclick="setRegistration(\'' + evId + '\',\'paameldt\')" style="background:' + (isPaameldt ? 'var(--green)' : 'var(--green-light)') + ';color:' + (isPaameldt ? '#fff' : 'var(--green-dark)') + ';border:1.5px solid var(--green);border-radius:7px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer">'
-    + (isPaameldt ? '\u2713 P\u00e5meldt' : 'Meld p\u00e5') + '</button>'
-    + '<button onclick="setRegistration(\'' + evId + '\',\'avmeldt\')" style="background:' + (isAvmeldt ? 'var(--red)' : 'var(--red-light)') + ';color:' + (isAvmeldt ? '#fff' : 'var(--red-dark)') + ';border:1.5px solid var(--red);border-radius:7px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer">'
-    + (isAvmeldt ? '\u274C Avmeldt' : 'Meld av') + '</button>'
+  // Default is paameldt - only show avmelding option
+  if (isAvmeldt) {
+    return '<div style="display:flex;gap:6px;align-items:center">'
+      + '<span style="font-size:12px;color:var(--red-dark);font-weight:700">\u274C Avmeldt</span>'
+      + '<button onclick="setRegistration(\'' + evId + '\',\'paameldt\')" style="background:var(--green-light);color:var(--green-dark);border:1.5px solid var(--green);border-radius:7px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer">Meld p\u00e5 igjen</button>'
+      + '</div>';
+  }
+  return '<div style="display:flex;gap:6px;align-items:center">'
+    + '<span style="font-size:12px;color:var(--green-dark);font-weight:700">\u2713 P\u00e5meldt</span>'
+    + '<button onclick="setRegistration(\'' + evId + '\',\'avmeldt\')" style="background:var(--red-light);color:var(--red-dark);border:1.5px solid var(--red);border-radius:7px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer">Meld av</button>'
     + '</div>';
 }
 
