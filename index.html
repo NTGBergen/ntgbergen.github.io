@@ -2707,8 +2707,9 @@ async function exportAllTests() {
 function openSnakkeLink(e) {
   e.preventDefault();
   var name = currentProfile ? currentProfile.full_name : 'Elev';
-  var subject = encodeURIComponent('Trenger noen å snakke med');
-  var body = encodeURIComponent('Hei,\n\nJeg heter ' + name + ' og trenger å snakke med noen.\n\nMvh\n' + name);
+  var sport = currentProfile ? (currentProfile.sport || '') : '';
+  var subject = encodeURIComponent('Trenger noen å snakke med – ' + sport);
+  var body = encodeURIComponent('Hei,\n\nJeg heter ' + name + (sport ? ' og går ' + sport : '') + '.\n\nJeg trenger å snakke med noen.\n\nMvh\n' + name);
   window.location.href = 'mailto:solhyl@ntg.no?subject=' + subject + '&body=' + body;
 }
 
